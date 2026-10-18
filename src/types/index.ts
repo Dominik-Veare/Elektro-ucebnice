@@ -1,4 +1,51 @@
-// Typy pro aplikaci ElektroUčebnice 26-017-H
+// Typy pro aplikaci ElektroUčebnice (NSK 26-017-H až 26-021-H)
+
+export type QualificationId =
+  | '26-017-H'
+  | '26-018-H'
+  | '26-019-H'
+  | '26-020-H'
+  | '26-021-H';
+
+export interface QualificationDef {
+  id: QualificationId;
+  title: string;
+  shortTitle: string;
+  hasContent: boolean;
+}
+
+export const QUALIFICATIONS: QualificationDef[] = [
+  {
+    id: '26-017-H',
+    title: 'Montér/Montérka elektrických instalací',
+    shortTitle: 'Montér elektrických instalací',
+    hasContent: true,
+  },
+  {
+    id: '26-018-H',
+    title: 'Montér/Montérka elektrických sítí',
+    shortTitle: 'Montér elektrických sítí',
+    hasContent: false,
+  },
+  {
+    id: '26-019-H',
+    title: 'Montér/Montérka elektrických rozvaděčů',
+    shortTitle: 'Montér elektrických rozvaděčů',
+    hasContent: false,
+  },
+  {
+    id: '26-020-H',
+    title: 'Montér/Montérka slaboproudých zařízení',
+    shortTitle: 'Montér slaboproudých zařízení',
+    hasContent: false,
+  },
+  {
+    id: '26-021-H',
+    title: 'Montér/Montérka hromosvodů',
+    shortTitle: 'Montér hromosvodů',
+    hasContent: false,
+  },
+];
 
 export interface Subchapter {
   id: string;

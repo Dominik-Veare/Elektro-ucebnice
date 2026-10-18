@@ -12,7 +12,7 @@ import {
   CheckCircle2, 
   ChevronRight
 } from 'lucide-react';
-import { UserProgress } from '../types';
+import { UserProgress, QualificationId, QUALIFICATIONS } from '../types';
 import { CHAPTERS } from '../data/chapters';
 
 interface SidebarProps {
@@ -24,6 +24,8 @@ interface SidebarProps {
   progress: UserProgress;
   onOpenSync: () => void;
   totalSubchapters: number;
+  activeQualification: QualificationId;
+  onSelectQualification: (id: QualificationId) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -35,8 +37,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
   progress,
   onOpenSync,
   totalSubchapters,
+  activeQualification,
+  onSelectQualification,
 }) => {
   if (!isOpen) return null;
+
+  const currentQual =
+    QUALIFICATIONS.find((q) => q.id === activeQualification) || QUALIFICATIONS[0];
 
   const completedCount = progress.completedSubchapters.length;
   const progressPercent = totalSubchapters > 0 
@@ -79,30 +86,30 @@ export const Sidebar: React.FC<SidebarProps> = ({
         
         {/* Horní hlavička menu */}
         <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/40">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 to-yellow-400 flex items-center justify-center shadow-lg shadow-amber-500/20 shrink-0">
               <svg className="w-5 h-5 text-slate-950 font-black" viewBox="0 0 24 24" fill="currentColor">
                 <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
               </svg>
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-1.5">
                 <span className="font-extrabold text-base tracking-tight text-white">
                   ElektroUčebnice
                 </span>
-                <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                  26-017-H
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                  {currentQual.id}
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400">
-                Montér elektrických instalací
+              <p className="text-[11px] text-slate-400 truncate">
+                {currentQual.title}
               </p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+            className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors shrink-0"
             title="Zavřít menu"
           >
             <X className="w-5 h-5" />
@@ -163,42 +170,83 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           </div>
 
-          {/* 2. Rychlý skok do 8 kapitol */}
+          {/* Přepínač profesních kvalifikací (5 učebnic) */}
           <div className="pt-2 border-t border-slate-800/80">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-3 mb-2 block font-mono">
-              Kapitoly učebnice (1–8)
+              Učebnice profesních kvalifikací
             </span>
             <div className="space-y-1">
-              {CHAPTERS.map((ch) => {
-                const chapterSubIds = ch.subchapters.map(s => s.id);
-                const isFullyRead = chapterSubIds.every(id => progress.completedSubchapters.includes(id));
-                const score = progress.quizScores[ch.id];
-
+              {QUALIFICATIONS.map((qual) => {
+                const isSelected = qual.id === activeQualification;
                 return (
                   <button
-                    key={ch.id}
-                    onClick={() => handleChapterClick(ch.id)}
-                    className="w-full text-left px-3 py-2 rounded-lg text-xs hover:bg-slate-800 transition-colors flex items-center justify-between text-slate-300 hover:text-white group"
+                    key={qual.id}
+                    onClick={() => {
+                      onSelectQualification(qual.id);
+                      onClose();
+                    }}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors flex items-center justify-between gap-2 ${
+                      isSelected
+                        ? 'bg-amber-500/15 border border-amber-500/40 text-white font-semibold'
+                        : 'hover:bg-slate-800 text-slate-300 hover:text-white border border-transparent'
+                    }`}
                   >
-                    <div className="flex items-center gap-2.5 truncate">
-                      <span className="w-5 h-5 rounded bg-slate-800 flex items-center justify-center font-mono font-bold text-[10px] text-amber-400 group-hover:bg-amber-500 group-hover:text-slate-950 transition-colors shrink-0">
-                        {ch.id}
+                    <div className="flex items-center gap-2 truncate">
+                      <span
+                        className={`px-1.5 py-0.5 rounded font-mono font-bold text-[10px] shrink-0 ${
+                          isSelected
+                            ? 'bg-amber-500 text-slate-950'
+                            : 'bg-slate-800 text-amber-400'
+                        }`}
+                      >
+                        {qual.id}
                       </span>
-                      <span className="truncate">{ch.title}</span>
-                    </div>
-
-                    <div className="shrink-0 pl-2">
-                      {isFullyRead ? (
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                      ) : score ? (
-                        <span className="text-[10px] font-mono text-emerald-400">{score.score}/{score.total}</span>
-                      ) : null}
+                      <span className="truncate">{qual.title}</span>
                     </div>
                   </button>
                 );
               })}
             </div>
           </div>
+
+          {/* 2. Rychlý skok do 8 kapitol (pouze pro 26-017-H) */}
+          {activeQualification === '26-017-H' && (
+            <div className="pt-2 border-t border-slate-800/80">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-3 mb-2 block font-mono">
+                Kapitoly učebnice (1–8)
+              </span>
+              <div className="space-y-1">
+                {CHAPTERS.map((ch) => {
+                  const chapterSubIds = ch.subchapters.map(s => s.id);
+                  const isFullyRead = chapterSubIds.every(id => progress.completedSubchapters.includes(id));
+                  const score = progress.quizScores[ch.id];
+
+                  return (
+                    <button
+                      key={ch.id}
+                      onClick={() => handleChapterClick(ch.id)}
+                      className="w-full text-left px-3 py-2 rounded-lg text-xs hover:bg-slate-800 transition-colors flex items-center justify-between text-slate-300 hover:text-white group"
+                    >
+                      <div className="flex items-center gap-2.5 truncate">
+                        <span className="w-5 h-5 rounded bg-slate-800 flex items-center justify-center font-mono font-bold text-[10px] text-amber-400 group-hover:bg-amber-500 group-hover:text-slate-950 transition-colors shrink-0">
+                          {ch.id}
+                        </span>
+                        <span className="truncate">{ch.title}</span>
+                      </div>
+
+                      <div className="shrink-0 pl-2">
+                        {isFullyRead ? (
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                        ) : score ? (
+                          <span className="text-[10px] font-mono text-emerald-400">{score.score}/{score.total}</span>
+                        ) : null}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
         </div>
 

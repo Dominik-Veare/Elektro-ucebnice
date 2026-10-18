@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { BookOpen } from 'lucide-react';
 import { Navbar } from './components/Navbar';
 import { ChapterView } from './components/ChapterView';
 import { QuizModal } from './components/QuizModal';
@@ -14,10 +15,12 @@ import { Sidebar } from './components/Sidebar';
 import { CHAPTERS } from './data/chapters';
 import { QUESTIONS } from './data/questions';
 import { loadProgress, saveProgress, syncWithCloud } from './services/storage';
-import { UserProgress } from './types';
+import { UserProgress, QualificationId, QUALIFICATIONS } from './types';
 
 export const App: React.FC = () => {
   const [progress, setProgress] = useState<UserProgress>(loadProgress());
+  const [activeQualification, setActiveQualification] =
+    useState<QualificationId>('26-017-H');
   const [currentTab, setCurrentTab] = useState<string>('ucebnice');
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [selectedChapterId, setSelectedChapterId] = useState<number | null>(null);
@@ -26,8 +29,14 @@ export const App: React.FC = () => {
   // Kvízové okno
   const [activeQuizChapterId, setActiveQuizChapterId] = useState<number | null>(null);
 
+  const currentQualDef =
+    QUALIFICATIONS.find((q) => q.id === activeQualification) || QUALIFICATIONS[0];
+
   // Počítadlo celkového počtu témat
-  const totalSubchapters = CHAPTERS.reduce((acc, c) => acc + c.subchapters.length, 0);
+  const totalSubchapters =
+    activeQualification === '26-017-H'
+      ? CHAPTERS.reduce((acc, c) => acc + c.subchapters.length, 0)
+      : 0;
 
   // Při prvním načtení zkusíme tichou synchronizaci s cloudem na pozadí
   useEffect(() => {
@@ -168,6 +177,11 @@ export const App: React.FC = () => {
         onOpenSync={() => setIsSyncModalOpen(true)}
         totalSubchapters={totalSubchapters}
         onToggleSidebar={() => setIsSidebarOpen(prev => !prev)}
+        activeQualification={activeQualification}
+        onSelectQualification={(id) => {
+          setActiveQualification(id);
+          setSelectedChapterId(null);
+        }}
       />
 
       {/* Postranní vysouvací menu */}
@@ -180,52 +194,84 @@ export const App: React.FC = () => {
         progress={progress}
         onOpenSync={() => setIsSyncModalOpen(true)}
         totalSubchapters={totalSubchapters}
+        activeQualification={activeQualification}
+        onSelectQualification={(id) => {
+          setActiveQualification(id);
+          setSelectedChapterId(null);
+        }}
       />
 
       {/* Hlavní obsahová část */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
-        {currentTab === 'ucebnice' && (
-          <ChapterView
-            chapters={CHAPTERS}
-            progress={progress}
-            onToggleSubchapter={handleToggleSubchapter}
-            onStartQuiz={(chId) => setActiveQuizChapterId(chId)}
-            selectedChapterId={selectedChapterId}
-            setSelectedChapterId={setSelectedChapterId}
-          />
-        )}
+        {!currentQualDef.hasContent ? (
+          <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-8 sm:p-12 text-center max-w-2xl mx-auto my-8 space-y-4">
+            <div className="w-14 h-14 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center mx-auto text-amber-400">
+              <BookOpen className="w-7 h-7" />
+            </div>
+            <div className="inline-block px-3 py-1 rounded-lg bg-amber-500/20 border border-amber-500/30 text-amber-300 font-mono text-xs font-bold">
+              {currentQualDef.id}
+            </div>
+            <h1 className="text-xl sm:text-2xl font-extrabold text-white">
+              {currentQualDef.title} {currentQualDef.id}
+            </h1>
+            <p className="text-sm text-slate-400 max-w-md mx-auto">
+              Tato učebnice je momentálně prázdná a připravená k doplnění studijních kapitol, testových otázek a praktických úloh.
+            </p>
+            <div className="pt-2">
+              <button
+                onClick={() => setActiveQualification('26-017-H')}
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 transition-all shadow-sm"
+              >
+                Zpět na Montér/Montérka elektrických instalací 26-017-H
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            {currentTab === 'ucebnice' && (
+              <ChapterView
+                chapters={CHAPTERS}
+                progress={progress}
+                onToggleSubchapter={handleToggleSubchapter}
+                onStartQuiz={(chId) => setActiveQuizChapterId(chId)}
+                selectedChapterId={selectedChapterId}
+                setSelectedChapterId={setSelectedChapterId}
+              />
+            )}
 
-        {currentTab === 'zkouska' && (
-          <ExamSimulator
-            allQuestions={QUESTIONS}
-            onFinishExam={handleFinishExam}
-            onExit={() => setCurrentTab('ucebnice')}
-          />
-        )}
+            {currentTab === 'zkouska' && (
+              <ExamSimulator
+                allQuestions={QUESTIONS}
+                onFinishExam={handleFinishExam}
+                onExit={() => setCurrentTab('ucebnice')}
+              />
+            )}
 
-        {currentTab === 'chyby' && (
-          <MistakeNotebook
-            allQuestions={QUESTIONS}
-            progress={progress}
-            onAnswerMistakeQuestion={handleAnswerMistakeQuestion}
-            onClearMistakes={handleClearMistakes}
-          />
-        )}
+            {currentTab === 'chyby' && (
+              <MistakeNotebook
+                allQuestions={QUESTIONS}
+                progress={progress}
+                onAnswerMistakeQuestion={handleAnswerMistakeQuestion}
+                onClearMistakes={handleClearMistakes}
+              />
+            )}
 
-        {currentTab === 'karticky' && (
-          <FlashcardsView />
-        )}
+            {currentTab === 'karticky' && (
+              <FlashcardsView />
+            )}
 
-        {currentTab === 'kalkulacky' && (
-          <CalculatorsView />
-        )}
+            {currentTab === 'kalkulacky' && (
+              <CalculatorsView />
+            )}
 
-        {currentTab === 'schemata' && (
-          <WiringSimulator />
-        )}
+            {currentTab === 'schemata' && (
+              <WiringSimulator />
+            )}
 
-        {currentTab === 'diagnostika' && (
-          <DiagnosticsView />
+            {currentTab === 'diagnostika' && (
+              <DiagnosticsView />
+            )}
+          </>
         )}
       </main>
 

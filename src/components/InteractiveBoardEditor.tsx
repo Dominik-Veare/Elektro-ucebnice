@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import {
   Plus,
   Trash2,
@@ -6,13 +6,16 @@ import {
   CheckCircle2,
   AlertTriangle,
   Eye,
+  ZoomIn,
+  ZoomOut,
+  Maximize2,
 } from 'lucide-react';
 
 // ============================================================================
 // TYPY PRO MONTÁŽNÍ TABULI
 // ============================================================================
 
-export type PlacementZone = 'din' | 'busbar' | 'wall' | 'fixed';
+export type PlacementZone = 'rail' | 'din' | 'busbar' | 'wall' | 'fixed';
 
 export type WireColor = 'L1' | 'L2' | 'L3' | 'N' | 'PE' | 'SW';
 
@@ -116,6 +119,16 @@ const PALETTE_ITEMS: PaletteItemDef[] = [
       { id: 'N', label: 'N', relX: 76, relY: 66, hintColor: 'N' },
       { id: 'PE', label: 'PE', relX: 96, relY: 66, hintColor: 'PE' },
     ],
+  },
+  {
+    type: 'din-rail',
+    name: 'DIN lišta TS 35 mm (nosná)',
+    shortName: 'DIN lišta 35 mm',
+    zone: 'rail',
+    width: 480,
+    height: 36,
+    description: 'Posuvná a odstranitelná lišta – nasazené moduly se posouvají s ní',
+    terminals: [],
   },
   {
     type: 'busbar-n',
@@ -576,9 +589,19 @@ const PALETTE_MAP: Record<string, PaletteItemDef> = Object.fromEntries(
   PALETTE_ITEMS.map((p) => [p.type, p])
 );
 
-// Výchozí prázdná tabule má pouze pevný přívod sítě 3F TN-S
+// Výchozí tabule obsahuje pevný přívod sítě 3F TN-S a jednu posuvnou/odstranitelnou DIN lištu
+const DEFAULT_DIN_RAIL: PlacedItem = {
+  instanceId: 'din-rail-1',
+  type: 'din-rail',
+  label: 'DIN lišta 35 mm',
+  x: 170,
+  y: 152,
+  state: 1,
+};
+
 const EMPTY_BOARD_ITEMS: PlacedItem[] = [
   { instanceId: 'supply', type: 'supply', label: 'Přívod 3F TN-S', x: 24, y: 24, state: 1 },
+  DEFAULT_DIN_RAIL,
 ];
 
 // ============================================================================
@@ -613,18 +636,46 @@ function boxesOverlap(
   );
 }
 
+// Zjistí, zda je DIN modul nasazen ("přilepen") na dané DIN liště
+function isModuleOnRail(mod: PlacedItem, rail: PlacedItem): boolean {
+  if (rail.type !== 'din-rail') return false;
+  const modDef = PALETTE_MAP[mod.type];
+  const railDef = PALETTE_MAP['din-rail'];
+  if (!modDef || modDef.zone !== 'din' || !railDef) return false;
+
+  const expectedY = rail.y + Math.round((railDef.height - modDef.height) / 2);
+  const yAligned = Math.abs(mod.y - expectedY) <= 18;
+  const xInside =
+    mod.x >= rail.x - 6 && mod.x + modDef.width <= rail.x + railDef.width + 6;
+  return yAligned && xInside;
+}
+
 function hasCollision(
   candidateId: string,
   x: number,
   y: number,
   w: number,
   h: number,
-  items: PlacedItem[]
+  items: PlacedItem[],
+  ignoreIds?: Set<string>,
+  candidateType?: string
 ): boolean {
+  const candZone = candidateType ? PALETTE_MAP[candidateType]?.zone : undefined;
+
   for (const other of items) {
     if (other.instanceId === candidateId) continue;
+    if (ignoreIds && ignoreIds.has(other.instanceId)) continue;
     const def = PALETTE_MAP[other.type];
     if (!def) continue;
+
+    // DIN lišta a DIN moduly se vzájemně neblokují (moduly sedí přímo na liště)
+    if (
+      (candZone === 'din' && def.zone === 'rail') ||
+      (candZone === 'rail' && def.zone === 'din')
+    ) {
+      continue;
+    }
+
     if (boxesOverlap(x, y, w, h, other.x, other.y, def.width, def.height)) {
       return true;
     }
@@ -639,9 +690,45 @@ function findFreePosition(
   const def = PALETTE_MAP[type];
   if (!def) return null;
 
+  if (def.zone === 'rail') {
+    if (
+      !hasCollision(
+        '__new__',
+        DEFAULT_DIN_RAIL.x,
+        DEFAULT_DIN_RAIL.y,
+        def.width,
+        def.height,
+        items,
+        undefined,
+        type
+      )
+    ) {
+      return { x: DEFAULT_DIN_RAIL.x, y: DEFAULT_DIN_RAIL.y };
+    }
+    for (let y = 104; y <= BOARD_HEIGHT - def.height - 40; y += 16) {
+      for (let x = 40; x <= BOARD_WIDTH - def.width - 20; x += 16) {
+        if (!hasCollision('__new__', x, y, def.width, def.height, items, undefined, type)) {
+          return { x, y };
+        }
+      }
+    }
+    return null;
+  }
+
   if (def.zone === 'busbar') {
     for (let x = 184; x <= BOARD_WIDTH - def.width - 20; x += 8) {
-      if (!hasCollision('__new__', x, BUSBAR_ROW_Y, def.width, def.height, items)) {
+      if (
+        !hasCollision(
+          '__new__',
+          x,
+          BUSBAR_ROW_Y,
+          def.width,
+          def.height,
+          items,
+          undefined,
+          type
+        )
+      ) {
         return { x, y: BUSBAR_ROW_Y };
       }
     }
@@ -649,9 +736,22 @@ function findFreePosition(
   }
 
   if (def.zone === 'din') {
-    for (let x = 184; x <= BOARD_WIDTH - def.width - 20; x += 8) {
-      if (!hasCollision('__new__', x, DIN_RAIL_ITEM_Y, def.width, def.height, items)) {
-        return { x, y: DIN_RAIL_ITEM_Y };
+    const rails = items.filter((i) => i.type === 'din-rail');
+    const railDef = PALETTE_MAP['din-rail'];
+    if (!railDef || rails.length === 0) return null;
+
+    for (const rail of rails) {
+      const modY = rail.y + Math.round((railDef.height - def.height) / 2);
+      for (
+        let x = rail.x + 12;
+        x <= rail.x + railDef.width - def.width - 12;
+        x += 8
+      ) {
+        if (
+          !hasCollision('__new__', x, modY, def.width, def.height, items, undefined, type)
+        ) {
+          return { x, y: modY };
+        }
       }
     }
     return null;
@@ -659,7 +759,7 @@ function findFreePosition(
 
   for (let y = WALL_ZONE_MIN_Y; y <= WALL_ZONE_MAX_Y; y += 16) {
     for (let x = 32; x <= BOARD_WIDTH - def.width - 20; x += 16) {
-      if (!hasCollision('__new__', x, y, def.width, def.height, items)) {
+      if (!hasCollision('__new__', x, y, def.width, def.height, items, undefined, type)) {
         return { x, y };
       }
     }
@@ -848,6 +948,8 @@ function computeOrthogonalWirePaths(
 
   for (const it of items) {
     itemMap.set(it.instanceId, it);
+    // Samotná kovová DIN lišta neblokuje vodiče (vodiče mohou procházet za lištou mezi moduly)
+    if (it.type === 'din-rail') continue;
     const def = PALETTE_MAP[it.type];
     if (!def) continue;
 
@@ -1984,7 +2086,7 @@ export const InteractiveBoardEditor: React.FC = () => {
   const [selectedLevel, setSelectedLevel] = useState<DifficultyLevel>(1);
   const [activeTaskId, setActiveTaskId] = useState<string>('u1-1');
 
-  // Při práci na úlohách začínáme vždy s prázdnou tabulí (pouze přívod sítě)
+  // Při práci na úlohách začínáme s výchozí tabulí (přívod sítě + posuvná/odstranitelná DIN lišta)
   const [items, setItems] = useState<PlacedItem[]>(EMPTY_BOARD_ITEMS);
   const [wires, setWires] = useState<BoardWire[]>([]);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
@@ -1993,6 +2095,16 @@ export const InteractiveBoardEditor: React.FC = () => {
     checked: boolean;
     ok: boolean;
     messages: string[];
+  } | null>(null);
+
+  // Zoom (kolečkem myši) a posun (levým klikem do prázdna)
+  const [zoom, setZoom] = useState<number>(1);
+  const [pan, setPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [panning, setPanning] = useState<{
+    startClientX: number;
+    startClientY: number;
+    startPanX: number;
+    startPanY: number;
   } | null>(null);
 
   // Drag & Drop vodiče ze startovní svorky na cílovou svorku
@@ -2007,11 +2119,12 @@ export const InteractiveBoardEditor: React.FC = () => {
     terminalId: string;
   } | null>(null);
 
-  // Drag & Drop modulů po tabuli
+  // Drag & Drop modulů a DIN lišty (včetně přilepených modulů na DIN liště)
   const [dragging, setDragging] = useState<{
     instanceId: string;
     offsetX: number;
     offsetY: number;
+    attachedOffsets: Array<{ instanceId: string; relX: number; relY: number }>;
   } | null>(null);
 
   const svgRef = useRef<SVGSVGElement | null>(null);
@@ -2033,6 +2146,67 @@ export const InteractiveBoardEditor: React.FC = () => {
     [items, wires]
   );
 
+  const selectedItem = useMemo(
+    () => items.find((i) => i.instanceId === selectedItemId) || null,
+    [items, selectedItemId]
+  );
+
+  // Přibližování a oddalování kolečkem myši v pracovním poli (se zamezením scrollu stránky)
+  useEffect(() => {
+    const svgEl = svgRef.current;
+    if (!svgEl) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const rect = svgEl.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return;
+
+      const relX = (e.clientX - rect.left) / rect.width;
+      const relY = (e.clientY - rect.top) / rect.height;
+
+      setZoom((prevZoom) => {
+        const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
+        const nextZoom = Math.max(0.45, Math.min(2.8, prevZoom * factor));
+        setPan((prevPan) => {
+          const boardX = prevPan.x + relX * (BOARD_WIDTH / prevZoom);
+          const boardY = prevPan.y + relY * (BOARD_HEIGHT / prevZoom);
+          return {
+            x: boardX - relX * (BOARD_WIDTH / nextZoom),
+            y: boardY - relY * (BOARD_HEIGHT / nextZoom),
+          };
+        });
+        return nextZoom;
+      });
+    };
+
+    svgEl.addEventListener('wheel', handleWheel, { passive: false });
+    return () => svgEl.removeEventListener('wheel', handleWheel);
+  }, []);
+
+  // Mazání vybraného modulu nebo DIN lišty klávesou Delete / Backspace
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        const tag = (e.target as HTMLElement)?.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+        if (selectedItemId && selectedItemId !== 'supply') {
+          e.preventDefault();
+          setItems((prev) => prev.filter((i) => i.instanceId !== selectedItemId));
+          setWires((prev) =>
+            prev.filter(
+              (w) => w.fromInstanceId !== selectedItemId && w.toInstanceId !== selectedItemId
+            )
+          );
+          setSelectedItemId(null);
+          setTaskFeedback(null);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedItemId]);
+
   const getTerminalCoords = (instanceId: string, terminalId: string) => {
     const item = items.find((i) => i.instanceId === instanceId);
     if (!item) return null;
@@ -2043,14 +2217,15 @@ export const InteractiveBoardEditor: React.FC = () => {
     return { x: item.x + term.relX, y: item.y + term.relY, term };
   };
 
-  const getSvgCoords = (e: React.MouseEvent) => {
+  const getSvgCoords = (e: { clientX: number; clientY: number }) => {
     if (!svgRef.current) return { x: 0, y: 0 };
     const rect = svgRef.current.getBoundingClientRect();
-    const scaleX = BOARD_WIDTH / rect.width;
-    const scaleY = BOARD_HEIGHT / rect.height;
+    if (rect.width === 0 || rect.height === 0) return { x: 0, y: 0 };
+    const relX = (e.clientX - rect.left) / rect.width;
+    const relY = (e.clientY - rect.top) / rect.height;
     return {
-      x: Math.round((e.clientX - rect.left) * scaleX),
-      y: Math.round((e.clientY - rect.top) * scaleY),
+      x: Math.round(pan.x + relX * (BOARD_WIDTH / zoom)),
+      y: Math.round(pan.y + relY * (BOARD_HEIGHT / zoom)),
     };
   };
 
@@ -2091,7 +2266,11 @@ export const InteractiveBoardEditor: React.FC = () => {
     setActiveTaskId(task.id);
     setSelectedLevel(task.level);
     if (showSolution) {
-      setItems(task.items.map((it) => ({ ...it })));
+      const hasRail = task.items.some((it) => it.type === 'din-rail');
+      const nextItems = hasRail
+        ? task.items.map((it) => ({ ...it }))
+        : [{ ...DEFAULT_DIN_RAIL }, ...task.items.map((it) => ({ ...it }))];
+      setItems(nextItems);
       setWires(task.solutionWires.map((w) => ({ ...w })));
     } else {
       setItems(EMPTY_BOARD_ITEMS.map((it) => ({ ...it })));
@@ -2126,9 +2305,21 @@ export const InteractiveBoardEditor: React.FC = () => {
     const def = PALETTE_MAP[type];
     if (!def || def.zone === 'fixed') return;
 
+    if (def.zone === 'din' && !items.some((i) => i.type === 'din-rail')) {
+      setCollisionWarning(
+        'Na tabuli není DIN lišta! Nejprve vložte DIN lištu TS 35 mm ze sekce 1.'
+      );
+      setTimeout(() => setCollisionWarning(null), 3500);
+      return;
+    }
+
     const freePos = findFreePosition(type, items);
     if (!freePos) {
-      setCollisionWarning('V této zóně již není volné místo bez překryvu.');
+      setCollisionWarning(
+        def.zone === 'din'
+          ? 'Na DIN liště již není volné místo pro další modul.'
+          : 'V této zóně již není volné místo bez překryvu.'
+      );
       setTimeout(() => setCollisionWarning(null), 3000);
       return;
     }
@@ -2145,7 +2336,8 @@ export const InteractiveBoardEditor: React.FC = () => {
         type.startsWith('rcd') ||
         type === 'rcbo-1p' ||
         type === 'qm-1p' ||
-        type === 'qm-3p'
+        type === 'qm-3p' ||
+        type === 'din-rail'
           ? 1
           : 0,
     };
@@ -2178,16 +2370,45 @@ export const InteractiveBoardEditor: React.FC = () => {
     );
   };
 
+  // Levý klik do prázdného prostoru tabule zahájí posouvání (panning)
+  const handleSvgMouseDown = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (e.button !== 0) return;
+    setSelectedItemId(null);
+    setPanning({
+      startClientX: e.clientX,
+      startClientY: e.clientY,
+      startPanX: pan.x,
+      startPanY: pan.y,
+    });
+  };
+
   const startDragItem = (e: React.MouseEvent, item: PlacedItem) => {
     e.stopPropagation();
+    if (e.button !== 0) return;
     setSelectedItemId(item.instanceId);
     const def = PALETTE_MAP[item.type];
     if (!def || def.zone === 'fixed') return;
     const coords = getSvgCoords(e);
+
+    // Pokud začínáme posouvat DIN lištu, přilepíme k ní všechny DIN moduly, které na ní sedí
+    const attachedOffsets =
+      item.type === 'din-rail'
+        ? items
+            .filter(
+              (other) => other.instanceId !== item.instanceId && isModuleOnRail(other, item)
+            )
+            .map((other) => ({
+              instanceId: other.instanceId,
+              relX: other.x - item.x,
+              relY: other.y - item.y,
+            }))
+        : [];
+
     setDragging({
       instanceId: item.instanceId,
       offsetX: coords.x - item.x,
       offsetY: coords.y - item.y,
+      attachedOffsets,
     });
   };
 
@@ -2254,6 +2475,19 @@ export const InteractiveBoardEditor: React.FC = () => {
   };
 
   const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (panning && svgRef.current) {
+      const rect = svgRef.current.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        const dxBoard = ((e.clientX - panning.startClientX) / rect.width) * (BOARD_WIDTH / zoom);
+        const dyBoard = ((e.clientY - panning.startClientY) / rect.height) * (BOARD_HEIGHT / zoom);
+        setPan({
+          x: panning.startPanX - dxBoard,
+          y: panning.startPanY - dyBoard,
+        });
+      }
+      return;
+    }
+
     const coords = getSvgCoords(e);
 
     if (wiringDrag) {
@@ -2273,53 +2507,223 @@ export const InteractiveBoardEditor: React.FC = () => {
 
     if (!dragging) return;
 
-    setItems((prev) =>
-      prev.map((it) => {
-        if (it.instanceId !== dragging.instanceId) return it;
-        const def = PALETTE_MAP[it.type];
-        if (!def) return it;
+    setItems((prev) => {
+      const draggedItem = prev.find((i) => i.instanceId === dragging.instanceId);
+      if (!draggedItem) return prev;
+      const def = PALETTE_MAP[draggedItem.type];
+      if (!def) return prev;
 
-        const rawX = coords.x - dragging.offsetX;
-        const rawY = coords.y - dragging.offsetY;
+      const rawX = coords.x - dragging.offsetX;
+      const rawY = coords.y - dragging.offsetY;
 
-        let targetX = it.x;
-        let targetY = it.y;
+      // 1. Posouvání DIN lišty společně se všemi přilepenými moduly
+      if (draggedItem.type === 'din-rail') {
+        const groupIds = new Set<string>([
+          draggedItem.instanceId,
+          ...dragging.attachedOffsets.map((a) => a.instanceId),
+        ]);
 
-        if (def.zone === 'din') {
-          targetX = Math.max(
-            176,
-            Math.min(BOARD_WIDTH - def.width - 20, Math.round(rawX / 8) * 8)
-          );
-          targetY = DIN_RAIL_ITEM_Y;
-        } else if (def.zone === 'busbar') {
-          targetX = Math.max(
-            176,
-            Math.min(BOARD_WIDTH - def.width - 20, Math.round(rawX / 8) * 8)
-          );
-          targetY = BUSBAR_ROW_Y;
+        const canPlaceRailGroup = (candX: number, candY: number): boolean => {
+          if (
+            candX < 16 ||
+            candX + def.width > BOARD_WIDTH - 16 ||
+            candY < 24 ||
+            candY + def.height > BOARD_HEIGHT - 24
+          ) {
+            return false;
+          }
+          if (
+            hasCollision(
+              draggedItem.instanceId,
+              candX,
+              candY,
+              def.width,
+              def.height,
+              prev,
+              groupIds,
+              'din-rail'
+            )
+          ) {
+            return false;
+          }
+          for (const att of dragging.attachedOffsets) {
+            const mod = prev.find((p) => p.instanceId === att.instanceId);
+            if (!mod) continue;
+            const modDef = PALETTE_MAP[mod.type];
+            if (!modDef) continue;
+            const mx = candX + att.relX;
+            const my = candY + att.relY;
+            if (
+              mx < 16 ||
+              mx + modDef.width > BOARD_WIDTH - 16 ||
+              my < 16 ||
+              my + modDef.height > BOARD_HEIGHT - 16
+            ) {
+              return false;
+            }
+            if (
+              hasCollision(
+                mod.instanceId,
+                mx,
+                my,
+                modDef.width,
+                modDef.height,
+                prev,
+                groupIds,
+                mod.type
+              )
+            ) {
+              return false;
+            }
+          }
+          return true;
+        };
+
+        const candX = Math.max(
+          16,
+          Math.min(BOARD_WIDTH - def.width - 16, Math.round(rawX / 8) * 8)
+        );
+        const candY = Math.max(
+          24,
+          Math.min(BOARD_HEIGHT - def.height - 24, Math.round(rawY / 8) * 8)
+        );
+
+        let finalX = draggedItem.x;
+        let finalY = draggedItem.y;
+
+        if (canPlaceRailGroup(candX, candY)) {
+          finalX = candX;
+          finalY = candY;
+        } else if (canPlaceRailGroup(candX, draggedItem.y)) {
+          finalX = candX;
+        } else if (canPlaceRailGroup(draggedItem.x, candY)) {
+          finalY = candY;
         } else {
-          targetX = Math.max(
-            24,
-            Math.min(BOARD_WIDTH - def.width - 20, Math.round(rawX / 8) * 8)
-          );
-          targetY = Math.max(
-            WALL_ZONE_MIN_Y,
-            Math.min(WALL_ZONE_MAX_Y, Math.round(rawY / 8) * 8)
-          );
+          return prev;
         }
 
-        if (!hasCollision(it.instanceId, targetX, targetY, def.width, def.height, prev)) {
-          return { ...it, x: targetX, y: targetY };
+        const offsetMap = new Map(
+          dragging.attachedOffsets.map((a) => [a.instanceId, a])
+        );
+
+        return prev.map((it) => {
+          if (it.instanceId === draggedItem.instanceId) {
+            return { ...it, x: finalX, y: finalY };
+          }
+          const att = offsetMap.get(it.instanceId);
+          if (att) {
+            return { ...it, x: finalX + att.relX, y: finalY + att.relY };
+          }
+          return it;
+        });
+      }
+
+      // 2. Posouvání DIN modulu po DIN liště
+      if (def.zone === 'din') {
+        const rails = prev.filter((r) => r.type === 'din-rail');
+        const railDef = PALETTE_MAP['din-rail'];
+        if (rails.length > 0 && railDef) {
+          let bestRail = rails[0];
+          let bestDist = Infinity;
+          for (const r of rails) {
+            const d = Math.abs(rawY + def.height / 2 - (r.y + railDef.height / 2));
+            if (d < bestDist) {
+              bestDist = d;
+              bestRail = r;
+            }
+          }
+          const targetX = Math.max(
+            bestRail.x + 8,
+            Math.min(
+              bestRail.x + railDef.width - def.width - 8,
+              Math.round(rawX / 8) * 8
+            )
+          );
+          const targetY = bestRail.y + Math.round((railDef.height - def.height) / 2);
+
+          if (
+            !hasCollision(
+              draggedItem.instanceId,
+              targetX,
+              targetY,
+              def.width,
+              def.height,
+              prev,
+              undefined,
+              draggedItem.type
+            )
+          ) {
+            return prev.map((it) =>
+              it.instanceId === draggedItem.instanceId
+                ? { ...it, x: targetX, y: targetY }
+                : it
+            );
+          }
         }
-        if (!hasCollision(it.instanceId, targetX, it.y, def.width, def.height, prev)) {
-          return { ...it, x: targetX, y: it.y };
-        }
-        if (!hasCollision(it.instanceId, it.x, targetY, def.width, def.height, prev)) {
-          return { ...it, x: it.x, y: targetY };
-        }
-        return it;
-      })
-    );
+        return prev;
+      }
+
+      // 3. Posouvání ostatních prvků (můstky, spínače, spotřebiče)
+      const targetX = Math.max(
+        16,
+        Math.min(BOARD_WIDTH - def.width - 16, Math.round(rawX / 8) * 8)
+      );
+      const targetY = Math.max(
+        16,
+        Math.min(BOARD_HEIGHT - def.height - 16, Math.round(rawY / 8) * 8)
+      );
+
+      let nextX = draggedItem.x;
+      let nextY = draggedItem.y;
+
+      if (
+        !hasCollision(
+          draggedItem.instanceId,
+          targetX,
+          targetY,
+          def.width,
+          def.height,
+          prev,
+          undefined,
+          draggedItem.type
+        )
+      ) {
+        nextX = targetX;
+        nextY = targetY;
+      } else if (
+        !hasCollision(
+          draggedItem.instanceId,
+          targetX,
+          draggedItem.y,
+          def.width,
+          def.height,
+          prev,
+          undefined,
+          draggedItem.type
+        )
+      ) {
+        nextX = targetX;
+      } else if (
+        !hasCollision(
+          draggedItem.instanceId,
+          draggedItem.x,
+          targetY,
+          def.width,
+          def.height,
+          prev,
+          undefined,
+          draggedItem.type
+        )
+      ) {
+        nextY = targetY;
+      } else {
+        return prev;
+      }
+
+      return prev.map((it) =>
+        it.instanceId === draggedItem.instanceId ? { ...it, x: nextX, y: nextY } : it
+      );
+    });
   };
 
   const handleMouseUp = (e: React.MouseEvent<SVGSVGElement>) => {
@@ -2338,11 +2742,32 @@ export const InteractiveBoardEditor: React.FC = () => {
       }
     }
     setDragging(null);
+    setPanning(null);
   };
 
   const removeWire = (wireId: string) => {
     setWires((prev) => prev.filter((w) => w.id !== wireId));
     setTaskFeedback(null);
+  };
+
+  const adjustZoom = (factor: number) => {
+    setZoom((prevZoom) => {
+      const nextZoom = Math.max(0.45, Math.min(2.8, prevZoom * factor));
+      setPan((prevPan) => {
+        const centerX = prevPan.x + (BOARD_WIDTH / prevZoom) * 0.5;
+        const centerY = prevPan.y + (BOARD_HEIGHT / prevZoom) * 0.5;
+        return {
+          x: centerX - (BOARD_WIDTH / nextZoom) * 0.5,
+          y: centerY - (BOARD_HEIGHT / nextZoom) * 0.5,
+        };
+      });
+      return nextZoom;
+    });
+  };
+
+  const resetView = () => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
   };
 
   return (
@@ -2382,13 +2807,13 @@ export const InteractiveBoardEditor: React.FC = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            {selectedItemId && selectedItemId !== 'supply' && (
+            {selectedItem && selectedItem.instanceId !== 'supply' && (
               <button
                 onClick={removeSelectedItem}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-rose-500/15 text-rose-300 border border-rose-500/30 hover:bg-rose-500/25 transition-all"
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                Smazat vybraný modul
+                Smazat: {selectedItem.label} (Del)
               </button>
             )}
             <button
@@ -2485,24 +2910,26 @@ export const InteractiveBoardEditor: React.FC = () => {
         <div className="lg:col-span-3 bg-slate-900/80 border border-slate-800 rounded-2xl p-4 space-y-4 max-h-[650px] overflow-y-auto">
           <div>
             <h3 className="text-xs font-bold uppercase tracking-wider text-amber-400 mb-2">
-              1. Sběrnice a můstky
+              1. DIN lišta, sběrnice a můstky
             </h3>
             <div className="grid grid-cols-1 gap-1.5">
-              {PALETTE_ITEMS.filter((p) => p.zone === 'busbar').map((item) => (
-                <button
-                  key={item.type}
-                  onClick={() => addItemToBoard(item.type)}
-                  className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-950/80 hover:bg-slate-800 border border-slate-800/80 text-left transition-all group"
-                >
-                  <div>
-                    <div className="text-xs font-bold text-slate-200 group-hover:text-amber-300">
-                      {item.name}
+              {PALETTE_ITEMS.filter((p) => p.zone === 'rail' || p.zone === 'busbar').map(
+                (item) => (
+                  <button
+                    key={item.type}
+                    onClick={() => addItemToBoard(item.type)}
+                    className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-950/80 hover:bg-slate-800 border border-slate-800/80 text-left transition-all group"
+                  >
+                    <div>
+                      <div className="text-xs font-bold text-slate-200 group-hover:text-amber-300">
+                        {item.name}
+                      </div>
+                      <div className="text-[10px] text-slate-500">{item.description}</div>
                     </div>
-                    <div className="text-[10px] text-slate-500">{item.description}</div>
-                  </div>
-                  <Plus className="w-4 h-4 text-slate-400 group-hover:text-amber-400 shrink-0 ml-2" />
-                </button>
-              ))}
+                    <Plus className="w-4 h-4 text-slate-400 group-hover:text-amber-400 shrink-0 ml-2" />
+                  </button>
+                )
+              )}
             </div>
           </div>
 
@@ -2613,8 +3040,39 @@ export const InteractiveBoardEditor: React.FC = () => {
                 </>
               )}
             </div>
-            <div className="text-[11px] text-slate-400 hidden sm:block truncate">
-              Vodič natáhnete přetažením myší (Drag &amp; Drop) ze svorky na svorku • Kliknutím na vodič jej smažete
+
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="text-[11px] text-slate-400 hidden xl:inline">
+                Kolečko: Zoom • Tažení v prázdnu: Posun • Del: Smazat prvek
+              </span>
+              <div className="flex items-center gap-1 bg-slate-950/80 border border-slate-800 rounded-lg px-1.5 py-0.5">
+                <button
+                  onClick={() => adjustZoom(1 / 1.15)}
+                  title="Oddálit"
+                  className="p-1 text-slate-400 hover:text-white transition-colors"
+                >
+                  <ZoomOut className="w-3.5 h-3.5" />
+                </button>
+                <span className="text-[11px] font-mono font-bold text-slate-300 w-10 text-center">
+                  {Math.round(zoom * 100)}%
+                </span>
+                <button
+                  onClick={() => adjustZoom(1.15)}
+                  title="Přiblížit"
+                  className="p-1 text-slate-400 hover:text-white transition-colors"
+                >
+                  <ZoomIn className="w-3.5 h-3.5" />
+                </button>
+                {(zoom !== 1 || pan.x !== 0 || pan.y !== 0) && (
+                  <button
+                    onClick={resetView}
+                    title="Vycentrovat pohled (100%)"
+                    className="p-1 text-amber-400 hover:text-amber-300 transition-colors"
+                  >
+                    <Maximize2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -2622,10 +3080,17 @@ export const InteractiveBoardEditor: React.FC = () => {
           <div className="bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
             <svg
               ref={svgRef}
-              viewBox={`0 0 ${BOARD_WIDTH} ${BOARD_HEIGHT}`}
-              className="w-full h-auto select-none"
+              viewBox={`${pan.x} ${pan.y} ${BOARD_WIDTH / zoom} ${BOARD_HEIGHT / zoom}`}
+              className={`w-full h-auto select-none ${
+                panning ? 'cursor-grabbing' : 'cursor-grab'
+              }`}
+              onMouseDown={handleSvgMouseDown}
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
+              onMouseLeave={() => {
+                setPanning(null);
+                setDragging(null);
+              }}
             >
               <defs>
                 <pattern id="board-grid" width="20" height="20" patternUnits="userSpaceOnUse">
@@ -2638,11 +3103,12 @@ export const InteractiveBoardEditor: React.FC = () => {
                 </pattern>
               </defs>
 
-              <rect width={BOARD_WIDTH} height={BOARD_HEIGHT} fill="#090d16" />
-              <rect width={BOARD_WIDTH} height={BOARD_HEIGHT} fill="url(#board-grid)" />
+              {/* Nekonečné mřížkované plátno při posouvání a oddalování */}
+              <rect x={-3000} y={-3000} width={7000} height={7000} fill="#090d16" />
+              <rect x={-3000} y={-3000} width={7000} height={7000} fill="url(#board-grid)" />
 
               {/* ============================================================
-                  ZÓNA 1: ROZVADĚČ + DIN LIŠTA 35 mm
+                  ZÓNA 1: ROZVADĚČ
                  ============================================================ */}
               <rect
                 x="12"
@@ -2663,52 +3129,8 @@ export const InteractiveBoardEditor: React.FC = () => {
                 fontWeight="bold"
                 letterSpacing="1"
               >
-                ROZVADĚČ (MŮSTKY N / PE / MET + DIN LIŠTA 35 MM)
+                ROZVADĚČ (MŮSTKY N / PE / MET + POSUVNÁ DIN LIŠTA 35 MM)
               </text>
-
-              {/* Kovová DIN lišta TS 35 */}
-              <g>
-                <rect
-                  x="165"
-                  y="152"
-                  width={BOARD_WIDTH - 190}
-                  height="36"
-                  rx="3"
-                  fill="#334155"
-                  stroke="#64748b"
-                  strokeWidth="1.5"
-                />
-                <rect
-                  x="165"
-                  y="160"
-                  width={BOARD_WIDTH - 190}
-                  height="20"
-                  fill="#1e293b"
-                />
-                {Array.from({ length: 14 }).map((_, idx) => (
-                  <rect
-                    key={idx}
-                    x={185 + idx * 44}
-                    y="165"
-                    width="22"
-                    height="10"
-                    rx="5"
-                    fill="#0f172a"
-                    stroke="#475569"
-                    strokeWidth="1"
-                  />
-                ))}
-                <text
-                  x={BOARD_WIDTH - 34}
-                  y="146"
-                  textAnchor="end"
-                  fill="#64748b"
-                  fontSize="9"
-                  fontWeight="bold"
-                >
-                  DIN LIŠTA 35 mm
-                </text>
-              </g>
 
               {/* ============================================================
                   ZÓNA 2: MONTÁŽNÍ PANEL (KRABICE, SPÍNAČE, SPOTŘEBIČE)
@@ -2735,6 +3157,67 @@ export const InteractiveBoardEditor: React.FC = () => {
               </text>
 
               {/* ============================================================
+                  VRSTVA POSUVNÝCH A ODSTRANITELNÝCH DIN LIŠT TS 35 MM
+                  (kreslí se pod moduly, při tažení posouvá i přilepené moduly)
+                 ============================================================ */}
+              {items
+                .filter((item) => item.type === 'din-rail')
+                .map((rail) => {
+                  const def = PALETTE_MAP['din-rail'];
+                  if (!def) return null;
+                  const isSelected = selectedItemId === rail.instanceId;
+                  const slotCount = Math.floor((def.width - 36) / 42);
+
+                  return (
+                    <g
+                      key={rail.instanceId}
+                      transform={`translate(${rail.x}, ${rail.y})`}
+                      onMouseDown={(e) => startDragItem(e, rail)}
+                      className="cursor-grab active:cursor-grabbing"
+                    >
+                      <rect
+                        width={def.width}
+                        height={def.height}
+                        rx="3"
+                        fill="#334155"
+                        stroke={isSelected ? '#fbbf24' : '#64748b'}
+                        strokeWidth={isSelected ? 2.5 : 1.5}
+                      />
+                      <rect
+                        x="2"
+                        y="8"
+                        width={def.width - 4}
+                        height="20"
+                        fill="#1e293b"
+                      />
+                      {Array.from({ length: slotCount }).map((_, idx) => (
+                        <rect
+                          key={idx}
+                          x={18 + idx * 42}
+                          y="13"
+                          width="22"
+                          height="10"
+                          rx="5"
+                          fill="#0f172a"
+                          stroke="#475569"
+                          strokeWidth="1"
+                        />
+                      ))}
+                      <text
+                        x={def.width - 8}
+                        y="-5"
+                        textAnchor="end"
+                        fill={isSelected ? '#fbbf24' : '#64748b'}
+                        fontSize="9"
+                        fontWeight="bold"
+                      >
+                        {rail.label} (posuvná / Del = smazat)
+                      </text>
+                    </g>
+                  );
+                })}
+
+              {/* ============================================================
                   VRSTVA VODIČŮ (POD MODULY, PRAVOÚHLÉ TRASY MIMO MODULY)
                  ============================================================ */}
               {wires.map((w) => {
@@ -2750,6 +3233,7 @@ export const InteractiveBoardEditor: React.FC = () => {
                   <g
                     key={w.id}
                     className="cursor-pointer group"
+                    onMouseDown={(e) => e.stopPropagation()}
                     onClick={(e) => {
                       e.stopPropagation();
                       removeWire(w.id);
@@ -2819,337 +3303,339 @@ export const InteractiveBoardEditor: React.FC = () => {
                 })()}
 
               {/* ============================================================
-                  VYKRESLENÍ VŠECH PRVKŮ NA TABULI
+                  VYKRESLENÍ VŠECH PŘÍSTROJŮ A MODULŮ NA TABULI
                  ============================================================ */}
-              {items.map((item) => {
-                const def = PALETTE_MAP[item.type];
-                if (!def) return null;
-                const isSelected = selectedItemId === item.instanceId;
+              {items
+                .filter((item) => item.type !== 'din-rail')
+                .map((item) => {
+                  const def = PALETTE_MAP[item.type];
+                  if (!def) return null;
+                  const isSelected = selectedItemId === item.instanceId;
 
-                const isLamp1Lit =
-                  item.type === 'lamp-1' &&
-                  sim.liveNodes.has(`${item.instanceId}:L`) &&
-                  sim.neutralNodes.has(`${item.instanceId}:N`) &&
-                  !sim.shortCircuit;
+                  const isLamp1Lit =
+                    item.type === 'lamp-1' &&
+                    sim.liveNodes.has(`${item.instanceId}:L`) &&
+                    sim.neutralNodes.has(`${item.instanceId}:N`) &&
+                    !sim.shortCircuit;
 
-                const isLamp2Branch1Lit =
-                  item.type === 'lamp-2' &&
-                  sim.liveNodes.has(`${item.instanceId}:L1`) &&
-                  sim.neutralNodes.has(`${item.instanceId}:N`) &&
-                  !sim.shortCircuit;
+                  const isLamp2Branch1Lit =
+                    item.type === 'lamp-2' &&
+                    sim.liveNodes.has(`${item.instanceId}:L1`) &&
+                    sim.neutralNodes.has(`${item.instanceId}:N`) &&
+                    !sim.shortCircuit;
 
-                const isLamp2Branch2Lit =
-                  item.type === 'lamp-2' &&
-                  sim.liveNodes.has(`${item.instanceId}:L2`) &&
-                  sim.neutralNodes.has(`${item.instanceId}:N`) &&
-                  !sim.shortCircuit;
+                  const isLamp2Branch2Lit =
+                    item.type === 'lamp-2' &&
+                    sim.liveNodes.has(`${item.instanceId}:L2`) &&
+                    sim.neutralNodes.has(`${item.instanceId}:N`) &&
+                    !sim.shortCircuit;
 
-                const isSocketPowered =
-                  item.type === 'socket-230' &&
-                  sim.liveNodes.has(`${item.instanceId}:L`) &&
-                  sim.neutralNodes.has(`${item.instanceId}:N`) &&
-                  sim.peNodes.has(`${item.instanceId}:PE`) &&
-                  !sim.shortCircuit;
+                  const isSocketPowered =
+                    item.type === 'socket-230' &&
+                    sim.liveNodes.has(`${item.instanceId}:L`) &&
+                    sim.neutralNodes.has(`${item.instanceId}:N`) &&
+                    sim.peNodes.has(`${item.instanceId}:PE`) &&
+                    !sim.shortCircuit;
 
-                const isSocket400Powered =
-                  item.type === 'socket-400' &&
-                  sim.nodePhases.get(`${item.instanceId}:L1`)?.has('L1') &&
-                  sim.nodePhases.get(`${item.instanceId}:L2`)?.has('L2') &&
-                  sim.nodePhases.get(`${item.instanceId}:L3`)?.has('L3') &&
-                  sim.neutralNodes.has(`${item.instanceId}:N`) &&
-                  sim.peNodes.has(`${item.instanceId}:PE`) &&
-                  !sim.shortCircuit;
+                  const isSocket400Powered =
+                    item.type === 'socket-400' &&
+                    sim.nodePhases.get(`${item.instanceId}:L1`)?.has('L1') &&
+                    sim.nodePhases.get(`${item.instanceId}:L2`)?.has('L2') &&
+                    sim.nodePhases.get(`${item.instanceId}:L3`)?.has('L3') &&
+                    sim.neutralNodes.has(`${item.instanceId}:N`) &&
+                    sim.peNodes.has(`${item.instanceId}:PE`) &&
+                    !sim.shortCircuit;
 
-                const isBoilerPowered =
-                  item.type === 'boiler-1f' &&
-                  sim.liveNodes.has(`${item.instanceId}:L`) &&
-                  sim.neutralNodes.has(`${item.instanceId}:N`) &&
-                  sim.peNodes.has(`${item.instanceId}:PE`) &&
-                  !sim.shortCircuit;
+                  const isBoilerPowered =
+                    item.type === 'boiler-1f' &&
+                    sim.liveNodes.has(`${item.instanceId}:L`) &&
+                    sim.neutralNodes.has(`${item.instanceId}:N`) &&
+                    sim.peNodes.has(`${item.instanceId}:PE`) &&
+                    !sim.shortCircuit;
 
-                const isStovePowered =
-                  item.type === 'stove-3f' &&
-                  sim.nodePhases.get(`${item.instanceId}:L1`)?.has('L1') &&
-                  sim.nodePhases.get(`${item.instanceId}:L2`)?.has('L2') &&
-                  sim.nodePhases.get(`${item.instanceId}:L3`)?.has('L3') &&
-                  sim.neutralNodes.has(`${item.instanceId}:N`) &&
-                  sim.peNodes.has(`${item.instanceId}:PE`) &&
-                  !sim.shortCircuit;
+                  const isStovePowered =
+                    item.type === 'stove-3f' &&
+                    sim.nodePhases.get(`${item.instanceId}:L1`)?.has('L1') &&
+                    sim.nodePhases.get(`${item.instanceId}:L2`)?.has('L2') &&
+                    sim.nodePhases.get(`${item.instanceId}:L3`)?.has('L3') &&
+                    sim.neutralNodes.has(`${item.instanceId}:N`) &&
+                    sim.peNodes.has(`${item.instanceId}:PE`) &&
+                    !sim.shortCircuit;
 
-                const isContactorEnergized =
-                  (item.type === 'contactor-km' || item.type === 'contactor-1p') &&
-                  (item.state === 1 || sim.energizedContactors.has(item.instanceId));
+                  const isContactorEnergized =
+                    (item.type === 'contactor-km' || item.type === 'contactor-1p') &&
+                    (item.state === 1 || sim.energizedContactors.has(item.instanceId));
 
-                return (
-                  <g
-                    key={item.instanceId}
-                    transform={`translate(${item.x}, ${item.y})`}
-                    onMouseDown={(e) => startDragItem(e, item)}
-                    className={def.zone === 'fixed' ? 'cursor-default' : 'cursor-grab'}
-                  >
-                    {/* Tělo modulu */}
-                    <rect
-                      width={def.width}
-                      height={def.height}
-                      rx="8"
-                      fill={
-                        item.type === 'busbar-n'
-                          ? '#1e3a8a'
-                          : item.type === 'busbar-pe' || item.type === 'met-hop'
-                          ? '#064e3b'
-                          : item.type === 'supply'
-                          ? '#1e293b'
-                          : '#0f172a'
-                      }
-                      stroke={
-                        isSelected
-                          ? '#fbbf24'
-                          : isLamp1Lit ||
-                            isLamp2Branch1Lit ||
-                            isLamp2Branch2Lit ||
-                            isSocketPowered ||
-                            isSocket400Powered ||
-                            isBoilerPowered ||
-                            isStovePowered ||
-                            isContactorEnergized
-                          ? '#10b981'
-                          : '#475569'
-                      }
-                      strokeWidth={isSelected ? 2.5 : 1.5}
-                    />
-
-                    {/* Název prvku */}
-                    <text
-                      x={def.width / 2}
-                      y={def.zone === 'busbar' ? 11 : 27}
-                      textAnchor="middle"
-                      fill="#e2e8f0"
-                      fontSize="9.5"
-                      fontWeight="bold"
+                  return (
+                    <g
+                      key={item.instanceId}
+                      transform={`translate(${item.x}, ${item.y})`}
+                      onMouseDown={(e) => startDragItem(e, item)}
+                      className={def.zone === 'fixed' ? 'cursor-default' : 'cursor-grab'}
                     >
-                      {item.label}
-                    </text>
-
-                    {/* Indikace pro žárovku 1-větvovou */}
-                    {item.type === 'lamp-1' && (
-                      <circle
-                        cx={def.width / 2}
-                        cy={46}
-                        r="14"
-                        fill={isLamp1Lit ? '#fde047' : '#1e293b'}
-                        stroke={isLamp1Lit ? '#f59e0b' : '#475569'}
-                        strokeWidth="2"
+                      {/* Tělo modulu */}
+                      <rect
+                        width={def.width}
+                        height={def.height}
+                        rx="8"
+                        fill={
+                          item.type === 'busbar-n'
+                            ? '#1e3a8a'
+                            : item.type === 'busbar-pe' || item.type === 'met-hop'
+                            ? '#064e3b'
+                            : item.type === 'supply'
+                            ? '#1e293b'
+                            : '#0f172a'
+                        }
+                        stroke={
+                          isSelected
+                            ? '#fbbf24'
+                            : isLamp1Lit ||
+                              isLamp2Branch1Lit ||
+                              isLamp2Branch2Lit ||
+                              isSocketPowered ||
+                              isSocket400Powered ||
+                              isBoilerPowered ||
+                              isStovePowered ||
+                              isContactorEnergized
+                            ? '#10b981'
+                            : '#475569'
+                        }
+                        strokeWidth={isSelected ? 2.5 : 1.5}
                       />
-                    )}
 
-                    {/* Indikace pro lustr 2-větvový */}
-                    {item.type === 'lamp-2' && (
-                      <g>
+                      {/* Název prvku */}
+                      <text
+                        x={def.width / 2}
+                        y={def.zone === 'busbar' ? 11 : 27}
+                        textAnchor="middle"
+                        fill="#e2e8f0"
+                        fontSize="9.5"
+                        fontWeight="bold"
+                      >
+                        {item.label}
+                      </text>
+
+                      {/* Indikace pro žárovku 1-větvovou */}
+                      {item.type === 'lamp-1' && (
                         <circle
-                          cx={def.width / 2 - 16}
+                          cx={def.width / 2}
                           cy={46}
-                          r="11"
-                          fill={isLamp2Branch1Lit ? '#fde047' : '#1e293b'}
-                          stroke={isLamp2Branch1Lit ? '#f59e0b' : '#475569'}
+                          r="14"
+                          fill={isLamp1Lit ? '#fde047' : '#1e293b'}
+                          stroke={isLamp1Lit ? '#f59e0b' : '#475569'}
                           strokeWidth="2"
                         />
-                        <circle
-                          cx={def.width / 2 + 16}
-                          cy={46}
-                          r="11"
-                          fill={isLamp2Branch2Lit ? '#fde047' : '#1e293b'}
-                          stroke={isLamp2Branch2Lit ? '#f59e0b' : '#475569'}
-                          strokeWidth="2"
-                        />
-                      </g>
-                    )}
+                      )}
 
-                    {/* Indikace zásuvky 230 V */}
-                    {item.type === 'socket-230' && (
-                      <text
-                        x={def.width / 2}
-                        y={48}
-                        textAnchor="middle"
-                        fill={isSocketPowered ? '#34d399' : '#64748b'}
-                        fontSize="9"
-                        fontWeight="bold"
-                      >
-                        {isSocketPowered ? '230 V OK' : 'BEZ NAPĚTÍ'}
-                      </text>
-                    )}
+                      {/* Indikace pro lustr 2-větvový */}
+                      {item.type === 'lamp-2' && (
+                        <g>
+                          <circle
+                            cx={def.width / 2 - 16}
+                            cy={46}
+                            r="11"
+                            fill={isLamp2Branch1Lit ? '#fde047' : '#1e293b'}
+                            stroke={isLamp2Branch1Lit ? '#f59e0b' : '#475569'}
+                            strokeWidth="2"
+                          />
+                          <circle
+                            cx={def.width / 2 + 16}
+                            cy={46}
+                            r="11"
+                            fill={isLamp2Branch2Lit ? '#fde047' : '#1e293b'}
+                            stroke={isLamp2Branch2Lit ? '#f59e0b' : '#475569'}
+                            strokeWidth="2"
+                          />
+                        </g>
+                      )}
 
-                    {/* Indikace 3f zásuvky 400 V */}
-                    {item.type === 'socket-400' && (
-                      <text
-                        x={def.width / 2}
-                        y={50}
-                        textAnchor="middle"
-                        fill={isSocket400Powered ? '#34d399' : '#64748b'}
-                        fontSize="9"
-                        fontWeight="bold"
-                      >
-                        {isSocket400Powered ? '3× 400 V OK' : 'CHYBÍ 3F+N+PE'}
-                      </text>
-                    )}
-
-                    {/* Indikace bojleru 230 V */}
-                    {item.type === 'boiler-1f' && (
-                      <text
-                        x={def.width / 2}
-                        y={50}
-                        textAnchor="middle"
-                        fill={isBoilerPowered ? '#f97316' : '#64748b'}
-                        fontSize="9"
-                        fontWeight="bold"
-                      >
-                        {isBoilerPowered ? 'OHŘÍVÁ (2,2 kW)' : 'VYPNUTO'}
-                      </text>
-                    )}
-
-                    {/* Indikace 3f elektrických kamen 400 V */}
-                    {item.type === 'stove-3f' && (
-                      <text
-                        x={def.width / 2}
-                        y={50}
-                        textAnchor="middle"
-                        fill={isStovePowered ? '#f97316' : '#64748b'}
-                        fontSize="9"
-                        fontWeight="bold"
-                      >
-                        {isStovePowered ? 'TOPÍ 3× 400 V' : 'VYPNUTO'}
-                      </text>
-                    )}
-
-                    {/* Indikace stykače KM (1P i 3P) */}
-                    {(item.type === 'contactor-km' || item.type === 'contactor-1p') && (
-                      <text
-                        x={def.width / 2}
-                        y={44}
-                        textAnchor="middle"
-                        fill={isContactorEnergized ? '#34d399' : '#94a3b8'}
-                        fontSize="8.5"
-                        fontWeight="bold"
-                      >
-                        {isContactorEnergized ? 'CÍVKA SEPNUTA' : 'CÍVKA VYPNUTA'}
-                      </text>
-                    )}
-
-                    {/* Přepínací tlačítko ON/OFF */}
-                    {(item.type.startsWith('mcb') ||
-                      item.type.startsWith('rcd') ||
-                      item.type === 'rcbo-1p' ||
-                      item.type === 'qm-1p' ||
-                      item.type === 'qm-3p' ||
-                      item.type === 'contactor-1p' ||
-                      item.type === 'contactor-km' ||
-                      item.type.startsWith('switch') ||
-                      item.type === 'pushbutton' ||
-                      item.type === 'relay-ka' ||
-                      item.type === 'supply') && (
-                      <g
-                        className="cursor-pointer"
-                        onMouseDown={(e) => e.stopPropagation()}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleItemState(item.instanceId);
-                        }}
-                      >
-                        <rect
-                          x={def.width / 2 - 20}
-                          y={def.height / 2 - 6}
-                          width="40"
-                          height="18"
-                          rx="4"
-                          fill={
-                            item.state > 0 || isContactorEnergized ? '#10b981' : '#334155'
-                          }
-                          stroke="#0f172a"
-                        />
+                      {/* Indikace zásuvky 230 V */}
+                      {item.type === 'socket-230' && (
                         <text
                           x={def.width / 2}
-                          y={def.height / 2 + 6}
+                          y={48}
                           textAnchor="middle"
-                          fill="#020617"
+                          fill={isSocketPowered ? '#34d399' : '#64748b'}
+                          fontSize="9"
+                          fontWeight="bold"
+                        >
+                          {isSocketPowered ? '230 V OK' : 'BEZ NAPĚTÍ'}
+                        </text>
+                      )}
+
+                      {/* Indikace 3f zásuvky 400 V */}
+                      {item.type === 'socket-400' && (
+                        <text
+                          x={def.width / 2}
+                          y={50}
+                          textAnchor="middle"
+                          fill={isSocket400Powered ? '#34d399' : '#64748b'}
+                          fontSize="9"
+                          fontWeight="bold"
+                        >
+                          {isSocket400Powered ? '3× 400 V OK' : 'CHYBÍ 3F+N+PE'}
+                        </text>
+                      )}
+
+                      {/* Indikace bojleru 230 V */}
+                      {item.type === 'boiler-1f' && (
+                        <text
+                          x={def.width / 2}
+                          y={50}
+                          textAnchor="middle"
+                          fill={isBoilerPowered ? '#f97316' : '#64748b'}
+                          fontSize="9"
+                          fontWeight="bold"
+                        >
+                          {isBoilerPowered ? 'OHŘÍVÁ (2,2 kW)' : 'VYPNUTO'}
+                        </text>
+                      )}
+
+                      {/* Indikace 3f elektrických kamen 400 V */}
+                      {item.type === 'stove-3f' && (
+                        <text
+                          x={def.width / 2}
+                          y={50}
+                          textAnchor="middle"
+                          fill={isStovePowered ? '#f97316' : '#64748b'}
+                          fontSize="9"
+                          fontWeight="bold"
+                        >
+                          {isStovePowered ? 'TOPÍ 3× 400 V' : 'VYPNUTO'}
+                        </text>
+                      )}
+
+                      {/* Indikace stykače KM (1P i 3P) */}
+                      {(item.type === 'contactor-km' || item.type === 'contactor-1p') && (
+                        <text
+                          x={def.width / 2}
+                          y={44}
+                          textAnchor="middle"
+                          fill={isContactorEnergized ? '#34d399' : '#94a3b8'}
                           fontSize="8.5"
                           fontWeight="bold"
                         >
-                          {item.type === 'switch-6' || item.type === 'switch-7'
-                            ? item.state === 0
-                              ? 'POL 1'
-                              : 'POL 2'
-                            : item.type === 'switch-5'
-                            ? item.state === 0
-                              ? '0 / 0'
-                              : item.state === 1
-                              ? '1 / 0'
-                              : item.state === 2
-                              ? '0 / 2'
-                              : '1 + 2'
-                            : item.state === 1 || isContactorEnergized
-                            ? 'ZAP'
-                            : 'VYP'}
+                          {isContactorEnergized ? 'CÍVKA SEPNUTA' : 'CÍVKA VYPNUTA'}
                         </text>
-                      </g>
-                    )}
+                      )}
 
-                    {/* Vykreslení svorek (terminálů) s podporou Drag & Drop */}
-                    {def.terminals.map((t) => {
-                      const nodeKey = `${item.instanceId}:${t.id}`;
-                      const isTermLive = sim.liveNodes.has(nodeKey);
-                      const isTermN = sim.neutralNodes.has(nodeKey);
-                      const isTermPE = sim.peNodes.has(nodeKey);
-                      const isDragStart =
-                        wiringDrag?.fromInstanceId === item.instanceId &&
-                        wiringDrag?.fromTerminalId === t.id;
-                      const isHoveredTarget =
-                        hoveredTerminal?.instanceId === item.instanceId &&
-                        hoveredTerminal?.terminalId === t.id;
-
-                      return (
+                      {/* Přepínací tlačítko ON/OFF */}
+                      {(item.type.startsWith('mcb') ||
+                        item.type.startsWith('rcd') ||
+                        item.type === 'rcbo-1p' ||
+                        item.type === 'qm-1p' ||
+                        item.type === 'qm-3p' ||
+                        item.type === 'contactor-1p' ||
+                        item.type === 'contactor-km' ||
+                        item.type.startsWith('switch') ||
+                        item.type === 'pushbutton' ||
+                        item.type === 'relay-ka' ||
+                        item.type === 'supply') && (
                         <g
-                          key={t.id}
-                          transform={`translate(${t.relX}, ${t.relY})`}
-                          className="cursor-crosshair"
-                          onMouseDown={(e) => startWireDrag(e, item.instanceId, t.id)}
-                          onMouseUp={(e) => {
+                          className="cursor-pointer"
+                          onMouseDown={(e) => e.stopPropagation()}
+                          onClick={(e) => {
                             e.stopPropagation();
-                            completeWireDrag(item.instanceId, t.id);
+                            toggleItemState(item.instanceId);
                           }}
                         >
-                          {/* Větší neviditelná plocha pro pohodlné uchopení a puštění vodiče */}
-                          <circle r={12} fill="transparent" />
-                          <circle
-                            r={isDragStart || isHoveredTarget ? 8.5 : 6}
+                          <rect
+                            x={def.width / 2 - 20}
+                            y={def.height / 2 - 6}
+                            width="40"
+                            height="18"
+                            rx="4"
                             fill={
-                              isDragStart || isHoveredTarget
-                                ? '#fbbf24'
-                                : isTermLive
-                                ? '#f59e0b'
-                                : isTermN
-                                ? '#3b82f6'
-                                : isTermPE
-                                ? '#10b981'
-                                : '#1e293b'
+                              item.state > 0 || isContactorEnergized ? '#10b981' : '#334155'
                             }
-                            stroke="#f8fafc"
-                            strokeWidth="1.5"
+                            stroke="#0f172a"
                           />
                           <text
-                            y={t.relY < def.height / 2 ? 15 : -9}
+                            x={def.width / 2}
+                            y={def.height / 2 + 6}
                             textAnchor="middle"
-                            fill="#cbd5e1"
-                            fontSize="8"
+                            fill="#020617"
+                            fontSize="8.5"
                             fontWeight="bold"
-                            className="pointer-events-none"
                           >
-                            {t.label}
+                            {item.type === 'switch-6' || item.type === 'switch-7'
+                              ? item.state === 0
+                                ? 'POL 1'
+                                : 'POL 2'
+                              : item.type === 'switch-5'
+                              ? item.state === 0
+                                ? '0 / 0'
+                                : item.state === 1
+                                ? '1 / 0'
+                                : item.state === 2
+                                ? '0 / 2'
+                                : '1 + 2'
+                              : item.state === 1 || isContactorEnergized
+                              ? 'ZAP'
+                              : 'VYP'}
                           </text>
                         </g>
-                      );
-                    })}
-                  </g>
-                );
-              })}
+                      )}
+
+                      {/* Vykreslení svorek (terminálů) s podporou Drag & Drop */}
+                      {def.terminals.map((t) => {
+                        const nodeKey = `${item.instanceId}:${t.id}`;
+                        const isTermLive = sim.liveNodes.has(nodeKey);
+                        const isTermN = sim.neutralNodes.has(nodeKey);
+                        const isTermPE = sim.peNodes.has(nodeKey);
+                        const isDragStart =
+                          wiringDrag?.fromInstanceId === item.instanceId &&
+                          wiringDrag?.fromTerminalId === t.id;
+                        const isHoveredTarget =
+                          hoveredTerminal?.instanceId === item.instanceId &&
+                          hoveredTerminal?.terminalId === t.id;
+
+                        return (
+                          <g
+                            key={t.id}
+                            transform={`translate(${t.relX}, ${t.relY})`}
+                            className="cursor-crosshair"
+                            onMouseDown={(e) => startWireDrag(e, item.instanceId, t.id)}
+                            onMouseUp={(e) => {
+                              e.stopPropagation();
+                              completeWireDrag(item.instanceId, t.id);
+                            }}
+                          >
+                            {/* Větší neviditelná plocha pro pohodlné uchopení a puštění vodiče */}
+                            <circle r={12} fill="transparent" />
+                            <circle
+                              r={isDragStart || isHoveredTarget ? 8.5 : 6}
+                              fill={
+                                isDragStart || isHoveredTarget
+                                  ? '#fbbf24'
+                                  : isTermLive
+                                  ? '#f59e0b'
+                                  : isTermN
+                                  ? '#3b82f6'
+                                  : isTermPE
+                                  ? '#10b981'
+                                  : '#1e293b'
+                              }
+                              stroke="#f8fafc"
+                              strokeWidth="1.5"
+                            />
+                            <text
+                              y={t.relY < def.height / 2 ? 15 : -9}
+                              textAnchor="middle"
+                              fill="#cbd5e1"
+                              fontSize="8"
+                              fontWeight="bold"
+                              className="pointer-events-none"
+                            >
+                              {t.label}
+                            </text>
+                          </g>
+                        );
+                      })}
+                    </g>
+                  );
+                })}
             </svg>
           </div>
         </div>

@@ -94,51 +94,112 @@ export function mergeProgress(local: UserProgress, remote: UserProgress): UserPr
   };
 }
 
-// Cloudová synchronizace přes anonymní bezplatné KV rozhraní (kvdb / relay)
-// Využívá unikátní hash sync kódu
-export async function syncWithCloud(progress: UserProgress, customCode?: string): Promise<{ success: boolean; progress: UserProgress; message: string }> {
+// Cloudová synchronizace dat (PC ↔ Mobil) přes spolehlivý veřejný cloud relay
+export async function syncWithCloud(
+  progress: UserProgress,
+  customCode?: string
+): Promise<{ success: boolean; progress: UserProgress; message: string }> {
   const code = (customCode || progress.syncId || '').trim().toUpperCase();
   if (!code) {
     return { success: false, progress, message: 'Chybí synchronizační kód.' };
   }
 
+  // Sanitizace kódu pro URL topic (odstraní pomlčky a mezery pro bezpečný topic)
+  const cleanTopicId = code.replace(/[^A-Z0-9]/gi, '');
+  const topicUrl = `https://ntfy.sh/elektro_sync_${cleanTopicId}`;
+
+  const isPairingWithOtherDevice = Boolean(customCode && customCode.trim().toUpperCase() !== progress.syncId);
+
   try {
-    // 1. Zkusíme načíst vzdálený stav z cloudu
-    // Používáme rychlou veřejnou cache proxy pro sdílení stavu
-    const relayUrl = `https://kvdb.io/A8vK4YvJqj9a5xY3YwHq8N/sync_${code}`;
-    
+    // 1. Zkusíme načíst uložená data z cloudu
     let remoteData: UserProgress | null = null;
     try {
-      const getRes = await fetch(relayUrl, { method: 'GET', cache: 'no-cache' });
+      const getRes = await fetch(`${topicUrl}/json?poll=1`, {
+        method: 'GET',
+        cache: 'no-cache',
+      });
+
       if (getRes.ok) {
-        remoteData = await getRes.json();
+        const text = await getRes.text();
+        const lines = text.trim().split('\n').filter(Boolean);
+        // Projdeme zprávy a najdeme nejnovější platný UserProgress
+        for (const line of lines) {
+          try {
+            const entry = JSON.parse(line);
+            if (entry && entry.message) {
+              const parsed = JSON.parse(entry.message);
+              if (parsed && Array.isArray(parsed.completedSubchapters)) {
+                remoteData = remoteData ? mergeProgress(remoteData, parsed) : parsed;
+              }
+            }
+          } catch {
+            // neplatný řádek přeskočíme
+          }
+        }
       }
-    } catch {
-      // remote nemusel existovat
+    } catch (e) {
+      console.warn('Nepodařilo se stáhnout data z cloudu:', e);
     }
 
-    const merged = remoteData ? mergeProgress(progress, remoteData) : { ...progress, syncId: code, lastSyncedAt: new Date().toISOString() };
-    merged.syncId = code;
+    // Pokud uživatel na mobilu zadal kód z PC, ale v cloudu pod tímto kódem nic není
+    if (isPairingWithOtherDevice && !remoteData) {
+      return {
+        success: false,
+        progress,
+        message: `Pod kódem ${code} nebyla v cloudu nalezena žádná data. Nejprve na prvním zařízení (PC) klikněte na „Synchronizovat s cloudem nyní“, aby se data nahrála.`,
+      };
+    }
 
-    // 2. Nahrajeme sloučený stav zpět do cloudu
-    const putRes = await fetch(relayUrl, {
+    // Sloučení stavů
+    const merged = remoteData
+      ? mergeProgress(progress, remoteData)
+      : { ...progress, syncId: code, lastSyncedAt: new Date().toISOString() };
+    merged.syncId = code;
+    merged.lastSyncedAt = new Date().toISOString();
+
+    // 2. Nahrajeme sloučený stav zpět do cloudu pro další synchronizace
+    const postRes = await fetch(topicUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Title': 'sync',
+        'Tags': 'books',
+      },
       body: JSON.stringify(merged),
     });
 
-    if (putRes.ok || putRes.status === 201) {
+    if (postRes.ok) {
       saveProgress(merged);
-      return { success: true, progress: merged, message: `Synchronizováno úspěšně (Kód: ${code}).` };
+      const subCount = merged.completedSubchapters.length;
+      const quizCount = Object.keys(merged.quizScores).length;
+
+      if (remoteData && isPairingWithOtherDevice) {
+        return {
+          success: true,
+          progress: merged,
+          message: `Úspěšně spárováno! Z druhého zařízení bylo staženo ${subCount} kapitol a ${quizCount} kvízů.`,
+        };
+      }
+
+      return {
+        success: true,
+        progress: merged,
+        message: `Postup byl úspěšně nahrán do cloudu (Kód: ${code}). Nyní můžete tento kód zadat na mobilu.`,
+      };
     } else {
-      // Pokud je kvdb dočasně nedostupná, uložíme alespoň lokálně
+      // Pokud POST vrátil chybu, ale máme sloučený lokální stav
       saveProgress(merged);
-      return { success: true, progress: merged, message: `Lokální stav uložen s kódem ${code}.` };
+      return {
+        success: true,
+        progress: merged,
+        message: `Lokální stav byl aktualizován s kódem ${code}.`,
+      };
     }
   } catch (err) {
-    console.warn('Online synchronizace selhala (offline režim):', err);
-    const updated = { ...progress, syncId: code };
-    saveProgress(updated);
-    return { success: false, progress: updated, message: 'Jste offline. Změny jsou bezpečně uloženy v zařízení a synchronizují se po připojení.' };
+    console.warn('Online synchronizace selhala (chyba sítě):', err);
+    return {
+      success: false,
+      progress,
+      message: 'Synchronizace selhala – zkontrolujte připojení k internetu a zkuste to znovu.',
+    };
   }
 }

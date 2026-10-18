@@ -9,23 +9,19 @@ import {
   ToggleLeft, 
   Search, 
   Cloud, 
-  CheckCircle2, 
   ChevronRight
 } from 'lucide-react';
 import { UserProgress, QualificationId, QUALIFICATIONS } from '../types';
-import { CHAPTERS } from '../data/chapters';
 
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
   currentTab: string;
   setCurrentTab: (tab: string) => void;
-  onSelectChapter: (chapterId: number) => void;
   progress: UserProgress;
   onOpenSync: () => void;
   totalSubchapters: number;
   activeQualification: QualificationId;
-  onSelectQualification: (id: QualificationId) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -33,12 +29,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onClose,
   currentTab,
   setCurrentTab,
-  onSelectChapter,
   progress,
   onOpenSync,
   totalSubchapters,
   activeQualification,
-  onSelectQualification,
 }) => {
   if (!isOpen) return null;
 
@@ -64,12 +58,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const handleNavClick = (tabId: string) => {
     setCurrentTab(tabId);
-    onClose();
-  };
-
-  const handleChapterClick = (chapterId: number) => {
-    setCurrentTab('ucebnice');
-    onSelectChapter(chapterId);
     onClose();
   };
 
@@ -117,9 +105,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Posuvný obsah menu */}
-        <div className="flex-1 overflow-y-auto p-3 space-y-6">
+        <div className="flex-1 overflow-y-auto p-3 space-y-4">
           
-          {/* 1. Hlavní sekce aplikace */}
+          {/* Hlavní sekce aplikace */}
           <div>
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-3 mb-2 block font-mono">
               Hlavní nabídka
@@ -169,84 +157,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
               })}
             </div>
           </div>
-
-          {/* Přepínač profesních kvalifikací (5 učebnic) */}
-          <div className="pt-2 border-t border-slate-800/80">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-3 mb-2 block font-mono">
-              Učebnice profesních kvalifikací
-            </span>
-            <div className="space-y-1">
-              {QUALIFICATIONS.map((qual) => {
-                const isSelected = qual.id === activeQualification;
-                return (
-                  <button
-                    key={qual.id}
-                    onClick={() => {
-                      onSelectQualification(qual.id);
-                      onClose();
-                    }}
-                    className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors flex items-center justify-between gap-2 ${
-                      isSelected
-                        ? 'bg-amber-500/15 border border-amber-500/40 text-white font-semibold'
-                        : 'hover:bg-slate-800 text-slate-300 hover:text-white border border-transparent'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 truncate">
-                      <span
-                        className={`px-1.5 py-0.5 rounded font-mono font-bold text-[10px] shrink-0 ${
-                          isSelected
-                            ? 'bg-amber-500 text-slate-950'
-                            : 'bg-slate-800 text-amber-400'
-                        }`}
-                      >
-                        {qual.id}
-                      </span>
-                      <span className="truncate">{qual.title}</span>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* 2. Rychlý skok do 8 kapitol (pouze pro 26-017-H) */}
-          {activeQualification === '26-017-H' && (
-            <div className="pt-2 border-t border-slate-800/80">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-3 mb-2 block font-mono">
-                Kapitoly učebnice (1–8)
-              </span>
-              <div className="space-y-1">
-                {CHAPTERS.map((ch) => {
-                  const chapterSubIds = ch.subchapters.map(s => s.id);
-                  const isFullyRead = chapterSubIds.every(id => progress.completedSubchapters.includes(id));
-                  const score = progress.quizScores[ch.id];
-
-                  return (
-                    <button
-                      key={ch.id}
-                      onClick={() => handleChapterClick(ch.id)}
-                      className="w-full text-left px-3 py-2 rounded-lg text-xs hover:bg-slate-800 transition-colors flex items-center justify-between text-slate-300 hover:text-white group"
-                    >
-                      <div className="flex items-center gap-2.5 truncate">
-                        <span className="w-5 h-5 rounded bg-slate-800 flex items-center justify-center font-mono font-bold text-[10px] text-amber-400 group-hover:bg-amber-500 group-hover:text-slate-950 transition-colors shrink-0">
-                          {ch.id}
-                        </span>
-                        <span className="truncate">{ch.title}</span>
-                      </div>
-
-                      <div className="shrink-0 pl-2">
-                        {isFullyRead ? (
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                        ) : score ? (
-                          <span className="text-[10px] font-mono text-emerald-400">{score.score}/{score.total}</span>
-                        ) : null}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
 
         </div>
 

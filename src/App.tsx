@@ -38,9 +38,22 @@ export const App: React.FC = () => {
       ? CHAPTERS.reduce((acc, c) => acc + c.subchapters.length, 0)
       : 0;
 
-  // Při prvním načtení zkusíme tichou synchronizaci s cloudem na pozadí
+  // Při prvním načtení zkusíme synchronizaci s cloudem (včetně odkazu z QR kódu ?syncCode=...)
   useEffect(() => {
-    if (navigator.onLine && progress.syncId) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlSyncCode = urlParams.get('syncCode');
+
+    if (urlSyncCode && urlSyncCode.trim()) {
+      const code = urlSyncCode.trim().toUpperCase();
+      syncWithCloud(progress, code).then(res => {
+        if (res.success) {
+          setProgress(res.progress);
+        }
+      });
+      // Vyčistíme parametr z adresního řádku pro čistý vzhled
+      const cleanUrl = window.location.pathname + window.location.hash;
+      window.history.replaceState({}, document.title, cleanUrl);
+    } else if (navigator.onLine && progress.syncId) {
       syncWithCloud(progress).then(res => {
         if (res.success) {
           setProgress(res.progress);
@@ -190,15 +203,10 @@ export const App: React.FC = () => {
         onClose={() => setIsSidebarOpen(false)}
         currentTab={currentTab}
         setCurrentTab={setCurrentTab}
-        onSelectChapter={(chId) => setSelectedChapterId(chId)}
         progress={progress}
         onOpenSync={() => setIsSyncModalOpen(true)}
         totalSubchapters={totalSubchapters}
         activeQualification={activeQualification}
-        onSelectQualification={(id) => {
-          setActiveQualification(id);
-          setSelectedChapterId(null);
-        }}
       />
 
       {/* Hlavní obsahová část */}

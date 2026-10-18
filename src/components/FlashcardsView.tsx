@@ -61,9 +61,9 @@ export const FlashcardsView: React.FC = () => {
             <span className="p-2 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
               <CreditCard className="w-5 h-5" />
             </span>
-            <h1 className="text-2xl font-black text-white">Kartičky pro ústní část</h1>
+            <h1 className="text-2xl font-black text-white leading-snug whitespace-nowrap">Kartičky pro ústní část</h1>
           </div>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-400 text-pretty leading-relaxed">
             Otázky zkoušejícího, které musíš umět bez váhání odříkat nahlas u zkoušky.
           </p>
         </div>

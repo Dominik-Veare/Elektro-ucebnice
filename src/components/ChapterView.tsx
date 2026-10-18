@@ -78,10 +78,10 @@ export const ChapterView: React.FC<ChapterViewProps> = ({
                 </span>
                 <span className="text-xs text-slate-400">• Kapitola {selectedChapter.id} z 8</span>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-snug text-balance">
                 {selectedChapter.title}
               </h1>
-              <p className="text-sm text-slate-300 pt-1">
+              <p className="text-sm text-slate-300 pt-1 leading-relaxed text-pretty">
                 {selectedChapter.shortDescription}
               </p>
             </div>
@@ -127,7 +127,7 @@ export const ChapterView: React.FC<ChapterViewProps> = ({
                     <span className="text-xs font-mono font-bold text-slate-500">
                       {selectedChapter.id}.{idx + 1}
                     </span>
-                    <h2 className="text-xl font-bold text-slate-100 mt-0.5">
+                    <h2 className="text-lg sm:text-xl font-bold text-slate-100 mt-0.5 leading-snug text-balance">
                       {sub.title}
                     </h2>
                     {sub.standardRefs && sub.standardRefs.length > 0 && (
@@ -230,10 +230,10 @@ export const ChapterView: React.FC<ChapterViewProps> = ({
           <span className="text-xs font-bold uppercase tracking-wider text-amber-400">
             Oficiální kvalifikační standard NSK
           </span>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-            Montér / montérka elektrických instalací (26-017-H)
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-snug text-balance">
+            Montér / montérka elektrických instalací <span className="whitespace-nowrap font-mono text-amber-400 text-xl sm:text-2xl">(26-017-H)</span>
           </h1>
-          <p className="text-slate-300 text-sm leading-relaxed pt-1">
+          <p className="text-slate-300 text-sm leading-relaxed pt-1 text-pretty max-w-2xl">
             Interaktivní učebnice a trenažér koncipovaný přímo podle 8 hodnoticích způsobilostí MPO a elektrotechnických norem ČSN. Vyber si kapitolu pro studium nebo si rovnou otestuj své znalosti v testu.
           </p>
         </div>
@@ -272,10 +272,10 @@ export const ChapterView: React.FC<ChapterViewProps> = ({
                   </div>
                 </div>
 
-                <h3 className="text-lg font-bold text-white group-hover:text-amber-400 transition-colors line-clamp-2">
+                <h3 className="text-base sm:text-lg font-bold text-white group-hover:text-amber-400 transition-colors leading-snug text-balance">
                   {chapter.title}
                 </h3>
-                <p className="text-xs text-slate-400 mt-1.5 line-clamp-2 leading-relaxed">
+                <p className="text-xs text-slate-400 mt-1.5 leading-relaxed text-pretty">
                   {chapter.shortDescription}
                 </p>
               </div>

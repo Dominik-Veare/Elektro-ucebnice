@@ -165,9 +165,9 @@ export const MistakeNotebook: React.FC<MistakeNotebookProps> = ({
             <span className="p-2 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
               <AlertCircle className="w-5 h-5" />
             </span>
-            <h1 className="text-2xl font-black text-white">Kniha chyb</h1>
+            <h1 className="text-2xl font-black text-white leading-snug whitespace-nowrap">Kniha chyb</h1>
           </div>
-          <p className="text-xs text-slate-400 max-w-xl">
+          <p className="text-xs text-slate-400 max-w-xl text-pretty leading-relaxed">
             Inteligentní zásobník otázek, ve kterých jsi při testech udělal chybu. Otázka zmizí ze seznamu, jakmile ji <strong>dvakrát za sebou</strong> zodpovíš správně.
           </p>
         </div>

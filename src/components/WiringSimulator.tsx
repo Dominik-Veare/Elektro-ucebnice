@@ -52,9 +52,9 @@ export const WiringSimulator: React.FC = () => {
           <span className="p-2 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
             <ToggleLeft className="w-5 h-5" />
           </span>
-          <h1 className="text-2xl font-black text-white">Interaktivní schémata zapojení</h1>
+          <h1 className="text-2xl font-black text-white leading-snug whitespace-nowrap">Interaktivní schémata zapojení</h1>
         </div>
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-slate-400 text-pretty leading-relaxed">
           Vyzkoušej si interaktivně funkci domovních spínačů (řazení 1, 5, 6, 7) a princip proudového chrániče (RCD).
         </p>
 
@@ -62,7 +62,7 @@ export const WiringSimulator: React.FC = () => {
         <div className="flex flex-wrap gap-2 mt-5">
           <button
             onClick={() => setActiveSchema('razeni1')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
               activeSchema === 'razeni1' ? 'bg-amber-500 text-slate-950 shadow-md' : 'bg-slate-800 text-slate-300 hover:text-white'
             }`}
           >
@@ -70,7 +70,7 @@ export const WiringSimulator: React.FC = () => {
           </button>
           <button
             onClick={() => setActiveSchema('razeni5')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
               activeSchema === 'razeni5' ? 'bg-amber-500 text-slate-950 shadow-md' : 'bg-slate-800 text-slate-300 hover:text-white'
             }`}
           >
@@ -78,7 +78,7 @@ export const WiringSimulator: React.FC = () => {
           </button>
           <button
             onClick={() => setActiveSchema('razeni6')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
               activeSchema === 'razeni6' ? 'bg-amber-500 text-slate-950 shadow-md' : 'bg-slate-800 text-slate-300 hover:text-white'
             }`}
           >
@@ -86,7 +86,7 @@ export const WiringSimulator: React.FC = () => {
           </button>
           <button
             onClick={() => setActiveSchema('razeni7')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
               activeSchema === 'razeni7' ? 'bg-amber-500 text-slate-950 shadow-md' : 'bg-slate-800 text-slate-300 hover:text-white'
             }`}
           >
@@ -94,7 +94,7 @@ export const WiringSimulator: React.FC = () => {
           </button>
           <button
             onClick={() => setActiveSchema('rcd')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
               activeSchema === 'rcd' ? 'bg-amber-500 text-slate-950 shadow-md' : 'bg-slate-800 text-slate-300 hover:text-white'
             }`}
           >

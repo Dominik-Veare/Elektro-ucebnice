@@ -127,10 +127,10 @@ export const ExamSimulator: React.FC<ExamSimulatorProps> = ({
             <span className="text-xs font-mono font-bold text-amber-400 uppercase tracking-widest">
               Simulátor písemné části zkoušky NSK
             </span>
-            <h1 className="text-2xl sm:text-4xl font-black text-white">
-              Ostrá zkouška (45 minut)
+            <h1 className="text-2xl sm:text-4xl font-black text-white leading-snug text-balance">
+              Ostrá cvičná zkouška (45 minut)
             </h1>
-            <p className="text-sm text-slate-300 max-w-xl mx-auto leading-relaxed">
+            <p className="text-sm text-slate-300 max-w-xl mx-auto leading-relaxed text-pretty">
               Tento trenažér věrně simuluje oficiální 45minutový písemný test pro kvalifikaci <strong>Montér elektrických instalací (26-017-H)</strong>. Otázky jsou náhodně generovány ze všech 8 zkušebních okruhů.
             </p>
           </div>

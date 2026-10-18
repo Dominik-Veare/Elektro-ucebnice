@@ -22,3 +22,15 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Build cache & local artifacts
+*.tsbuildinfo
+
+# Local source/reference materials & scripts (do not push to repo)
+testy dle 50/
+*_files/
+194_2022*.html
+Národní soustava kvalifikací.html
+*.pdf
+*.bat
+

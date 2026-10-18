@@ -5,7 +5,6 @@ import {
   RotateCcw,
   CheckCircle2,
   AlertTriangle,
-  Sparkles,
   Eye,
 } from 'lucide-react';
 
@@ -30,6 +29,7 @@ export interface PaletteItemDef {
   name: string;
   shortName: string;
   zone: PlacementZone;
+  phaseGroup?: '1f' | '3f';
   width: number;
   height: number;
   description: string;
@@ -164,21 +164,20 @@ const PALETTE_ITEMS: PaletteItemDef[] = [
       { id: 'E4', label: 'SPD', relX: 112, relY: 24, hintColor: 'PE' },
     ],
   },
+
+  // JEDNOFÁZOVÉ MODULY NA DIN LIŠTU (230 V)
   {
-    type: 'qm-3p',
-    name: 'Hlavní vypínač 3P (40 A)',
-    shortName: 'Vypínač 3P',
+    type: 'qm-1p',
+    name: 'Hlavní vypínač 1P (40 A)',
+    shortName: 'Vypínač 1P',
     zone: 'din',
-    width: 82,
+    phaseGroup: '1f',
+    width: 52,
     height: 112,
-    description: 'Třípólový hlavní vypínač rozvaděče (1-2, 3-4, 5-6)',
+    description: 'Jednopólový hlavní vypínač obvodu (1 = vstup, 2 = výstup)',
     terminals: [
-      { id: '1', label: '1', relX: 18, relY: 12, hintColor: 'L1' },
-      { id: '3', label: '3', relX: 41, relY: 12, hintColor: 'L2' },
-      { id: '5', label: '5', relX: 64, relY: 12, hintColor: 'L3' },
-      { id: '2', label: '2', relX: 18, relY: 100, hintColor: 'L1' },
-      { id: '4', label: '4', relX: 41, relY: 100, hintColor: 'L2' },
-      { id: '6', label: '6', relX: 64, relY: 100, hintColor: 'L3' },
+      { id: '1', label: '1', relX: 26, relY: 12, hintColor: 'L1' },
+      { id: '2', label: '2', relX: 26, relY: 100, hintColor: 'L1' },
     ],
   },
   {
@@ -186,6 +185,7 @@ const PALETTE_ITEMS: PaletteItemDef[] = [
     name: 'Jistič 1P B10 (světla)',
     shortName: 'FA B10',
     zone: 'din',
+    phaseGroup: '1f',
     width: 50,
     height: 112,
     description: 'Jednopólový jistič B10 A (1 = vstup, 2 = výstup)',
@@ -199,6 +199,7 @@ const PALETTE_ITEMS: PaletteItemDef[] = [
     name: 'Jistič 1P B16 (zásuvky)',
     shortName: 'FA B16',
     zone: 'din',
+    phaseGroup: '1f',
     width: 50,
     height: 112,
     description: 'Jednopólový jistič B16 A (1 = vstup, 2 = výstup)',
@@ -208,10 +209,110 @@ const PALETTE_ITEMS: PaletteItemDef[] = [
     ],
   },
   {
+    type: 'rcd-2p',
+    name: 'Proudový chránič 2P 30mA (1F+N)',
+    shortName: 'RCD 2P',
+    zone: 'din',
+    phaseGroup: '1f',
+    width: 78,
+    height: 112,
+    description: 'Dvoupólový proudový chránič FI (1-2 fáze, N_in - N_out)',
+    terminals: [
+      { id: '1', label: '1(L)', relX: 24, relY: 12, hintColor: 'L1' },
+      { id: 'N_in', label: 'N', relX: 54, relY: 12, hintColor: 'N' },
+      { id: '2', label: '2(L)', relX: 24, relY: 100, hintColor: 'L1' },
+      { id: 'N_out', label: 'N', relX: 54, relY: 100, hintColor: 'N' },
+    ],
+  },
+  {
+    type: 'rcbo-1p',
+    name: 'Jističochránič RCBO B16/30mA (1P+N)',
+    shortName: 'RCBO B16',
+    zone: 'din',
+    phaseGroup: '1f',
+    width: 78,
+    height: 112,
+    description: 'Kombinovaný proudový chránič s jističem 1P+N (B16 / 30 mA)',
+    terminals: [
+      { id: '1', label: '1(L)', relX: 24, relY: 12, hintColor: 'L1' },
+      { id: 'N_in', label: 'N', relX: 54, relY: 12, hintColor: 'N' },
+      { id: '2', label: '2(L)', relX: 24, relY: 100, hintColor: 'L1' },
+      { id: 'N_out', label: 'N', relX: 54, relY: 100, hintColor: 'N' },
+    ],
+  },
+  {
+    type: 'contactor-1p',
+    name: 'Instalační stykač 1P (230 V + cívka A1/A2)',
+    shortName: 'Stykač 1P',
+    zone: 'din',
+    phaseGroup: '1f',
+    width: 78,
+    height: 112,
+    description: 'Jednofázový stykač 20 A: cívka A1-A2 spíná silový kontakt 1-2',
+    terminals: [
+      { id: 'A1', label: 'A1', relX: 24, relY: 12, hintColor: 'SW' },
+      { id: '1', label: '1(L)', relX: 54, relY: 12, hintColor: 'L1' },
+      { id: 'A2', label: 'A2', relX: 24, relY: 100, hintColor: 'N' },
+      { id: '2', label: '2(T)', relX: 54, relY: 100, hintColor: 'L1' },
+    ],
+  },
+  {
+    type: 'relay-ka',
+    name: 'Impulzní relé KA (krokové)',
+    shortName: 'Relé KA',
+    zone: 'din',
+    phaseGroup: '1f',
+    width: 78,
+    height: 112,
+    description: 'Krokové relé: cívka A1-A2, spínací kontakt 1-2',
+    terminals: [
+      { id: 'A1', label: 'A1', relX: 24, relY: 12, hintColor: 'SW' },
+      { id: '1', label: '1(L)', relX: 54, relY: 12, hintColor: 'L1' },
+      { id: 'A2', label: 'A2', relX: 24, relY: 100, hintColor: 'N' },
+      { id: '2', label: '2(L′)', relX: 54, relY: 100, hintColor: 'SW' },
+    ],
+  },
+  {
+    type: 'spd-1p',
+    name: 'Svodič přepětí SPD 1P+N (230 V)',
+    shortName: 'SPD 1P+N',
+    zone: 'din',
+    phaseGroup: '1f',
+    width: 78,
+    height: 112,
+    description: 'Jednofázový chránič přepětí: nahoře L a N, dole PE do MET',
+    terminals: [
+      { id: 'L', label: 'L', relX: 24, relY: 12, hintColor: 'L1' },
+      { id: 'N', label: 'N', relX: 54, relY: 12, hintColor: 'N' },
+      { id: 'PE', label: 'PE', relX: 39, relY: 100, hintColor: 'PE' },
+    ],
+  },
+
+  // TŘÍFÁZOVÉ MODULY NA DIN LIŠTU (400 V)
+  {
+    type: 'qm-3p',
+    name: 'Hlavní vypínač 3P (40 A)',
+    shortName: 'Vypínač 3P',
+    zone: 'din',
+    phaseGroup: '3f',
+    width: 82,
+    height: 112,
+    description: 'Třípólový hlavní vypínač rozvaděče (1-2, 3-4, 5-6)',
+    terminals: [
+      { id: '1', label: '1', relX: 18, relY: 12, hintColor: 'L1' },
+      { id: '3', label: '3', relX: 41, relY: 12, hintColor: 'L2' },
+      { id: '5', label: '5', relX: 64, relY: 12, hintColor: 'L3' },
+      { id: '2', label: '2', relX: 18, relY: 100, hintColor: 'L1' },
+      { id: '4', label: '4', relX: 41, relY: 100, hintColor: 'L2' },
+      { id: '6', label: '6', relX: 64, relY: 100, hintColor: 'L3' },
+    ],
+  },
+  {
     type: 'mcb-3p',
     name: 'Jistič 3P B16 (3f spotřebiče)',
     shortName: 'FA 3P B16',
     zone: 'din',
+    phaseGroup: '3f',
     width: 82,
     height: 112,
     description: 'Třípólový jistič B16 A pro 400 V (1-2, 3-4, 5-6)',
@@ -225,25 +326,11 @@ const PALETTE_ITEMS: PaletteItemDef[] = [
     ],
   },
   {
-    type: 'rcd-2p',
-    name: 'Proudový chránič 2P 30mA',
-    shortName: 'RCD 2P',
-    zone: 'din',
-    width: 78,
-    height: 112,
-    description: 'Dvoupólový proudový chránič FI (1-2 fáze, N_in - N_out)',
-    terminals: [
-      { id: '1', label: '1(L)', relX: 24, relY: 12, hintColor: 'L1' },
-      { id: 'N_in', label: 'N', relX: 54, relY: 12, hintColor: 'N' },
-      { id: '2', label: '2(L)', relX: 24, relY: 100, hintColor: 'L1' },
-      { id: 'N_out', label: 'N', relX: 54, relY: 100, hintColor: 'N' },
-    ],
-  },
-  {
     type: 'rcd-4p',
     name: 'Proudový chránič 4P 30mA (3f)',
     shortName: 'RCD 4P',
     zone: 'din',
+    phaseGroup: '3f',
     width: 108,
     height: 112,
     description: 'Čtyřpólový proudový chránič pro 3f rozvody (1,3,5,N -> 2,4,6,N)',
@@ -259,25 +346,11 @@ const PALETTE_ITEMS: PaletteItemDef[] = [
     ],
   },
   {
-    type: 'rcbo-1p',
-    name: 'Jističochránič RCBO B16/30mA',
-    shortName: 'RCBO B16',
-    zone: 'din',
-    width: 78,
-    height: 112,
-    description: 'Kombinovaný proudový chránič s jističem 1P+N (B16 / 30 mA)',
-    terminals: [
-      { id: '1', label: '1(L)', relX: 24, relY: 12, hintColor: 'L1' },
-      { id: 'N_in', label: 'N', relX: 54, relY: 12, hintColor: 'N' },
-      { id: '2', label: '2(L)', relX: 24, relY: 100, hintColor: 'L1' },
-      { id: 'N_out', label: 'N', relX: 54, relY: 100, hintColor: 'N' },
-    ],
-  },
-  {
     type: 'contactor-km',
-    name: 'Instalační stykač KM (3P + cívka A1/A2)',
-    shortName: 'Stykač KM',
+    name: 'Instalační stykač 3P (400 V + cívka A1/A2)',
+    shortName: 'Stykač 3P',
     zone: 'din',
+    phaseGroup: '3f',
     width: 110,
     height: 112,
     description: '3pólový stykač: cívka A1-A2 spíná silové kontakty 1-2, 3-4, 5-6',
@@ -293,25 +366,11 @@ const PALETTE_ITEMS: PaletteItemDef[] = [
     ],
   },
   {
-    type: 'relay-ka',
-    name: 'Impulzní relé KA (krokové)',
-    shortName: 'Relé KA',
-    zone: 'din',
-    width: 78,
-    height: 112,
-    description: 'Krokové relé: cívka A1-A2, spínací kontakt 1-2',
-    terminals: [
-      { id: 'A1', label: 'A1', relX: 24, relY: 12, hintColor: 'SW' },
-      { id: '1', label: '1(L)', relX: 54, relY: 12, hintColor: 'L1' },
-      { id: 'A2', label: 'A2', relX: 24, relY: 100, hintColor: 'N' },
-      { id: '2', label: '2(L′)', relX: 54, relY: 100, hintColor: 'SW' },
-    ],
-  },
-  {
     type: 'spd-t2',
     name: 'Svodič přepětí SPD T1+T2 (3P+N)',
     shortName: 'SPD 3P+N',
     zone: 'din',
+    phaseGroup: '3f',
     width: 108,
     height: 112,
     description: 'Chránič přepětí 3P+N: nahoře L1, L2, L3, N, dole svorka PE do MET',
@@ -1358,17 +1417,17 @@ const BOARD_TASKS: BoardTask[] = [
     id: 'u2-3',
     level: 2,
     number: 7,
-    title: 'Elektrický bojler 230 V spínaný stykačem KM',
+    title: 'Elektrický bojler 230 V spínaný 1f stykačem KM',
     subtitle: 'Silové spínání bojleru instalačním stykačem ovládaným spínačem HDO / termostatem',
     assignment:
-      'Vložte můstky N a PE, jistič B16 (silový), jistič B10 (ovládací), stykač KM, spínač č. 1 (HDO) a bojler 230 V. Silovou fázi z B16 veďte přes kontakt 1–2 stykače KM na bojler (L). Ovládací fázi z B10 veďte přes spínač č. 1 na cívku A1 stykače. Doplňte N (na A2 i bojler) a PE.',
+      'Vložte můstky N a PE, jistič B16 (silový), jistič B10 (ovládací), 1f stykač KM (1P), spínač č. 1 (HDO) a bojler 230 V. Silovou fázi z B16 veďte přes kontakt 1–2 stykače KM na bojler (L). Ovládací fázi z B10 veďte přes spínač č. 1 na cívku A1 stykače. Doplňte N (na A2 i bojler) a PE.',
     items: [
       { instanceId: 'supply', type: 'supply', label: 'Přívod 3F TN-S', x: 24, y: 24, state: 1 },
       { instanceId: 'bus-n', type: 'busbar-n', label: 'Můstek N', x: 230, y: BUSBAR_ROW_Y, state: 1 },
       { instanceId: 'bus-pe', type: 'busbar-pe', label: 'Můstek PE', x: 430, y: BUSBAR_ROW_Y, state: 1 },
       { instanceId: 'mcb-16', type: 'mcb-b16', label: 'FA1 B16 (bojler)', x: 210, y: DIN_RAIL_ITEM_Y, state: 1 },
       { instanceId: 'mcb-10', type: 'mcb-b10', label: 'FA2 B10 (ovl.)', x: 290, y: DIN_RAIL_ITEM_Y, state: 1 },
-      { instanceId: 'km-1', type: 'contactor-km', label: 'Stykač KM', x: 380, y: DIN_RAIL_ITEM_Y, state: 0 },
+      { instanceId: 'km-1', type: 'contactor-1p', label: 'Stykač KM 1P', x: 380, y: DIN_RAIL_ITEM_Y, state: 0 },
       { instanceId: 'sw-hdo', type: 'switch-1', label: 'Spínač HDO', x: 180, y: 340, state: 1 },
       { instanceId: 'boiler-1', type: 'boiler-1f', label: 'Bojler 230 V', x: 450, y: 340, state: 0 },
     ],
@@ -1387,10 +1446,10 @@ const BOARD_TASKS: BoardTask[] = [
     ],
     check: (items, _wires, sim) => {
       const msgs: string[] = [];
-      const km = items.find((i) => i.type === 'contactor-km');
+      const km = items.find((i) => i.type === 'contactor-1p' || i.type === 'contactor-km');
       const boiler = items.find((i) => i.type === 'boiler-1f');
       if (!km) {
-        msgs.push('Chybí instalační stykač KM na DIN liště.');
+        msgs.push('Chybí instalační stykač KM (1P nebo 3P) na DIN liště.');
       } else if (!sim.energizedContactors.has(km.instanceId)) {
         msgs.push('Cívka stykače KM (A1–A2) není pod napětím – zkontrolujte ovládací obvod přes spínač a vodič N na A2.');
       }
@@ -1408,10 +1467,10 @@ const BOARD_TASKS: BoardTask[] = [
     id: 'u2-4',
     level: 2,
     number: 8,
-    title: 'Chránič přepětí SPD 3P+N a hlavní pospojování',
-    subtitle: 'Ochrana třífázového rozvaděče proti přepětí a pospojování MET',
+    title: 'Chránič přepětí SPD a hlavní pospojování MET',
+    subtitle: 'Ochrana rozvaděče proti přepětí (1P+N nebo 3P+N) a pospojování MET',
     assignment:
-      'Vložte můstek N, svorkovnici MET/HOP, svodič přepětí SPD 3P+N a kovové potrubí vody. Přiveďte L1, L2, L3 a N na svodič přepětí SPD a jeho zemnicí svorku PE i vodovodní potrubí pospojujte do MET/HOP.',
+      'Vložte můstek N, svorkovnici MET/HOP, svodič přepětí SPD (3P+N nebo 1P+N) a kovové potrubí vody. Přiveďte fázové vodiče a N na svodič přepětí SPD a jeho zemnicí svorku PE i vodovodní potrubí pospojujte do MET/HOP.',
     items: [
       { instanceId: 'supply', type: 'supply', label: 'Přívod 3F TN-S', x: 24, y: 24, state: 1 },
       { instanceId: 'bus-n', type: 'busbar-n', label: 'Můstek N', x: 230, y: BUSBAR_ROW_Y, state: 1 },
@@ -1431,20 +1490,27 @@ const BOARD_TASKS: BoardTask[] = [
     ],
     check: (items, _wires, sim) => {
       const msgs: string[] = [];
-      const spd = items.find((i) => i.type === 'spd-t2');
+      const spd3 = items.find((i) => i.type === 'spd-t2');
+      const spd1 = items.find((i) => i.type === 'spd-1p');
       const pipe = items.find((i) => i.type === 'water-pipe');
-      if (!spd) {
-        msgs.push('Chybí svodič přepětí SPD 3P+N.');
-      } else {
+      if (!spd3 && !spd1) {
+        msgs.push('Chybí svodič přepětí SPD (1P+N nebo 3P+N).');
+      } else if (spd3) {
         if (
-          !sim.liveNodes.has(`${spd.instanceId}:L1`) ||
-          !sim.liveNodes.has(`${spd.instanceId}:L2`) ||
-          !sim.liveNodes.has(`${spd.instanceId}:L3`)
+          !sim.liveNodes.has(`${spd3.instanceId}:L1`) ||
+          !sim.liveNodes.has(`${spd3.instanceId}:L2`) ||
+          !sim.liveNodes.has(`${spd3.instanceId}:L3`)
         ) {
-          msgs.push('Svodič přepětí SPD musí mít připojené všechny 3 fáze (L1, L2, L3).');
+          msgs.push('Třífázový svodič přepětí SPD 3P+N musí mít připojené všechny 3 fáze (L1, L2, L3).');
         }
-        if (!sim.neutralNodes.has(`${spd.instanceId}:N`)) msgs.push('Chybí připojený vodič N na svodiči přepětí SPD.');
-        if (!sim.peNodes.has(`${spd.instanceId}:PE`)) msgs.push('Svodič přepětí SPD není uzemněn na svorkovnici MET/HOP!');
+        if (!sim.neutralNodes.has(`${spd3.instanceId}:N`)) msgs.push('Chybí připojený vodič N na svodiči přepětí SPD.');
+        if (!sim.peNodes.has(`${spd3.instanceId}:PE`)) msgs.push('Svodič přepětí SPD není uzemněn na svorkovnici MET/HOP!');
+      } else if (spd1) {
+        if (!sim.liveNodes.has(`${spd1.instanceId}:L`)) {
+          msgs.push('Jednofázový svodič přepětí SPD 1P+N nemá připojenou fázi L.');
+        }
+        if (!sim.neutralNodes.has(`${spd1.instanceId}:N`)) msgs.push('Chybí připojený vodič N na svodiči přepětí SPD.');
+        if (!sim.peNodes.has(`${spd1.instanceId}:PE`)) msgs.push('Svodič přepětí SPD není uzemněn na svorkovnici MET/HOP!');
       }
       if (!pipe || !sim.peNodes.has(`${pipe.instanceId}:PE`)) {
         msgs.push('Chybí pospojování vodovodního potrubí s MET/HOP.');
@@ -1723,6 +1789,7 @@ function simulateCircuit(items: PlacedItem[], wires: BoardWire[]): SimulationRes
           addEdge(`${id}:C1`, `${id}:C2`);
           addEdge(`${id}:C1`, `${id}:C3`);
           break;
+        case 'qm-1p':
         case 'mcb-b10':
         case 'mcb-b16':
           if (item.state === 1) addEdge(`${id}:1`, `${id}:2`);
@@ -1748,6 +1815,11 @@ function simulateCircuit(items: PlacedItem[], wires: BoardWire[]): SimulationRes
             addEdge(`${id}:3`, `${id}:4`);
             addEdge(`${id}:5`, `${id}:6`);
             addEdge(`${id}:N_in`, `${id}:N_out`);
+          }
+          break;
+        case 'contactor-1p':
+          if (item.state === 1 || energizedContactors.has(id)) {
+            addEdge(`${id}:1`, `${id}:2`);
           }
           break;
         case 'contactor-km':
@@ -1821,7 +1893,7 @@ function simulateCircuit(items: PlacedItem[], wires: BoardWire[]): SimulationRes
   const pass1Neutral = pass1.bfs(nStarts);
 
   for (const item of items) {
-    if (item.type === 'contactor-km') {
+    if (item.type === 'contactor-km' || item.type === 'contactor-1p') {
       const a1 = `${item.instanceId}:A1`;
       const a2 = `${item.instanceId}:A2`;
       if (
@@ -2072,6 +2144,7 @@ export const InteractiveBoardEditor: React.FC = () => {
         type.startsWith('mcb') ||
         type.startsWith('rcd') ||
         type === 'rcbo-1p' ||
+        type === 'qm-1p' ||
         type === 'qm-3p'
           ? 1
           : 0,
@@ -2435,30 +2508,57 @@ export const InteractiveBoardEditor: React.FC = () => {
 
           <div>
             <h3 className="text-xs font-bold uppercase tracking-wider text-sky-400 mb-2">
-              2. Moduly na DIN lištu (1F / 3F)
+              2. Jednofázové moduly DIN (230 V)
             </h3>
             <div className="grid grid-cols-1 gap-1.5">
-              {PALETTE_ITEMS.filter((p) => p.zone === 'din').map((item) => (
-                <button
-                  key={item.type}
-                  onClick={() => addItemToBoard(item.type)}
-                  className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-950/80 hover:bg-slate-800 border border-slate-800/80 text-left transition-all group"
-                >
-                  <div>
-                    <div className="text-xs font-bold text-slate-200 group-hover:text-sky-300">
-                      {item.name}
+              {PALETTE_ITEMS.filter((p) => p.zone === 'din' && p.phaseGroup === '1f').map(
+                (item) => (
+                  <button
+                    key={item.type}
+                    onClick={() => addItemToBoard(item.type)}
+                    className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-950/80 hover:bg-slate-800 border border-slate-800/80 text-left transition-all group"
+                  >
+                    <div>
+                      <div className="text-xs font-bold text-slate-200 group-hover:text-sky-300">
+                        {item.name}
+                      </div>
+                      <div className="text-[10px] text-slate-500">{item.description}</div>
                     </div>
-                    <div className="text-[10px] text-slate-500">{item.description}</div>
-                  </div>
-                  <Plus className="w-4 h-4 text-slate-400 group-hover:text-sky-400 shrink-0 ml-2" />
-                </button>
-              ))}
+                    <Plus className="w-4 h-4 text-slate-400 group-hover:text-sky-400 shrink-0 ml-2" />
+                  </button>
+                )
+              )}
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-indigo-400 mb-2">
+              3. Třífázové moduly DIN (400 V)
+            </h3>
+            <div className="grid grid-cols-1 gap-1.5">
+              {PALETTE_ITEMS.filter((p) => p.zone === 'din' && p.phaseGroup === '3f').map(
+                (item) => (
+                  <button
+                    key={item.type}
+                    onClick={() => addItemToBoard(item.type)}
+                    className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-950/80 hover:bg-slate-800 border border-slate-800/80 text-left transition-all group"
+                  >
+                    <div>
+                      <div className="text-xs font-bold text-slate-200 group-hover:text-indigo-300">
+                        {item.name}
+                      </div>
+                      <div className="text-[10px] text-slate-500">{item.description}</div>
+                    </div>
+                    <Plus className="w-4 h-4 text-slate-400 group-hover:text-indigo-400 shrink-0 ml-2" />
+                  </button>
+                )
+              )}
             </div>
           </div>
 
           <div>
             <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-400 mb-2">
-              3. Spínače a spotřebiče (230/400 V)
+              4. Spínače a spotřebiče (230/400 V)
             </h3>
             <div className="grid grid-cols-1 gap-1.5">
               {PALETTE_ITEMS.filter((p) => p.zone === 'wall').map((item) => (
@@ -2484,39 +2584,24 @@ export const InteractiveBoardEditor: React.FC = () => {
             PRAVÝ PANEL: INTERAKTIVNÍ SVG PLÁTNO MONTÁŽNÍ TABULE
            ================================================================== */}
         <div className="lg:col-span-9 space-y-3">
-          {/* Diagnostická lišta */}
+          {/* Diagnostická lišta s pevnou výškou (žádné posouvání tabule při tažení vodiče) */}
           <div
-            className={`rounded-xl px-4 py-2.5 border flex flex-wrap items-center justify-between gap-2 ${
+            className={`h-10 rounded-xl px-4 border flex items-center justify-between gap-2 whitespace-nowrap overflow-hidden ${
               sim.shortCircuit || sim.rcdTripped
                 ? 'bg-rose-950/60 border-rose-500/40 text-rose-200'
                 : 'bg-slate-900/90 border-slate-800 text-slate-300'
             }`}
           >
-            <div className="flex items-center gap-2 text-xs">
+            <div className="flex items-center gap-2 text-xs truncate">
               {sim.shortCircuit || sim.rcdTripped ? (
                 <>
                   <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
-                  <span className="font-bold">{sim.diagnostics[0]}</span>
-                </>
-              ) : wiringDrag ? (
-                <>
-                  <Sparkles className="w-4 h-4 text-amber-400 shrink-0 animate-pulse" />
-                  <span>
-                    Tažení vodiče{' '}
-                    <strong className="text-amber-300">
-                      {WIRE_COLORS[wiringDrag.color].name}
-                    </strong>{' '}
-                    ze svorky{' '}
-                    <strong className="text-white">
-                      {wiringDrag.fromInstanceId}:{wiringDrag.fromTerminalId}
-                    </strong>{' '}
-                    — pusťte myš nad cílovou svorkou.
-                  </span>
+                  <span className="font-bold truncate">{sim.diagnostics[0]}</span>
                 </>
               ) : collisionWarning ? (
                 <>
                   <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
-                  <span className="text-amber-300 font-semibold">{collisionWarning}</span>
+                  <span className="text-amber-300 font-semibold truncate">{collisionWarning}</span>
                 </>
               ) : (
                 <>
@@ -2528,7 +2613,7 @@ export const InteractiveBoardEditor: React.FC = () => {
                 </>
               )}
             </div>
-            <div className="text-[11px] text-slate-400">
+            <div className="text-[11px] text-slate-400 hidden sm:block truncate">
               Vodič natáhnete přetažením myší (Drag &amp; Drop) ze svorky na svorku • Kliknutím na vodič jej smažete
             </div>
           </div>
@@ -2792,7 +2877,7 @@ export const InteractiveBoardEditor: React.FC = () => {
                   !sim.shortCircuit;
 
                 const isContactorEnergized =
-                  item.type === 'contactor-km' &&
+                  (item.type === 'contactor-km' || item.type === 'contactor-1p') &&
                   (item.state === 1 || sim.energizedContactors.has(item.instanceId));
 
                 return (
@@ -2935,8 +3020,8 @@ export const InteractiveBoardEditor: React.FC = () => {
                       </text>
                     )}
 
-                    {/* Indikace stykače KM */}
-                    {item.type === 'contactor-km' && (
+                    {/* Indikace stykače KM (1P i 3P) */}
+                    {(item.type === 'contactor-km' || item.type === 'contactor-1p') && (
                       <text
                         x={def.width / 2}
                         y={44}
@@ -2953,7 +3038,9 @@ export const InteractiveBoardEditor: React.FC = () => {
                     {(item.type.startsWith('mcb') ||
                       item.type.startsWith('rcd') ||
                       item.type === 'rcbo-1p' ||
+                      item.type === 'qm-1p' ||
                       item.type === 'qm-3p' ||
+                      item.type === 'contactor-1p' ||
                       item.type === 'contactor-km' ||
                       item.type.startsWith('switch') ||
                       item.type === 'pushbutton' ||

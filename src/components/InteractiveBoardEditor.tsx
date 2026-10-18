@@ -614,7 +614,6 @@ const BOARD_HEIGHT = 600;
 const BUSBAR_ROW_Y = 22;
 const DIN_RAIL_ITEM_Y = 114;
 const WALL_ZONE_MIN_Y = 280;
-const WALL_ZONE_MAX_Y = 495;
 const MODULE_GAP = 8;
 
 function boxesOverlap(
@@ -690,51 +689,6 @@ function findFreePosition(
   const def = PALETTE_MAP[type];
   if (!def) return null;
 
-  if (def.zone === 'rail') {
-    if (
-      !hasCollision(
-        '__new__',
-        DEFAULT_DIN_RAIL.x,
-        DEFAULT_DIN_RAIL.y,
-        def.width,
-        def.height,
-        items,
-        undefined,
-        type
-      )
-    ) {
-      return { x: DEFAULT_DIN_RAIL.x, y: DEFAULT_DIN_RAIL.y };
-    }
-    for (let y = 104; y <= BOARD_HEIGHT - def.height - 40; y += 16) {
-      for (let x = 40; x <= BOARD_WIDTH - def.width - 20; x += 16) {
-        if (!hasCollision('__new__', x, y, def.width, def.height, items, undefined, type)) {
-          return { x, y };
-        }
-      }
-    }
-    return null;
-  }
-
-  if (def.zone === 'busbar') {
-    for (let x = 184; x <= BOARD_WIDTH - def.width - 20; x += 8) {
-      if (
-        !hasCollision(
-          '__new__',
-          x,
-          BUSBAR_ROW_Y,
-          def.width,
-          def.height,
-          items,
-          undefined,
-          type
-        )
-      ) {
-        return { x, y: BUSBAR_ROW_Y };
-      }
-    }
-    return null;
-  }
-
   if (def.zone === 'din') {
     const rails = items.filter((i) => i.type === 'din-rail');
     const railDef = PALETTE_MAP['din-rail'];
@@ -757,8 +711,55 @@ function findFreePosition(
     return null;
   }
 
-  for (let y = WALL_ZONE_MIN_Y; y <= WALL_ZONE_MAX_Y; y += 16) {
-    for (let x = 32; x <= BOARD_WIDTH - def.width - 20; x += 16) {
+  if (def.zone === 'rail') {
+    if (
+      !hasCollision(
+        '__new__',
+        DEFAULT_DIN_RAIL.x,
+        DEFAULT_DIN_RAIL.y,
+        def.width,
+        def.height,
+        items,
+        undefined,
+        type
+      )
+    ) {
+      return { x: DEFAULT_DIN_RAIL.x, y: DEFAULT_DIN_RAIL.y };
+    }
+    for (let y = 104; y <= 1200; y += 24) {
+      for (let x = 40; x <= 1400; x += 24) {
+        if (!hasCollision('__new__', x, y, def.width, def.height, items, undefined, type)) {
+          return { x, y };
+        }
+      }
+    }
+    return null;
+  }
+
+  if (def.zone === 'busbar') {
+    for (let y = BUSBAR_ROW_Y; y <= 1200; y += 24) {
+      for (let x = 184; x <= 1400; x += 16) {
+        if (
+          !hasCollision(
+            '__new__',
+            x,
+            y,
+            def.width,
+            def.height,
+            items,
+            undefined,
+            type
+          )
+        ) {
+          return { x, y };
+        }
+      }
+    }
+    return null;
+  }
+
+  for (let y = WALL_ZONE_MIN_Y; y <= 1400; y += 16) {
+    for (let x = 32; x <= 1400; x += 16) {
       if (!hasCollision('__new__', x, y, def.width, def.height, items, undefined, type)) {
         return { x, y };
       }
@@ -769,11 +770,10 @@ function findFreePosition(
 
 // ============================================================================
 // ORTOGONÁLNÍ ROUTOVÁNÍ VODIČŮ BEZ PŘEKRYVU SOUBĚŽNÝCH TRAS (A* + PARALLEL LANES)
+// Dynamická mřížka se přizpůsobí libovolné poloze prvků na pracovní ploše
 // ============================================================================
 
 const GRID_STEP = 8;
-const GRID_COLS = Math.ceil(BOARD_WIDTH / GRID_STEP);
-const GRID_ROWS = Math.ceil(BOARD_HEIGHT / GRID_STEP);
 
 interface TerminalExit {
   gx: number;
@@ -784,6 +784,10 @@ interface TerminalExit {
 function getTerminalExit(
   item: PlacedItem,
   termId: string,
+  originX: number,
+  originY: number,
+  gridCols: number,
+  gridRows: number,
   extraOffsetSteps = 0
 ): TerminalExit | null {
   const def = PALETTE_MAP[item.type];
@@ -820,8 +824,14 @@ function getTerminalExit(
     side = 'right';
   }
 
-  const gx = Math.max(1, Math.min(GRID_COLS - 2, Math.round(exitX / GRID_STEP)));
-  const gy = Math.max(1, Math.min(GRID_ROWS - 2, Math.round(exitY / GRID_STEP)));
+  const gx = Math.max(
+    1,
+    Math.min(gridCols - 2, Math.round((exitX - originX) / GRID_STEP))
+  );
+  const gy = Math.max(
+    1,
+    Math.min(gridRows - 2, Math.round((exitY - originY) / GRID_STEP))
+  );
 
   return { gx, gy, side };
 }
@@ -943,7 +953,36 @@ function computeOrthogonalWirePaths(
   items: PlacedItem[],
   wires: BoardWire[]
 ): Record<string, string> {
-  const blocked = new Uint8Array(GRID_COLS * GRID_ROWS);
+  if (wires.length === 0) return {};
+
+  let minX = 0;
+  let minY = 0;
+  let maxX = BOARD_WIDTH;
+  let maxY = BOARD_HEIGHT;
+
+  for (const it of items) {
+    const def = PALETTE_MAP[it.type];
+    const w = def ? def.width : 100;
+    const h = def ? def.height : 100;
+    if (it.x < minX) minX = it.x;
+    if (it.y < minY) minY = it.y;
+    if (it.x + w > maxX) maxX = it.x + w;
+    if (it.y + h > maxY) maxY = it.y + h;
+  }
+
+  const pad = 96;
+  const originX = Math.floor((minX - pad) / GRID_STEP) * GRID_STEP;
+  const originY = Math.floor((minY - pad) / GRID_STEP) * GRID_STEP;
+  const gridCols = Math.max(
+    40,
+    Math.min(450, Math.ceil((maxX + pad - originX) / GRID_STEP))
+  );
+  const gridRows = Math.max(
+    40,
+    Math.min(450, Math.ceil((maxY + pad - originY) / GRID_STEP))
+  );
+
+  const blocked = new Uint8Array(gridCols * gridRows);
   const itemMap = new Map<string, PlacedItem>();
 
   for (const it of items) {
@@ -953,21 +992,21 @@ function computeOrthogonalWirePaths(
     const def = PALETTE_MAP[it.type];
     if (!def) continue;
 
-    const c0 = Math.max(0, Math.floor((it.x - 4) / GRID_STEP));
-    const c1 = Math.min(GRID_COLS - 1, Math.ceil((it.x + def.width + 4) / GRID_STEP));
-    const r0 = Math.max(0, Math.floor((it.y - 4) / GRID_STEP));
-    const r1 = Math.min(GRID_ROWS - 1, Math.ceil((it.y + def.height + 4) / GRID_STEP));
+    const c0 = Math.max(0, Math.floor((it.x - originX - 4) / GRID_STEP));
+    const c1 = Math.min(gridCols - 1, Math.ceil((it.x - originX + def.width + 4) / GRID_STEP));
+    const r0 = Math.max(0, Math.floor((it.y - originY - 4) / GRID_STEP));
+    const r1 = Math.min(gridRows - 1, Math.ceil((it.y - originY + def.height + 4) / GRID_STEP));
 
     for (let r = r0; r <= r1; r++) {
       for (let c = c0; c <= c1; c++) {
-        blocked[r * GRID_COLS + c] = 1;
+        blocked[r * gridCols + c] = 1;
       }
     }
   }
 
-  const usedHoriz = new Uint8Array(GRID_COLS * GRID_ROWS);
-  const usedVert = new Uint8Array(GRID_COLS * GRID_ROWS);
-  const usedTurn = new Uint8Array(GRID_COLS * GRID_ROWS);
+  const usedHoriz = new Uint8Array(gridCols * gridRows);
+  const usedVert = new Uint8Array(gridCols * gridRows);
+  const usedTurn = new Uint8Array(gridCols * gridRows);
   const terminalUsageCount = new Map<string, number>();
 
   const dirs = [
@@ -1002,19 +1041,35 @@ function computeOrthogonalWirePaths(
     const endAbsX = toItem.x + toTerm.relX;
     const endAbsY = toItem.y + toTerm.relY;
 
-    const startExit = getTerminalExit(fromItem, w.fromTerminalId, fromCount);
-    const endExit = getTerminalExit(toItem, w.toTerminalId, toCount);
+    const startExit = getTerminalExit(
+      fromItem,
+      w.fromTerminalId,
+      originX,
+      originY,
+      gridCols,
+      gridRows,
+      fromCount
+    );
+    const endExit = getTerminalExit(
+      toItem,
+      w.toTerminalId,
+      originX,
+      originY,
+      gridCols,
+      gridRows,
+      toCount
+    );
     if (!startExit || !endExit) return;
 
-    const startIdx = startExit.gy * GRID_COLS + startExit.gx;
-    const endIdx = endExit.gy * GRID_COLS + endExit.gx;
+    const startIdx = startExit.gy * gridCols + startExit.gx;
+    const endIdx = endExit.gy * gridCols + endExit.gx;
 
     const prevBlockedStart = blocked[startIdx];
     const prevBlockedEnd = blocked[endIdx];
     blocked[startIdx] = 0;
     blocked[endIdx] = 0;
 
-    const totalStates = GRID_COLS * GRID_ROWS * 5;
+    const totalStates = gridCols * gridRows * 5;
     const gScore = new Float32Array(totalStates);
     gScore.fill(1e9);
     const parentState = new Int32Array(totalStates);
@@ -1033,8 +1088,8 @@ function computeOrthogonalWirePaths(
       for (let i = 0; i < openSet.length; i++) {
         const st = openSet[i];
         const cellIdx = Math.floor(st / 5);
-        const c = cellIdx % GRID_COLS;
-        const r = Math.floor(cellIdx / GRID_COLS);
+        const c = cellIdx % gridCols;
+        const r = Math.floor(cellIdx / gridCols);
         const h = (Math.abs(c - endExit.gx) + Math.abs(r - endExit.gy)) * 10;
         const f = gScore[st] + h;
         if (f < bestF) {
@@ -1054,15 +1109,15 @@ function computeOrthogonalWirePaths(
         break;
       }
 
-      const c = cellIdx % GRID_COLS;
-      const r = Math.floor(cellIdx / GRID_COLS);
+      const c = cellIdx % gridCols;
+      const r = Math.floor(cellIdx / gridCols);
 
       for (let d = 0; d < 4; d++) {
         const nc = c + dirs[d].dc;
         const nr = r + dirs[d].dr;
-        if (nc < 1 || nc >= GRID_COLS - 1 || nr < 1 || nr >= GRID_ROWS - 1) continue;
+        if (nc < 1 || nc >= gridCols - 1 || nr < 1 || nr >= gridRows - 1) continue;
 
-        const nCell = nr * GRID_COLS + nc;
+        const nCell = nr * gridCols + nc;
         if (blocked[nCell] && nCell !== endIdx) continue;
 
         const isHoriz = d === 0 || d === 1;
@@ -1082,16 +1137,16 @@ function computeOrthogonalWirePaths(
           } else if (usedVert[nCell]) {
             penalty += 24;
           }
-          if (nr > 0 && usedHoriz[(nr - 1) * GRID_COLS + nc]) penalty += 3;
-          if (nr < GRID_ROWS - 1 && usedHoriz[(nr + 1) * GRID_COLS + nc]) penalty += 3;
+          if (nr > 0 && usedHoriz[(nr - 1) * gridCols + nc]) penalty += 3;
+          if (nr < gridRows - 1 && usedHoriz[(nr + 1) * gridCols + nc]) penalty += 3;
         } else {
           if (usedVert[nCell] || usedTurn[nCell]) {
             penalty += 2500;
           } else if (usedHoriz[nCell]) {
             penalty += 24;
           }
-          if (nc > 0 && usedVert[nr * GRID_COLS + (nc - 1)]) penalty += 3;
-          if (nc < GRID_COLS - 1 && usedVert[nr * GRID_COLS + (nc + 1)]) penalty += 3;
+          if (nc > 0 && usedVert[nr * gridCols + (nc - 1)]) penalty += 3;
+          if (nc < gridCols - 1 && usedVert[nr * gridCols + (nc + 1)]) penalty += 3;
         }
 
         const tentativeG = gScore[currentState] + penalty;
@@ -1120,9 +1175,14 @@ function computeOrthogonalWirePaths(
       while (cur !== -1) {
         const cell = Math.floor(cur / 5);
         const dir = cur % 5;
-        const c = cell % GRID_COLS;
-        const r = Math.floor(cell / GRID_COLS);
-        gridPath.push({ x: c * GRID_STEP, y: r * GRID_STEP, cell, dir });
+        const c = cell % gridCols;
+        const r = Math.floor(cell / gridCols);
+        gridPath.push({
+          x: originX + c * GRID_STEP,
+          y: originY + r * GRID_STEP,
+          cell,
+          dir,
+        });
         cur = parentState[cur];
       }
       gridPath.reverse();
@@ -2387,7 +2447,7 @@ export const InteractiveBoardEditor: React.FC = () => {
     if (e.button !== 0) return;
     setSelectedItemId(item.instanceId);
     const def = PALETTE_MAP[item.type];
-    if (!def || def.zone === 'fixed') return;
+    if (!def) return;
     const coords = getSvgCoords(e);
 
     // Pokud začínáme posouvat DIN lištu, přilepíme k ní všechny DIN moduly, které na ní sedí
@@ -2516,7 +2576,7 @@ export const InteractiveBoardEditor: React.FC = () => {
       const rawX = coords.x - dragging.offsetX;
       const rawY = coords.y - dragging.offsetY;
 
-      // 1. Posouvání DIN lišty společně se všemi přilepenými moduly
+      // 1. Posouvání DIN lišty společně se všemi přilepenými moduly (volně po celé ploše)
       if (draggedItem.type === 'din-rail') {
         const groupIds = new Set<string>([
           draggedItem.instanceId,
@@ -2524,14 +2584,6 @@ export const InteractiveBoardEditor: React.FC = () => {
         ]);
 
         const canPlaceRailGroup = (candX: number, candY: number): boolean => {
-          if (
-            candX < 16 ||
-            candX + def.width > BOARD_WIDTH - 16 ||
-            candY < 24 ||
-            candY + def.height > BOARD_HEIGHT - 24
-          ) {
-            return false;
-          }
           if (
             hasCollision(
               draggedItem.instanceId,
@@ -2554,14 +2606,6 @@ export const InteractiveBoardEditor: React.FC = () => {
             const mx = candX + att.relX;
             const my = candY + att.relY;
             if (
-              mx < 16 ||
-              mx + modDef.width > BOARD_WIDTH - 16 ||
-              my < 16 ||
-              my + modDef.height > BOARD_HEIGHT - 16
-            ) {
-              return false;
-            }
-            if (
               hasCollision(
                 mod.instanceId,
                 mx,
@@ -2579,14 +2623,8 @@ export const InteractiveBoardEditor: React.FC = () => {
           return true;
         };
 
-        const candX = Math.max(
-          16,
-          Math.min(BOARD_WIDTH - def.width - 16, Math.round(rawX / 8) * 8)
-        );
-        const candY = Math.max(
-          24,
-          Math.min(BOARD_HEIGHT - def.height - 24, Math.round(rawY / 8) * 8)
-        );
+        const candX = Math.round(rawX / 8) * 8;
+        const candY = Math.round(rawY / 8) * 8;
 
         let finalX = draggedItem.x;
         let finalY = draggedItem.y;
@@ -2663,15 +2701,9 @@ export const InteractiveBoardEditor: React.FC = () => {
         return prev;
       }
 
-      // 3. Posouvání ostatních prvků (můstky, spínače, spotřebiče)
-      const targetX = Math.max(
-        16,
-        Math.min(BOARD_WIDTH - def.width - 16, Math.round(rawX / 8) * 8)
-      );
-      const targetY = Math.max(
-        16,
-        Math.min(BOARD_HEIGHT - def.height - 16, Math.round(rawY / 8) * 8)
-      );
+      // 3. Posouvání ostatních prvků (přívod, můstky, spínače, spotřebiče) volně po celé pracovní ploše
+      const targetX = Math.round(rawX / 8) * 8;
+      const targetY = Math.round(rawY / 8) * 8;
 
       let nextX = draggedItem.x;
       let nextY = draggedItem.y;
@@ -3106,55 +3138,6 @@ export const InteractiveBoardEditor: React.FC = () => {
               {/* Nekonečné mřížkované plátno při posouvání a oddalování */}
               <rect x={-3000} y={-3000} width={7000} height={7000} fill="#090d16" />
               <rect x={-3000} y={-3000} width={7000} height={7000} fill="url(#board-grid)" />
-
-              {/* ============================================================
-                  ZÓNA 1: ROZVADĚČ
-                 ============================================================ */}
-              <rect
-                x="12"
-                y="12"
-                width={BOARD_WIDTH - 24}
-                height="236"
-                rx="12"
-                fill="#0f172a"
-                fillOpacity="0.65"
-                stroke="#334155"
-                strokeDasharray="6 4"
-              />
-              <text
-                x="24"
-                y="26"
-                fill="#64748b"
-                fontSize="10"
-                fontWeight="bold"
-                letterSpacing="1"
-              >
-                ROZVADĚČ (MŮSTKY N / PE / MET + POSUVNÁ DIN LIŠTA 35 MM)
-              </text>
-
-              {/* ============================================================
-                  ZÓNA 2: MONTÁŽNÍ PANEL (KRABICE, SPÍNAČE, SPOTŘEBIČE)
-                 ============================================================ */}
-              <rect
-                x="12"
-                y="260"
-                width={BOARD_WIDTH - 24}
-                height={BOARD_HEIGHT - 272}
-                rx="12"
-                fill="#0f172a"
-                fillOpacity="0.35"
-                stroke="#1e293b"
-              />
-              <text
-                x="24"
-                y="278"
-                fill="#64748b"
-                fontSize="10"
-                fontWeight="bold"
-                letterSpacing="1"
-              >
-                MONTÁŽNÍ PANEL (ODBOČNÉ KRABICE, SPÍNAČE, ZÁSUVKY, SPOTŘEBIČE 230/400 V)
-              </text>
 
               {/* ============================================================
                   VRSTVA POSUVNÝCH A ODSTRANITELNÝCH DIN LIŠT TS 35 MM

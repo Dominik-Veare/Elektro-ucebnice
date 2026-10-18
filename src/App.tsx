@@ -9,6 +9,7 @@ import { CalculatorsView } from './components/CalculatorsView';
 import { WiringSimulator } from './components/WiringSimulator';
 import { DiagnosticsView } from './components/DiagnosticsView';
 import { SyncModal } from './components/SyncModal';
+import { Sidebar } from './components/Sidebar';
 
 import { CHAPTERS } from './data/chapters';
 import { QUESTIONS } from './data/questions';
@@ -18,6 +19,8 @@ import { UserProgress } from './types';
 export const App: React.FC = () => {
   const [progress, setProgress] = useState<UserProgress>(loadProgress());
   const [currentTab, setCurrentTab] = useState<string>('ucebnice');
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
+  const [selectedChapterId, setSelectedChapterId] = useState<number | null>(null);
   const [isSyncModalOpen, setIsSyncModalOpen] = useState<boolean>(false);
 
   // Kvízové okno
@@ -164,6 +167,19 @@ export const App: React.FC = () => {
         progress={progress}
         onOpenSync={() => setIsSyncModalOpen(true)}
         totalSubchapters={totalSubchapters}
+        onToggleSidebar={() => setIsSidebarOpen(prev => !prev)}
+      />
+
+      {/* Postranní vysouvací menu */}
+      <Sidebar
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+        currentTab={currentTab}
+        setCurrentTab={setCurrentTab}
+        onSelectChapter={(chId) => setSelectedChapterId(chId)}
+        progress={progress}
+        onOpenSync={() => setIsSyncModalOpen(true)}
+        totalSubchapters={totalSubchapters}
       />
 
       {/* Hlavní obsahová část */}
@@ -174,6 +190,8 @@ export const App: React.FC = () => {
             progress={progress}
             onToggleSubchapter={handleToggleSubchapter}
             onStartQuiz={(chId) => setActiveQuizChapterId(chId)}
+            selectedChapterId={selectedChapterId}
+            setSelectedChapterId={setSelectedChapterId}
           />
         )}
 

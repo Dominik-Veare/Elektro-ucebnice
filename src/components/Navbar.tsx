@@ -8,7 +8,8 @@ import {
   ToggleLeft, 
   Search, 
   Cloud, 
-  CheckCircle2
+  CheckCircle2,
+  Menu
 } from 'lucide-react';
 import { UserProgress } from '../types';
 
@@ -18,6 +19,7 @@ interface NavbarProps {
   progress: UserProgress;
   onOpenSync: () => void;
   totalSubchapters: number;
+  onToggleSidebar: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -26,6 +28,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   progress,
   onOpenSync,
   totalSubchapters,
+  onToggleSidebar,
 }) => {
   const completedCount = progress.completedSubchapters.length;
   const progressPercent = totalSubchapters > 0 
@@ -51,28 +54,39 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
           <div className="flex items-center justify-between h-16 gap-3">
             
-            {/* Logo a název */}
-            <div 
-              className="flex items-center gap-2.5 cursor-pointer group shrink-0"
-              onClick={() => setCurrentTab('ucebnice')}
-            >
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 to-yellow-400 flex items-center justify-center shadow-lg shadow-amber-500/20 group-hover:scale-105 transition-transform shrink-0">
-                <svg className="w-5 h-5 text-slate-950 font-black" viewBox="0 0 24 24" fill="currentColor">
-                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-                </svg>
-              </div>
-              <div className="flex flex-col justify-center">
-                <div className="flex items-center gap-1.5 whitespace-nowrap">
-                  <span className="font-extrabold text-base sm:text-lg tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">
-                    ElektroUčebnice
-                  </span>
-                  <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                    26-017-H
-                  </span>
+            {/* Tlačítko pro vysunutí postranního menu + Logo a název */}
+            <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+              <button
+                onClick={onToggleSidebar}
+                className="p-2 -ml-1 text-slate-300 hover:text-white rounded-xl hover:bg-slate-800 transition-colors flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                title="Otevřít postranní menu"
+                aria-label="Otevřít postranní menu"
+              >
+                <Menu className="w-5 h-5 text-amber-400" />
+              </button>
+
+              <div 
+                className="flex items-center gap-2.5 cursor-pointer group shrink-0"
+                onClick={() => setCurrentTab('ucebnice')}
+              >
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 to-yellow-400 flex items-center justify-center shadow-lg shadow-amber-500/20 group-hover:scale-105 transition-transform shrink-0">
+                  <svg className="w-5 h-5 text-slate-950 font-black" viewBox="0 0 24 24" fill="currentColor">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                  </svg>
                 </div>
-                <p className="text-[11px] text-slate-400 hidden xl:block whitespace-nowrap leading-none mt-0.5">
-                  Montér elektrických instalací
-                </p>
+                <div className="flex flex-col justify-center">
+                  <div className="flex items-center gap-1.5 whitespace-nowrap">
+                    <span className="font-extrabold text-base sm:text-lg tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">
+                      ElektroUčebnice
+                    </span>
+                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                      26-017-H
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 hidden xl:block whitespace-nowrap leading-none mt-0.5">
+                    Montér elektrických instalací
+                  </p>
+                </div>
               </div>
             </div>
 

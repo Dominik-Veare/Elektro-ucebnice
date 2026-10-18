@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { 
   Zap, 
   ShieldCheck, 
@@ -23,6 +23,8 @@ interface ChapterViewProps {
   progress: UserProgress;
   onToggleSubchapter: (subchapterId: string) => void;
   onStartQuiz: (chapterId: number) => void;
+  selectedChapterId: number | null;
+  setSelectedChapterId: (id: number | null) => void;
 }
 
 const ICON_MAP: Record<string, React.ElementType> = {
@@ -41,9 +43,9 @@ export const ChapterView: React.FC<ChapterViewProps> = ({
   progress,
   onToggleSubchapter,
   onStartQuiz,
+  selectedChapterId,
+  setSelectedChapterId,
 }) => {
-  const [selectedChapterId, setSelectedChapterId] = useState<number | null>(null);
-
   const selectedChapter = chapters.find(c => c.id === selectedChapterId);
 
   // Zobrazení detailu jedné vybrané kapitoly

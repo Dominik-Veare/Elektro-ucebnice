@@ -53,10 +53,7 @@ export const QuizModal: React.FC<QuizModalProps> = ({
       setIsAnswered(false);
     } else {
       setIsFinished(true);
-      const finalScore = selectedOptionId === currentQ.correctOptionId ? score : score;
-      const finalIncorrect = selectedOptionId === currentQ.correctOptionId ? incorrectIds : [...incorrectIds, currentQ.id];
-      
-      const pct = (finalScore / questions.length) * 100;
+      const pct = (score / questions.length) * 100;
       if (pct >= 75) {
         confetti({
           particleCount: 80,
@@ -65,7 +62,7 @@ export const QuizModal: React.FC<QuizModalProps> = ({
         });
       }
 
-      onQuizCompleted(chapterId, finalScore, questions.length, finalIncorrect);
+      onQuizCompleted(chapterId, score, questions.length, incorrectIds);
     }
   };
 

@@ -38,6 +38,161 @@ const ICON_MAP: Record<string, React.ElementType> = {
   HeartPulse,
 };
 
+// Pomocná funkce pro převod inline LaTeX a Markdown syntaxe na čisté React elementy
+const formatInlineText = (text: string): React.ReactNode => {
+  // Nejprve převedeme případný zbytkový inline LaTeX ($...$) na čitelný zápis
+  const cleaned = text
+    .replace(/\$([^$]+)\$/g, (_, math) =>
+      math
+        .replace(/\\Omega/g, 'Ω')
+        .replace(/\\varphi/g, 'φ')
+        .replace(/\\rho/g, 'ρ')
+        .replace(/\\gamma/g, 'γ')
+        .replace(/\\Delta/g, 'Δ')
+        .replace(/\\mu/g, 'µ')
+        .replace(/\\cdot/g, '·')
+        .replace(/\\times/g, '×')
+        .replace(/\\le/g, '≤')
+        .replace(/\\ge/g, '≥')
+        .replace(/\\approx/g, '≈')
+        .replace(/\\implies/g, '⇒')
+        .replace(/\\rightarrow/g, '→')
+        .replace(/\\text\{([^}]*)\}/g, '$1')
+        .replace(/\^2/g, '²')
+        .replace(/\^\\circ/g, '°')
+        .replace(/_\{([^}]*)\}/g, '$1')
+        .replace(/\\;/g, ' ')
+    );
+
+  // Zpracování tučného písma **text** a kurzívy *text*
+  const parts = cleaned.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
+  return parts.map((part, idx) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return (
+        <strong key={idx} className="font-bold text-white">
+          {part.slice(2, -2)}
+        </strong>
+      );
+    }
+    if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
+      return (
+        <em key={idx} className="italic text-slate-300">
+          {part.slice(1, -1)}
+        </em>
+      );
+    }
+    return part;
+  });
+};
+
+// Vykreslení strukturovaného obsahu podkapitoly (nadpisy, vzorce, seznamy, odstavce)
+const renderFormattedContent = (content: string) => {
+  const lines = content.split('\n');
+  const elements: React.ReactNode[] = [];
+
+  lines.forEach((rawLine, idx) => {
+    const line = rawLine.trim();
+    if (!line) return;
+
+    // Vodorovný oddělovač
+    if (line === '---') {
+      elements.push(<hr key={idx} className="border-slate-800 my-4" />);
+      return;
+    }
+
+    // Nadpis H3 (### )
+    if (line.startsWith('### ')) {
+      elements.push(
+        <h3
+          key={idx}
+          className="text-base font-extrabold text-amber-400 pt-3 pb-1 border-b border-slate-800/80 flex items-center gap-2"
+        >
+          {formatInlineText(line.slice(4))}
+        </h3>
+      );
+      return;
+    }
+
+    // Nadpis H4 (#### )
+    if (line.startsWith('#### ')) {
+      elements.push(
+        <h4 key={idx} className="text-sm font-bold text-slate-100 pt-2">
+          {formatInlineText(line.slice(5))}
+        </h4>
+      );
+      return;
+    }
+
+    // Zvýrazněný box se vzorcem (📐 nebo $$...$$)
+    if (line.startsWith('$$') && line.endsWith('$$')) {
+      const formula = line.slice(2, -2).trim();
+      elements.push(
+        <div
+          key={idx}
+          className="my-2.5 px-4 py-3 rounded-xl bg-slate-950 border border-amber-500/30 font-mono text-sm sm:text-base font-bold text-amber-300 shadow-inner overflow-x-auto"
+        >
+          {formatInlineText(`$${formula}$`)}
+        </div>
+      );
+      return;
+    }
+
+    if (line.startsWith('📐')) {
+      elements.push(
+        <div
+          key={idx}
+          className="my-2.5 px-4 py-3 rounded-xl bg-slate-950 border border-amber-500/30 font-mono text-sm sm:text-base font-bold text-amber-300 shadow-inner overflow-x-auto flex items-center gap-2.5"
+        >
+          <span className="text-amber-400 select-none">📐</span>
+          <span>{formatInlineText(line.slice(2).trim())}</span>
+        </div>
+      );
+      return;
+    }
+
+    // Odrážkový seznam (* nebo •)
+    if (line.startsWith('* ') || line.startsWith('• ')) {
+      const indent = rawLine.search(/\S|$/);
+      const isNested = indent >= 2;
+      elements.push(
+        <div
+          key={idx}
+          className={`flex items-start gap-2.5 py-0.5 ${isNested ? 'pl-5 text-slate-300' : 'text-slate-200'}`}
+        >
+          <span className="text-amber-400 font-bold mt-0.5 shrink-0">
+            {isNested ? '◦' : '•'}
+          </span>
+          <span className="flex-1 leading-relaxed">{formatInlineText(line.slice(2))}</span>
+        </div>
+      );
+      return;
+    }
+
+    // Číslovaný seznam (1. , 2. , ...)
+    const numMatch = line.match(/^(\d+)\.\s+(.*)$/);
+    if (numMatch) {
+      elements.push(
+        <div key={idx} className="flex items-start gap-2.5 py-0.5 text-slate-200">
+          <span className="font-mono text-xs font-extrabold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30 shrink-0 mt-0.5">
+            {numMatch[1]}.
+          </span>
+          <span className="flex-1 leading-relaxed">{formatInlineText(numMatch[2])}</span>
+        </div>
+      );
+      return;
+    }
+
+    // Běžný odstavec
+    elements.push(
+      <p key={idx} className="text-slate-300 leading-relaxed">
+        {formatInlineText(line)}
+      </p>
+    );
+  });
+
+  return elements;
+};
+
 export const ChapterView: React.FC<ChapterViewProps> = ({
   chapters,
   progress,
@@ -148,7 +303,7 @@ export const ChapterView: React.FC<ChapterViewProps> = ({
 
                   <button
                     onClick={() => onToggleSubchapter(sub.id)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 ${
                       isCompleted
                         ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
                         : 'bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700'
@@ -168,9 +323,9 @@ export const ChapterView: React.FC<ChapterViewProps> = ({
                   </button>
                 </div>
 
-                {/* Text výkladu */}
-                <div className="prose prose-invert max-w-none text-slate-300 text-sm leading-relaxed space-y-3 whitespace-pre-line font-sans">
-                  {sub.content}
+                {/* Strukturovaný text výkladu */}
+                <div className="text-slate-300 text-sm space-y-2 font-sans">
+                  {renderFormattedContent(sub.content)}
                 </div>
 
                 {/* Klíčové body k zapamatování */}
@@ -230,13 +385,13 @@ export const ChapterView: React.FC<ChapterViewProps> = ({
       <div className="bg-gradient-to-r from-slate-900 via-slate-850 to-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-xl">
         <div className="max-w-3xl space-y-2">
           <span className="text-xs font-bold uppercase tracking-wider text-amber-400">
-            Oficiální kvalifikační standard NSK
+            Oficiální kvalifikační standard NSK (platnost od 15. 10. 2022)
           </span>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-snug text-balance">
             Montér / montérka elektrických instalací <span className="whitespace-nowrap font-mono text-amber-400 text-xl sm:text-2xl">(26-017-H)</span>
           </h1>
           <p className="text-slate-300 text-sm leading-relaxed pt-1 text-pretty max-w-2xl">
-            Interaktivní učebnice a trenažér koncipovaný přímo podle 8 hodnoticích způsobilostí MPO a elektrotechnických norem ČSN. Vyber si kapitolu pro studium nebo si rovnou otestuj své znalosti v testu.
+            Interaktivní učebnice a trenažér koncipovaný přesně podle 8 hodnoticích způsobilostí MPO, zákona č. 250/2021 Sb., NV č. 194/2022 Sb. a platných norem ČSN. Vyber si kapitolu pro studium nebo si rovnou otestuj své znalosti v testu.
           </p>
         </div>
       </div>

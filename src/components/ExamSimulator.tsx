@@ -29,8 +29,9 @@ export const ExamSimulator: React.FC<ExamSimulatorProps> = ({
   onFinishExam,
   onExit,
 }) => {
-  const EXAM_DURATION = 45 * 60; // 45 minut v sekundách
-  const EXAM_QUESTIONS_COUNT = 20;
+  const [examMode, setExamMode] = useState<'standard' | 'extended'>('standard');
+  const EXAM_DURATION = (examMode === 'standard' ? 45 : 60) * 60;
+  const EXAM_QUESTIONS_COUNT = examMode === 'standard' ? 20 : 40;
 
   const [hasStarted, setHasStarted] = useState(false);
   const [examQuestions, setExamQuestions] = useState<Question[]>([]);
@@ -41,21 +42,51 @@ export const ExamSimulator: React.FC<ExamSimulatorProps> = ({
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [reviewMode, setReviewMode] = useState(false);
 
-  // Inicializace náhodného výběru otázek
+  // Fisher-Yates míchání pole
+  const shuffleArray = <T,>(arr: T[]): T[] => {
+    const copy = [...arr];
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
+  };
+
+  // Inicializace vyváženého výběru otázek ze všech 8 kapitol NSK
   const startExam = () => {
-    // Náhodně zamícháme otázky a vybereme 20 z nich
-    const shuffled = [...allQuestions].sort(() => 0.5 - Math.random()).slice(0, EXAM_QUESTIONS_COUNT);
-    setExamQuestions(shuffled);
+    const targetCount = examMode === 'standard' ? 20 : 40;
+    const minPerChapter = examMode === 'standard' ? 2 : 5;
+    const selected: Question[] = [];
+    const selectedIds = new Set<string>();
+
+    // Nejprve vybereme garantovaný počet otázek z každé z 8 kapitol
+    for (let ch = 1; ch <= 8; ch++) {
+      const chQuestions = shuffleArray(allQuestions.filter(q => q.chapterId === ch));
+      const picked = chQuestions.slice(0, minPerChapter);
+      picked.forEach(q => {
+        selected.push(q);
+        selectedIds.add(q.id);
+      });
+    }
+
+    // Doplníme zbytek do cílového počtu z ostatních otázek
+    const remaining = shuffleArray(allQuestions.filter(q => !selectedIds.has(q.id)));
+    const finalSelection = shuffleArray([
+      ...selected,
+      ...remaining.slice(0, Math.max(0, targetCount - selected.length))
+    ]);
+
+    setExamQuestions(finalSelection);
     setUserAnswers({});
     setFlaggedQuestions({});
     setCurrentIndex(0);
-    setTimeLeft(EXAM_DURATION);
+    setTimeLeft((examMode === 'standard' ? 45 : 60) * 60);
     setIsSubmitted(false);
     setReviewMode(false);
     setHasStarted(true);
   };
 
-  // Časomíra 45 minut
+  // Časomíra
   useEffect(() => {
     if (!hasStarted || isSubmitted) return;
 
@@ -125,21 +156,52 @@ export const ExamSimulator: React.FC<ExamSimulatorProps> = ({
 
           <div className="space-y-2">
             <span className="text-xs font-mono font-bold text-amber-400 uppercase tracking-widest">
-              Simulátor písemné části zkoušky NSK
+              Simulátor písemné části zkoušky NSK ({allQuestions.length} otázek v bance)
             </span>
             <h1 className="text-2xl sm:text-4xl font-black text-white leading-snug text-balance">
-              Ostrá cvičná zkouška (45 minut)
+              Ostrá cvičná zkouška
             </h1>
             <p className="text-sm text-slate-300 max-w-xl mx-auto leading-relaxed text-pretty">
-              Tento trenažér věrně simuluje oficiální 45minutový písemný test pro kvalifikaci <strong>Montér elektrických instalací (26-017-H)</strong>. Otázky jsou náhodně generovány ze všech 8 zkušebních okruhů.
+              Tento trenažér věrně simuluje oficiální písemný test pro kvalifikaci <strong>Montér elektrických instalací (26-017-H)</strong> a přezkoušení dle <strong>NV č. 194/2022 Sb.</strong> Otázky jsou vyváženě vybírány ze všech 8 zkušebních okruhů.
             </p>
+          </div>
+
+          {/* Volba režimu zkoušky */}
+          <div className="grid sm:grid-cols-2 gap-3 max-w-xl mx-auto text-left">
+            <button
+              type="button"
+              onClick={() => setExamMode('standard')}
+              className={`p-4 rounded-2xl border text-left transition-all ${
+                examMode === 'standard'
+                  ? 'bg-amber-500/15 border-amber-500 text-white ring-1 ring-amber-500'
+                  : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700'
+              }`}
+            >
+              <div className="text-xs font-mono font-bold text-amber-400 uppercase">Standardní zkouška NSK</div>
+              <div className="text-base font-extrabold text-white mt-0.5">20 otázek • 45 minut</div>
+              <div className="text-[11px] text-slate-400 mt-1">Přesná simulace státní zkoušky (min. 15/20 správně)</div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setExamMode('extended')}
+              className={`p-4 rounded-2xl border text-left transition-all ${
+                examMode === 'extended'
+                  ? 'bg-amber-500/15 border-amber-500 text-white ring-1 ring-amber-500'
+                  : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700'
+              }`}
+            >
+              <div className="text-xs font-mono font-bold text-amber-400 uppercase">Velký trénink ČSN & NV 194</div>
+              <div className="text-base font-extrabold text-white mt-0.5">40 otázek • 60 minut</div>
+              <div className="text-[11px] text-slate-400 mt-1">Důkladné prověření všech 8 kapitol (po 5 otázkách z kapitoly)</div>
+            </button>
           </div>
 
           {/* Zkušební parametry */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-left">
             <div className="bg-slate-950/60 border border-slate-800 p-4 rounded-xl">
               <span className="text-[11px] text-slate-400 block">Časový limit</span>
-              <span className="text-lg font-extrabold text-amber-400">45 minut</span>
+              <span className="text-lg font-extrabold text-amber-400">{examMode === 'standard' ? '45 minut' : '60 minut'}</span>
             </div>
             <div className="bg-slate-950/60 border border-slate-800 p-4 rounded-xl">
               <span className="text-[11px] text-slate-400 block">Počet otázek</span>
@@ -147,7 +209,9 @@ export const ExamSimulator: React.FC<ExamSimulatorProps> = ({
             </div>
             <div className="bg-slate-950/60 border border-slate-800 p-4 rounded-xl">
               <span className="text-[11px] text-slate-400 block">Limit pro úspěch</span>
-              <span className="text-lg font-extrabold text-emerald-400">75 % (15/20)</span>
+              <span className="text-lg font-extrabold text-emerald-400">
+                75 % ({examMode === 'standard' ? '15/20' : '30/40'})
+              </span>
             </div>
             <div className="bg-slate-950/60 border border-slate-800 p-4 rounded-xl">
               <span className="text-[11px] text-slate-400 block">Okamžitá zpětná vazba</span>

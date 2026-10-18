@@ -1,12 +1,81 @@
 import React, { useState } from 'react';
 import { Calculator, CheckCircle2, AlertTriangle, Zap, Activity } from 'lucide-react';
 
+// Tabulka proudové zatížitelnosti Iz [A] dle ČSN 33 2000-5-52 (při 30 °C)
+const AMPACITY_TABLE: Record<
+  'cu' | 'al',
+  Record<'C' | 'B2' | 'A2', Record<string, { '1f': number; '3f': number }>>
+> = {
+  cu: {
+    // C = přímo pod omítkou ve zdivu
+    C: {
+      '1.5': { '1f': 19.5, '3f': 17.5 },
+      '2.5': { '1f': 27, '3f': 24 },
+      '4': { '1f': 36, '3f': 32 },
+      '6': { '1f': 46, '3f': 41 },
+      '10': { '1f': 63, '3f': 57 },
+      '16': { '1f': 85, '3f': 76 },
+      '25': { '1f': 112, '3f': 96 },
+    },
+    // B2 = v trubce nebo liště na stěně / ve zdivu
+    B2: {
+      '1.5': { '1f': 16.5, '3f': 15 },
+      '2.5': { '1f': 23, '3f': 20 },
+      '4': { '1f': 30, '3f': 27 },
+      '6': { '1f': 38, '3f': 34 },
+      '10': { '1f': 52, '3f': 46 },
+      '16': { '1f': 69, '3f': 62 },
+      '25': { '1f': 90, '3f': 80 },
+    },
+    // A2 = kabel v tepelně izolované stěně (dřevostavba / SDK s vatou)
+    A2: {
+      '1.5': { '1f': 14, '3f': 13 },
+      '2.5': { '1f': 18.5, '3f': 17.5 },
+      '4': { '1f': 25, '3f': 23 },
+      '6': { '1f': 32, '3f': 29 },
+      '10': { '1f': 43, '3f': 39 },
+      '16': { '1f': 57, '3f': 52 },
+      '25': { '1f': 75, '3f': 68 },
+    },
+  },
+  al: {
+    C: {
+      '1.5': { '1f': 0, '3f': 0 }, // Al pod 2,5 / 4 mm² se v pevných rozvodech nepoužívá
+      '2.5': { '1f': 21, '3f': 18.5 },
+      '4': { '1f': 28, '3f': 25 },
+      '6': { '1f': 36, '3f': 32 },
+      '10': { '1f': 49, '3f': 44 },
+      '16': { '1f': 66, '3f': 59 },
+      '25': { '1f': 83, '3f': 73 },
+    },
+    B2: {
+      '1.5': { '1f': 0, '3f': 0 },
+      '2.5': { '1f': 17.5, '3f': 15.5 },
+      '4': { '1f': 24, '3f': 21 },
+      '6': { '1f': 30, '3f': 27 },
+      '10': { '1f': 41, '3f': 36 },
+      '16': { '1f': 54, '3f': 48 },
+      '25': { '1f': 71, '3f': 62 },
+    },
+    A2: {
+      '1.5': { '1f': 0, '3f': 0 },
+      '2.5': { '1f': 14.5, '3f': 13.5 },
+      '4': { '1f': 19.5, '3f': 17.5 },
+      '6': { '1f': 25, '3f': 23 },
+      '10': { '1f': 34, '3f': 30 },
+      '16': { '1f': 45, '3f': 40 },
+      '25': { '1f': 59, '3f': 53 },
+    },
+  },
+};
+
 export const CalculatorsView: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'dimenzovani' | 'impedance' | 'ohm'>('dimenzovani');
 
   // --- 1. Stavy pro kalkulačku dimenzování ---
   const [systemType, setSystemType] = useState<'1f' | '3f'>('1f');
   const [material, setMaterial] = useState<'cu' | 'al'>('cu');
+  const [installMethod, setInstallMethod] = useState<'C' | 'B2' | 'A2'>('C');
   const [powerKw, setPowerKw] = useState<string>('3.5');
   const [lengthM, setLengthM] = useState<string>('25');
   const [cosPhi, setCosPhi] = useState<string>('1.0');
@@ -43,12 +112,17 @@ export const CalculatorsView: React.FC = () => {
     deltaUPct = (deltaU / 400) * 100;
   }
 
+  // Doporučený jistič In >= IB
+  const standardBreakers = [6, 10, 13, 16, 20, 25, 32, 40, 50, 63, 80, 100];
+  const recommendedBreaker = standardBreakers.find(b => b >= currentA) || 100;
+
+  // Proudová zatížitelnost Iz pro zvolený průřez a uložení
+  const cableIz = AMPACITY_TABLE[material]?.[installMethod]?.[crossSection]?.[systemType] ?? 0;
+
   const maxAllowedPct = circuitType === 'svetla' ? 2.0 : 3.0;
   const isDropOk = deltaUPct <= maxAllowedPct;
-
-  // Doporučený jistič
-  const standardBreakers = [6, 10, 13, 16, 20, 25, 32, 40, 50, 63];
-  const recommendedBreaker = standardBreakers.find(b => b >= currentA) || 63;
+  const isAmpacityOk = cableIz > 0 && currentA <= recommendedBreaker && recommendedBreaker <= cableIz;
+  const isAllOk = isDropOk && isAmpacityOk;
 
   // Výpočty impedance smyčky
   const multiplier = charType === 'B' ? 5 : charType === 'C' ? 10 : 20;
@@ -76,7 +150,7 @@ export const CalculatorsView: React.FC = () => {
           <h1 className="text-2xl font-black text-white leading-snug whitespace-nowrap">Elektrotechnické kalkulačky</h1>
         </div>
         <p className="text-xs text-slate-400 text-pretty leading-relaxed">
-          Oficiální výpočty zkoušejícího: Dimenzování a úbytek napětí dle ČSN 33 2000-5-52 a kontrola impedance smyčky Zs.
+          Oficiální výpočty zkoušejícího: Dimenzování (IB ≤ In ≤ Iz) a úbytek napětí dle ČSN 33 2000-5-52 a kontrola impedance smyčky Zs.
         </p>
 
         {/* Přepínač záložek */}
@@ -89,7 +163,7 @@ export const CalculatorsView: React.FC = () => {
                 : 'bg-slate-800 text-slate-300 hover:text-white'
             }`}
           >
-            Dimenzování a úbytek napětí
+            Dimenzování (IB ≤ In ≤ Iz) & úbytek ΔU
           </button>
           <button
             onClick={() => setActiveTab('impedance')}
@@ -152,7 +226,7 @@ export const CalculatorsView: React.FC = () => {
             {/* Příkon v kW */}
             <div>
               <label className="text-xs font-semibold text-slate-400 block mb-1">
-                Příkon spotřebiče (kW):
+                Příkon spotřebiče P (kW):
               </label>
               <input
                 type="number"
@@ -167,7 +241,7 @@ export const CalculatorsView: React.FC = () => {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs font-semibold text-slate-400 block mb-1">
-                  Délka L (m):
+                  Délka trasy L (m):
                 </label>
                 <input
                   type="number"
@@ -195,10 +269,10 @@ export const CalculatorsView: React.FC = () => {
             {/* Materiál vodiče a typ obvodu */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-semibold text-slate-400 block mb-1">Materiál:</label>
+                <label className="text-xs font-semibold text-slate-400 block mb-1">Materiál vodiče:</label>
                 <select
                   value={material}
-                  onChange={(e) => setMaterial(e.target.value as any)}
+                  onChange={(e) => setMaterial(e.target.value as 'cu' | 'al')}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-amber-500"
                 >
                   <option value="cu">Měď (Cu, γ=56)</option>
@@ -206,10 +280,10 @@ export const CalculatorsView: React.FC = () => {
                 </select>
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-400 block mb-1">Typ obvodu (limit):</label>
+                <label className="text-xs font-semibold text-slate-400 block mb-1">Typ obvodu (limit ΔU):</label>
                 <select
                   value={circuitType}
-                  onChange={(e) => setCircuitType(e.target.value as any)}
+                  onChange={(e) => setCircuitType(e.target.value as 'zasuvky' | 'svetla')}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-amber-500"
                 >
                   <option value="zasuvky">Zásuvky / jiný (max 3 %)</option>
@@ -218,79 +292,115 @@ export const CalculatorsView: React.FC = () => {
               </div>
             </div>
 
-            {/* Průřez kabelu */}
-            <div>
-              <label className="text-xs font-semibold text-slate-400 block mb-1">
-                Zvolený průřez vodiče S (mm²):
-              </label>
-              <select
-                value={crossSection}
-                onChange={(e) => setCrossSection(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-amber-400 font-bold focus:outline-none focus:border-amber-500"
-              >
-                <option value="1.5">1,5 mm²</option>
-                <option value="2.5">2,5 mm²</option>
-                <option value="4">4,0 mm²</option>
-                <option value="6">6,0 mm²</option>
-                <option value="10">10,0 mm²</option>
-                <option value="16">16,0 mm²</option>
-                <option value="25">25,0 mm²</option>
-              </select>
+            {/* Způsob uložení a Průřez kabelu */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-semibold text-slate-400 block mb-1">
+                  Způsob uložení (ČSN 5-52):
+                </label>
+                <select
+                  value={installMethod}
+                  onChange={(e) => setInstallMethod(e.target.value as 'C' | 'B2' | 'A2')}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-amber-500"
+                >
+                  <option value="C">C – Přímo pod omítkou ve zdivu</option>
+                  <option value="B2">B2 – V trubce / liště na zdi</option>
+                  <option value="A2">A2 – V tepelně izol. stěně (vata)</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-slate-400 block mb-1">
+                  Zvolený průřez S (mm²):
+                </label>
+                <select
+                  value={crossSection}
+                  onChange={(e) => setCrossSection(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-amber-400 font-bold focus:outline-none focus:border-amber-500"
+                >
+                  <option value="1.5">1,5 mm²</option>
+                  <option value="2.5">2,5 mm²</option>
+                  <option value="4">4,0 mm²</option>
+                  <option value="6">6,0 mm²</option>
+                  <option value="10">10,0 mm²</option>
+                  <option value="16">16,0 mm²</option>
+                  <option value="25">25,0 mm²</option>
+                </select>
+              </div>
             </div>
           </div>
 
           {/* Výsledky a posouzení */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between shadow-xl space-y-6">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between shadow-xl space-y-5">
             <div>
               <h3 className="text-base font-bold text-white mb-4">
-                Výsledné posouzení dle ČSN 33 2130
+                Výsledné posouzení dle ČSN 33 2000-5-52 a ČSN 33 2130
               </h3>
 
-              <div className="space-y-3">
-                <div className="bg-slate-950/70 border border-slate-800 p-3.5 rounded-xl flex items-center justify-between">
-                  <span className="text-xs text-slate-400">Návrhový proud zátěže (IB):</span>
-                  <span className="font-mono text-base font-bold text-slate-100">{currentA.toFixed(2)} A</span>
+              <div className="space-y-2.5">
+                <div className="bg-slate-950/70 border border-slate-800 p-3 rounded-xl flex items-center justify-between">
+                  <span className="text-xs text-slate-400">1. Návrhový proud zátěže (IB):</span>
+                  <span className="font-mono text-sm font-bold text-slate-100">{currentA.toFixed(2)} A</span>
                 </div>
 
-                <div className="bg-slate-950/70 border border-slate-800 p-3.5 rounded-xl flex items-center justify-between">
-                  <span className="text-xs text-slate-400">Doporučený jistič (In):</span>
-                  <span className="font-mono text-base font-bold text-amber-400">{recommendedBreaker} A</span>
+                <div className="bg-slate-950/70 border border-slate-800 p-3 rounded-xl flex items-center justify-between">
+                  <span className="text-xs text-slate-400">2. Nejbližší jistič (In ≥ IB):</span>
+                  <span className="font-mono text-sm font-bold text-amber-400">{recommendedBreaker} A</span>
                 </div>
 
-                <div className="bg-slate-950/70 border border-slate-800 p-3.5 rounded-xl flex items-center justify-between">
-                  <span className="text-xs text-slate-400">Vypočtený úbytek napětí (ΔU):</span>
-                  <span className="font-mono text-base font-bold text-slate-100">
-                    {deltaU.toFixed(2)} V ({deltaUPct.toFixed(2)} %)
+                <div className="bg-slate-950/70 border border-slate-800 p-3 rounded-xl flex items-center justify-between">
+                  <span className="text-xs text-slate-400">3. Zatížitelnost kabelu Iz ({installMethod}, 30 °C):</span>
+                  <span className={`font-mono text-sm font-bold ${isAmpacityOk ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {cableIz > 0 ? `${cableIz} A` : 'Nepovolený Al průřez'}
                   </span>
                 </div>
 
-                <div className="bg-slate-950/70 border border-slate-800 p-3.5 rounded-xl flex items-center justify-between">
-                  <span className="text-xs text-slate-400">Normový limit pro tento okruh:</span>
-                  <span className="font-mono text-xs text-slate-400">max. {maxAllowedPct} %</span>
+                <div className="bg-slate-950/70 border border-slate-800 p-3 rounded-xl flex items-center justify-between">
+                  <span className="text-xs text-slate-400">Podmínka jištění (IB ≤ In ≤ Iz):</span>
+                  <span className={`font-mono text-xs font-bold ${isAmpacityOk ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {currentA.toFixed(1)} A ≤ {recommendedBreaker} A {isAmpacityOk ? '≤' : '>'} {cableIz} A
+                  </span>
+                </div>
+
+                <div className="bg-slate-950/70 border border-slate-800 p-3 rounded-xl flex items-center justify-between">
+                  <span className="text-xs text-slate-400">4. Úbytek napětí ΔU (limit {maxAllowedPct} %):</span>
+                  <span className={`font-mono text-sm font-bold ${isDropOk ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {deltaU.toFixed(2)} V ({deltaUPct.toFixed(2)} %)
+                  </span>
                 </div>
               </div>
             </div>
 
             {/* Verdikt vyhovuje / nevyhovuje */}
-            <div className={`p-4 rounded-xl border flex items-center gap-3 ${
-              isDropOk
+            <div className={`p-4 rounded-xl border flex items-start gap-3 ${
+              isAllOk
                 ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
                 : 'bg-red-500/10 border-red-500/30 text-red-300'
             }`}>
-              {isDropOk ? (
+              {isAllOk ? (
                 <>
-                  <CheckCircle2 className="w-6 h-6 shrink-0 text-emerald-400" />
-                  <div className="text-xs">
-                    <strong className="block text-sm">VYHOVUJE NORMĚ</strong>
-                    Úbytek napětí nepřekračuje normový limit {maxAllowedPct} %.
+                  <CheckCircle2 className="w-6 h-6 shrink-0 text-emerald-400 mt-0.5" />
+                  <div className="text-xs space-y-0.5">
+                    <strong className="block text-sm">NÁVRH PLNĚ VYHOVUJE NORMĚ</strong>
+                    <span>
+                      Je splněna podmínka proudové zatížitelnosti ({recommendedBreaker} A ≤ {cableIz} A) i dovoleného úbytku napětí ({deltaUPct.toFixed(2)} % ≤ {maxAllowedPct} %).
+                    </span>
                   </div>
                 </>
               ) : (
                 <>
-                  <AlertTriangle className="w-6 h-6 shrink-0 text-red-400" />
-                  <div className="text-xs">
-                    <strong className="block text-sm">NEVYHOVUJE!</strong>
-                    Úbytek napětí {deltaUPct.toFixed(2)} % překračuje limit {maxAllowedPct} %. Zvolte větší průřez vodiče!
+                  <AlertTriangle className="w-6 h-6 shrink-0 text-red-400 mt-0.5" />
+                  <div className="text-xs space-y-1">
+                    <strong className="block text-sm">NÁVRH NEVYHOVUJE! ZVOLTE VĚTŠÍ PRŮŘEZ!</strong>
+                    {!isAmpacityOk && (
+                      <p>
+                        • <strong>Přetížení vodiče:</strong> Jistič {recommendedBreaker} A překračuje dovolenou proudovou zatížitelnost zvoleného kabelu (Iz = {cableIz} A). Porušena podmínka In ≤ Iz!
+                      </p>
+                    )}
+                    {!isDropOk && (
+                      <p>
+                        • <strong>Velký úbytek napětí:</strong> Úbytek {deltaUPct.toFixed(2)} % překračuje normový limit {maxAllowedPct} %.
+                      </p>
+                    )}
                   </div>
                 </>
               )}
@@ -324,7 +434,7 @@ export const CalculatorsView: React.FC = () => {
                       charType === c ? 'bg-amber-500/20 border-amber-500 text-amber-300' : 'bg-slate-950 border-slate-800 text-slate-400'
                     }`}
                   >
-                    Charakteristika {c} ({c === 'B' ? '5×' : c === 'C' ? '10×' : '20×'} In)
+                    Char. {c} ({c === 'B' ? '5×' : c === 'C' ? '10×' : '20×'} In)
                   </button>
                 ))}
               </div>

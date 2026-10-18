@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { ToggleLeft, Lightbulb, ShieldAlert, CheckCircle2, RotateCcw } from 'lucide-react';
+import { ToggleLeft, Lightbulb, ShieldAlert, CheckCircle2, RotateCcw, Zap } from 'lucide-react';
 
 export const WiringSimulator: React.FC = () => {
-  const [activeSchema, setActiveSchema] = useState<'razeni1' | 'razeni5' | 'razeni6' | 'razeni7' | 'rcd'>('razeni6');
+  const [activeSchema, setActiveSchema] = useState<'razeni1' | 'razeni5' | 'razeni6' | 'razeni7' | 'impulzni' | 'rcd'>('razeni6');
 
   // Stavy pro vypínače
   const [switch1, setSwitch1] = useState(false);
@@ -13,6 +13,11 @@ export const WiringSimulator: React.FC = () => {
   const [switch7A, setSwitch7A] = useState(false);
   const [switch7B, setSwitch7B] = useState(false); // křížový
   const [switch7C, setSwitch7C] = useState(false);
+
+  // Stavy pro impulzní (paměťové) relé
+  const [impulseRelayOn, setImpulseRelayOn] = useState(false);
+  const [activePushButton, setActivePushButton] = useState<number | null>(null);
+  const [pulseCount, setPulseCount] = useState(0);
 
   // Stavy pro proudový chránič
   const [leakageMa, setLeakageMa] = useState<number>(0);
@@ -29,6 +34,16 @@ export const WiringSimulator: React.FC = () => {
   // Řazení 7 (křížák): každé přepnutí kteréhokoliv ze 3 spínačů změní stav
   // Parita: switch7A XOR switch7B XOR switch7C
   const bulb7On = (Number(switch7A) + Number(switch7B) + Number(switch7C)) % 2 === 0;
+
+  // Stisk tlačítka pro impulzní relé
+  const handleTriggerImpulse = (btnIndex: number) => {
+    setActivePushButton(btnIndex);
+    setImpulseRelayOn(prev => !prev);
+    setPulseCount(prev => prev + 1);
+    setTimeout(() => {
+      setActivePushButton(null);
+    }, 350);
+  };
 
   // Logika RCD:
   const handleLeakageChange = (val: number) => {
@@ -55,7 +70,7 @@ export const WiringSimulator: React.FC = () => {
           <h1 className="text-2xl font-black text-white leading-snug whitespace-nowrap">Interaktivní schémata zapojení</h1>
         </div>
         <p className="text-xs text-slate-400 text-pretty leading-relaxed">
-          Vyzkoušej si interaktivně funkci domovních spínačů (řazení 1, 5, 6, 7) a princip proudového chrániče (RCD).
+          Vyzkoušej si interaktivně funkci domovních spínačů (řazení 1, 5, 6, 7), impulzního relé s tlačítky a princip proudového chrániče (RCD).
         </p>
 
         {/* Přepínače obvodů */}
@@ -93,6 +108,14 @@ export const WiringSimulator: React.FC = () => {
             Řazení 7 (křížový 6-7-6)
           </button>
           <button
+            onClick={() => setActiveSchema('impulzni')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+              activeSchema === 'impulzni' ? 'bg-amber-500 text-slate-950 shadow-md' : 'bg-slate-800 text-slate-300 hover:text-white'
+            }`}
+          >
+            Impulzní relé (tlačítka)
+          </button>
+          <button
             onClick={() => setActiveSchema('rcd')}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
               activeSchema === 'rcd' ? 'bg-amber-500 text-slate-950 shadow-md' : 'bg-slate-800 text-slate-300 hover:text-white'
@@ -110,7 +133,7 @@ export const WiringSimulator: React.FC = () => {
             <span className="text-xs font-mono font-bold text-amber-400 uppercase">Spínač č. 1</span>
             <h2 className="text-lg font-bold text-white">Jednopólový spínač (1 svítidlo z 1 místa)</h2>
             <p className="text-xs text-slate-400 mt-1">
-              Fáze L vstupuje do svorky spínače. Spínačem přerušujeme výhradně fázový vodič L. Nulák N a PE jdou přímo do svítidla.
+              Fáze L vstupuje do svorky L spínače. Spínačem přerušujeme výhradně fázový vodič L. Nulák N (na závit objímky) a PE jdou přímo do svítidla.
             </p>
           </div>
 
@@ -264,7 +287,7 @@ export const WiringSimulator: React.FC = () => {
               {/* Korespondenční linky */}
               <div className="flex-1 flex flex-col justify-between h-14 relative px-2">
                 <div className={`h-1 rounded transition-all ${bulb6On && switch6A ? 'bg-amber-400 shadow-sm shadow-amber-400' : 'bg-slate-800'}`} />
-                <span className="text-[9px] text-center text-slate-600 font-mono">2 korespondenční vodiče</span>
+                <span className="text-[9px] text-center text-slate-500 font-mono">2 korespondenční vodiče</span>
                 <div className={`h-1 rounded transition-all ${bulb6On && !switch6A ? 'bg-amber-400 shadow-sm shadow-amber-400' : 'bg-slate-800'}`} />
               </div>
 
@@ -379,7 +402,103 @@ export const WiringSimulator: React.FC = () => {
         </div>
       )}
 
-      {/* 5. PROUDOVÝ CHRÁNIČ (RCD) */}
+      {/* 5. IMPULZNÍ (PAMĚŤOVÉ) RELÉ S PARALELNÍMI TLAČÍTKY */}
+      {activeSchema === 'impulzni' && (
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-xl space-y-6">
+          <div>
+            <span className="text-xs font-mono font-bold text-amber-400 uppercase">Kritérium NSK 4b • Impulzní relé (KA) + tlačítka (SB)</span>
+            <h2 className="text-lg font-bold text-white">Světelný obvod ovládaný z více míst impulzním relé</h2>
+            <p className="text-xs text-slate-400 mt-1">
+              Všechna tlačítka (zapuštěné ovladače č. 1/0 s pružinou) jsou zapojena <strong>PARALELNĚ</strong>. Každý stisk pošle krátký impulz na cívku relé <strong>A1–A2</strong>, které překlopí svůj silový kontakt <strong>1–2</strong>.
+            </p>
+          </div>
+
+          <div className="bg-slate-950 border border-slate-800 rounded-2xl p-6 sm:p-8 space-y-6">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+              
+              {/* 3 paralelní tlačítka */}
+              <div className="space-y-2 text-center">
+                <span className="text-xs font-bold text-slate-300 block">Paralelně zapojená tlačítka (1/0):</span>
+                <div className="flex items-center gap-3">
+                  {[1, 2, 3].map((btnNum) => {
+                    const isPressed = activePushButton === btnNum;
+                    return (
+                      <button
+                        key={btnNum}
+                        onClick={() => handleTriggerImpulse(btnNum)}
+                        className={`w-16 h-20 rounded-2xl border-2 flex flex-col items-center justify-between p-2 transition-all ${
+                          isPressed
+                            ? 'bg-amber-500 text-slate-950 border-amber-300 scale-95 shadow-lg shadow-amber-500/40'
+                            : 'bg-slate-900 border-slate-700 hover:border-amber-500 text-slate-300'
+                        }`}
+                      >
+                        <span className="text-[10px] font-mono font-bold">SB{btnNum}</span>
+                        <div className={`w-7 h-7 rounded-full border flex items-center justify-center text-xs font-bold ${
+                          isPressed ? 'bg-slate-950 text-amber-400 border-slate-950' : 'bg-slate-800 text-amber-400 border-slate-600'
+                        }`}>
+                          ●
+                        </div>
+                        <span className="text-[9px]">Stiskni</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <span className="text-[11px] text-slate-500 block font-mono">
+                  Společný vodič z tlačítek → svorka A1
+                </span>
+              </div>
+
+              {/* Modul impulzního relé v rozvaděči */}
+              <div className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 min-w-[180px] ${
+                activePushButton !== null
+                  ? 'bg-amber-500/20 border-amber-400 shadow-lg shadow-amber-500/20'
+                  : 'bg-slate-900 border-slate-700'
+              }`}>
+                <span className="text-[10px] font-mono font-bold text-amber-400 uppercase">Rozvaděč • Relé KA1</span>
+                <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                  <Zap className="w-4 h-4 text-amber-400" />
+                  <span>Impulzní relé</span>
+                </div>
+                <div className="w-full bg-slate-950 rounded-lg p-2 text-[11px] font-mono text-slate-300 space-y-1 border border-slate-800">
+                  <div className="flex justify-between">
+                    <span>Cívka A1–A2:</span>
+                    <span className={activePushButton !== null ? 'text-amber-400 font-bold' : 'text-slate-500'}>
+                      {activePushButton !== null ? 'IMPULZ 230V!' : '0 V (klid)'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Kontakt 1–2:</span>
+                    <span className={impulseRelayOn ? 'text-emerald-400 font-bold' : 'text-red-400'}>
+                      {impulseRelayOn ? 'SEPNUTO' : 'ROZEPNUTO'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-[10px] text-slate-500">
+                    <span>Počet stisků:</span>
+                    <span>{pulseCount}×</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Svítidlo */}
+              <div className="flex flex-col items-center gap-2">
+                <div className={`w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 ${
+                  impulseRelayOn
+                    ? 'bg-amber-400/20 text-yellow-300 ring-8 ring-amber-400/20 shadow-2xl shadow-yellow-400/50 scale-105'
+                    : 'bg-slate-900 text-slate-700 border border-slate-800'
+                }`}>
+                  <Lightbulb className={`w-10 h-10 ${impulseRelayOn ? 'fill-yellow-400 text-yellow-300' : ''}`} />
+                </div>
+                <span className="text-xs text-slate-300 font-bold">
+                  {impulseRelayOn ? 'SVÍTÍ' : 'NESVÍTÍ'}
+                </span>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 6. PROUDOVÝ CHRÁNIČ (RCD) */}
       {activeSchema === 'rcd' && (
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-xl space-y-6">
           <div>

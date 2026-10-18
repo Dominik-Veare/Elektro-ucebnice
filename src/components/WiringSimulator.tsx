@@ -11,9 +11,11 @@ import {
   AlertTriangle,
   Sparkles,
   Trash2,
-  Eye
+  Eye,
+  Layers
 } from 'lucide-react';
 import { ELECTRICAL_DEVICES_CATALOG, DeviceSvgPreview, DeviceSpec } from './svg/ElectricalDevices';
+import { InteractiveBoardEditor } from './InteractiveBoardEditor';
 
 type WireColor = 'brown' | 'blue' | 'green-yellow' | 'black';
 
@@ -351,7 +353,7 @@ const WIRE_COLORS: { id: WireColor; name: string; badgeClass: string; hex: strin
 ];
 
 export const WiringSimulator: React.FC = () => {
-  const [mainTab, setMainTab] = useState<'workbench' | 'catalog' | 'live'>('workbench');
+  const [mainTab, setMainTab] = useState<'board' | 'workbench' | 'catalog' | 'live'>('board');
 
   // --- STAVY PRO KATALOG SVG PŘÍSTROJŮ ---
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -469,7 +471,7 @@ export const WiringSimulator: React.FC = () => {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 animate-fadeIn pb-16">
-      {/* HLAVIČKA A PŘEPÍNAČ 3 HLAVNÍCH REŽIMŮ */}
+      {/* HLAVIČKA A PŘEPÍNAČ 4 HLAVNÍCH REŽIMŮ */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
@@ -478,53 +480,70 @@ export const WiringSimulator: React.FC = () => {
                 <Wrench className="w-5 h-5" />
               </span>
               <h1 className="text-xl sm:text-2xl font-black text-white leading-snug">
-                Trenažér zapojení &amp; Katalog SVG přístrojů
+                Interaktivní montážní tabule &amp; Trenažér zapojení
               </h1>
             </div>
             <p className="text-xs text-slate-400 leading-relaxed">
-              Praktická příprava na zkoušku NSK (26-017-H): propojuj svorky reálných přístrojů vodiči, prohlédni si SVG katalog 20+ modulů nebo testuj živé obvody.
+              Praktická příprava na zkoušku NSK (26-017-H): skládej přístroje na DIN lištu a montážní tabuli, propojuj svorky vodiči a testuj živou funkci obvodu.
             </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 mt-5">
+          <button
+            onClick={() => setMainTab('board')}
+            className={`flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-xs font-extrabold transition-all border ${
+              mainTab === 'board'
+                ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-lg shadow-amber-500/20'
+                : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-700 hover:text-white'
+            }`}
+          >
+            <Layers className="w-4 h-4 shrink-0" />
+            <span>1. Montážní tabule (DIN + Stěna)</span>
+          </button>
+
           <button
             onClick={() => setMainTab('workbench')}
-            className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-xs font-extrabold transition-all border ${
+            className={`flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-xs font-extrabold transition-all border ${
               mainTab === 'workbench'
                 ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-lg shadow-amber-500/20'
                 : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-700 hover:text-white'
             }`}
           >
             <Wrench className="w-4 h-4 shrink-0" />
-            <span>1. Trenažér zapojování (8 úloh)</span>
+            <span>2. Krok za krokem (8 úloh)</span>
           </button>
 
           <button
             onClick={() => setMainTab('catalog')}
-            className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-xs font-extrabold transition-all border ${
+            className={`flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-xs font-extrabold transition-all border ${
               mainTab === 'catalog'
                 ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-lg shadow-amber-500/20'
                 : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-700 hover:text-white'
             }`}
           >
             <Cpu className="w-4 h-4 shrink-0" />
-            <span>2. Katalog SVG přístrojů a svorek</span>
+            <span>3. Katalog SVG přístrojů</span>
           </button>
 
           <button
             onClick={() => setMainTab('live')}
-            className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-xs font-extrabold transition-all border ${
+            className={`flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-xs font-extrabold transition-all border ${
               mainTab === 'live'
                 ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-lg shadow-amber-500/20'
                 : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-700 hover:text-white'
             }`}
           >
             <ToggleLeft className="w-4 h-4 shrink-0" />
-            <span>3. Živá simulace spínačů a RCD</span>
+            <span>4. Princip spínačů a RCD</span>
           </button>
         </div>
       </div>
+
+      {/* ===================================================================== */}
+      {/* REŽIM 0: VOLNÁ INTERAKTIVNÍ MONTÁŽNÍ TABULE (DIN LIŠTA + STĚNA)        */}
+      {/* ===================================================================== */}
+      {mainTab === 'board' && <InteractiveBoardEditor />}
 
       {/* ===================================================================== */}
       {/* REŽIM 1: PRAKTICKÝ TRENAŽÉR ZAPOJOVÁNÍ SVOREK (8 ÚLOH NSK)             */}

@@ -90,35 +90,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
             </div>
 
-            {/* Desktopové položky menu */}
-            <nav className="hidden lg:flex items-center space-x-1 overflow-x-auto py-1">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                const active = currentTab === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => setCurrentTab(item.id)}
-                    className={`relative px-2.5 xl:px-3 py-1.5 rounded-lg text-xs xl:text-sm font-semibold transition-all flex items-center gap-1.5 xl:gap-2 whitespace-nowrap shrink-0 ${
-                      active
-                        ? 'bg-amber-500 text-slate-950 font-bold shadow-md shadow-amber-500/20'
-                        : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
-                    }`}
-                  >
-                    <Icon className={`w-4 h-4 shrink-0 ${active ? 'text-slate-950' : 'text-slate-400'}`} />
-                    <span className="whitespace-nowrap">{item.label}</span>
-                    {item.badgeCount && item.badgeCount > 0 ? (
-                      <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold shrink-0 ${
-                        active ? 'bg-slate-900 text-amber-400' : 'bg-red-500 text-white'
-                      }`}>
-                        {item.badgeCount}
-                      </span>
-                    ) : null}
-                  </button>
-                );
-              })}
-            </nav>
-
             {/* Pravá část: Progres a tlačítko Synchronizace */}
             <div className="flex items-center gap-2.5 shrink-0 whitespace-nowrap">
               {/* Progres indikátor */}

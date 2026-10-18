@@ -39,6 +39,7 @@ const DEFAULT_PROGRESS: UserProgress = {
   quizScores: {},
   examHistory: [],
   mistakes: {},
+  mistakesClearedAt: undefined,
   syncId: generateSyncCode(),
   lastSyncedAt: undefined,
 };
@@ -56,6 +57,7 @@ export function loadProgress(): UserProgress {
       ...DEFAULT_PROGRESS,
       ...parsed,
       mistakes: parsed.mistakes || {},
+      mistakesClearedAt: parsed.mistakesClearedAt,
       quizScores: parsed.quizScores || {},
       examHistory: parsed.examHistory || [],
       completedSubchapters: parsed.completedSubchapters || [],
@@ -110,22 +112,43 @@ export function mergeProgress(local: UserProgress, remote: UserProgress): UserPr
   }
   mergedExams.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-  const mergedMistakes = { ...(local.mistakes || {}) };
-  if (remote.mistakes) {
-    for (const [qId, val] of Object.entries(remote.mistakes)) {
-      if (!mergedMistakes[qId]) {
-        mergedMistakes[qId] = val;
-      } else {
-        mergedMistakes[qId] = {
-          questionId: qId,
-          mistakeCount: Math.max(mergedMistakes[qId].mistakeCount, val.mistakeCount),
-          correctInRow: Math.min(mergedMistakes[qId].correctInRow, val.correctInRow),
-          lastAttemptDate:
-            new Date(mergedMistakes[qId].lastAttemptDate) > new Date(val.lastAttemptDate)
-              ? mergedMistakes[qId].lastAttemptDate
-              : val.lastAttemptDate,
-        };
-      }
+  // Porovnání času smazání chyb – pokud bylo smazání provedeno na kterémkoliv zařízení, zohlední se
+  const localClearedAt = local.mistakesClearedAt ? new Date(local.mistakesClearedAt).getTime() : 0;
+  const remoteClearedAt = remote.mistakesClearedAt ? new Date(remote.mistakesClearedAt).getTime() : 0;
+  const effectiveClearedAt = Math.max(localClearedAt, remoteClearedAt);
+  const effectiveClearedAtStr =
+    effectiveClearedAt > 0
+      ? localClearedAt >= remoteClearedAt
+        ? local.mistakesClearedAt
+        : remote.mistakesClearedAt
+      : undefined;
+
+  const mergedMistakes: Record<string, UserProgress['mistakes'][string]> = {};
+
+  const allMistakeEntries = [
+    ...Object.entries(local.mistakes || {}),
+    ...Object.entries(remote.mistakes || {}),
+  ];
+
+  for (const [qId, val] of allMistakeEntries) {
+    const mistakeTime = val.lastAttemptDate ? new Date(val.lastAttemptDate).getTime() : 0;
+    // Pokud chyba vznikla před nebo při posledním smazání historie chyb, nepřidáváme ji zpět
+    if (effectiveClearedAt > 0 && mistakeTime <= effectiveClearedAt) {
+      continue;
+    }
+
+    if (!mergedMistakes[qId]) {
+      mergedMistakes[qId] = val;
+    } else {
+      mergedMistakes[qId] = {
+        questionId: qId,
+        mistakeCount: Math.max(mergedMistakes[qId].mistakeCount, val.mistakeCount),
+        correctInRow: Math.min(mergedMistakes[qId].correctInRow, val.correctInRow),
+        lastAttemptDate:
+          new Date(mergedMistakes[qId].lastAttemptDate) > new Date(val.lastAttemptDate)
+            ? mergedMistakes[qId].lastAttemptDate
+            : val.lastAttemptDate,
+      };
     }
   }
 
@@ -134,6 +157,7 @@ export function mergeProgress(local: UserProgress, remote: UserProgress): UserPr
     quizScores: mergedScores,
     examHistory: mergedExams,
     mistakes: mergedMistakes,
+    mistakesClearedAt: effectiveClearedAtStr,
     syncId: local.syncId || remote.syncId,
     lastSyncedAt: new Date().toISOString(),
   };
@@ -284,19 +308,32 @@ export async function syncWithCloud(
       if (getRes.ok) {
         const text = await getRes.text();
         const lines = text.trim().split('\n').filter(Boolean);
+        // Vybereme pouze nejnovější zprávu pro každé zařízení (senderId)
+        const latestPerSender = new Map<string, { timestamp: number; progress: UserProgress }>();
+
         for (const line of lines) {
           try {
             const entry = JSON.parse(line);
             if (entry && entry.message) {
               const parsed = JSON.parse(entry.message);
+              const sender = parsed.senderId || 'unknown';
+              const time = parsed.timestamp || (entry.time ? entry.time * 1000 : 0);
               const remote = parsed.progress || parsed;
               if (remote && Array.isArray(remote.completedSubchapters)) {
-                remoteData = remoteData ? mergeProgress(remoteData, remote) : remote;
+                const existing = latestPerSender.get(sender);
+                if (!existing || time >= existing.timestamp) {
+                  latestPerSender.set(sender, { timestamp: time, progress: remote });
+                }
               }
             }
           } catch {
             // neplatný řádek přeskočíme
           }
+        }
+
+        // Sloučíme pouze aktuální stav z jednotlivých zařízení
+        for (const item of latestPerSender.values()) {
+          remoteData = remoteData ? mergeProgress(remoteData, item.progress) : item.progress;
         }
       }
     } catch (e) {

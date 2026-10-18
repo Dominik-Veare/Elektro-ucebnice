@@ -137,6 +137,7 @@ export interface UserProgress {
     correctInRow: number; // if >= 2, marked as mastered
     lastAttemptDate: string;
   }>;
+  mistakesClearedAt?: string; // ISO čas posledního smazání historie chyb
   syncId: string; // e.g. "ELEKTRO-7842"
   lastSyncedAt?: string;
 }

@@ -81,48 +81,49 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <>
       {/* Hlavní horní navigační panel */}
-      <header className="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 text-slate-100">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
-          <div className="flex items-center justify-between h-16 gap-3">
+      <header className="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 text-slate-100 w-full">
+        <div className="max-w-7xl mx-auto px-2.5 sm:px-4 lg:px-6 w-full">
+          <div className="flex items-center justify-between h-14 sm:h-16 gap-2 sm:gap-3">
             
             {/* Tlačítko pro vysunutí postranního menu + Logo, název a přepínač učebnice */}
-            <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+            <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
               <button
                 onClick={onToggleSidebar}
-                className="p-2 -ml-1 text-slate-300 hover:text-white rounded-xl hover:bg-slate-800 transition-colors flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                className="p-1.5 sm:p-2 -ml-1 text-slate-300 hover:text-white rounded-xl hover:bg-slate-800 transition-colors flex items-center justify-center shrink-0 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
                 title="Otevřít postranní menu"
                 aria-label="Otevřít postranní menu"
               >
                 <Menu className="w-5 h-5 text-amber-400" />
               </button>
 
-              <div className="flex items-center gap-2.5 shrink-0">
+              <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
                 <div 
-                  className="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 to-yellow-400 flex items-center justify-center shadow-lg shadow-amber-500/20 hover:scale-105 transition-transform shrink-0 cursor-pointer"
+                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-tr from-amber-500 to-yellow-400 flex items-center justify-center shadow-lg shadow-amber-500/20 hover:scale-105 transition-transform shrink-0 cursor-pointer"
                   onClick={() => setCurrentTab('ucebnice')}
+                  title="Přejít na učebnici"
                 >
-                  <svg className="w-5 h-5 text-slate-950 font-black" viewBox="0 0 24 24" fill="currentColor">
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5 text-slate-950 font-black" viewBox="0 0 24 24" fill="currentColor">
                     <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
                   </svg>
                 </div>
 
-                <div className="flex flex-col justify-center">
-                  <div className="flex items-center gap-2 whitespace-nowrap">
+                <div className="flex flex-col justify-center min-w-0">
+                  <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
                     <span 
                       onClick={() => setCurrentTab('ucebnice')}
-                      className="font-extrabold text-base sm:text-lg tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent cursor-pointer"
+                      className="font-extrabold text-sm sm:text-base lg:text-lg tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent cursor-pointer truncate"
                     >
                       ElektroUčebnice
                     </span>
 
                     {/* Intuitivní tlačítkový přepínač učebnic v záhlaví */}
-                    <div className="relative" ref={switcherRef}>
+                    <div className="relative shrink-0" ref={switcherRef}>
                       <button
                         type="button"
                         onClick={() => setIsSwitcherOpen((prev) => !prev)}
                         title="Přepnout učebnici profesní kvalifikace"
                         aria-expanded={isSwitcherOpen}
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition-all shadow-sm cursor-pointer select-none border ${
+                        className={`inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-mono font-bold transition-all shadow-sm cursor-pointer select-none border shrink-0 ${
                           isSwitcherOpen
                             ? 'bg-amber-500 text-slate-950 border-amber-300 shadow-amber-500/25'
                             : 'bg-amber-500/20 hover:bg-amber-500/30 active:scale-95 text-amber-300 hover:text-amber-200 border-amber-500/40 hover:border-amber-400/70 shadow-amber-500/10'
@@ -130,7 +131,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       >
                         <span>{currentQual.id}</span>
                         <ChevronDown
-                          className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                          className={`w-3 h-3 sm:w-3.5 sm:h-3.5 transition-transform duration-200 ${
                             isSwitcherOpen ? 'rotate-180' : ''
                           }`}
                         />
@@ -206,39 +207,11 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
             </div>
 
-            {/* Desktopová navigační lišta záložek */}
-            <nav className="hidden lg:flex items-center gap-1 mx-2 overflow-x-auto py-1">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                const active = currentTab === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => setCurrentTab(item.id)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap relative ${
-                      active
-                        ? 'bg-amber-500 text-slate-950 font-bold shadow-md shadow-amber-500/20'
-                        : 'text-slate-300 hover:text-white hover:bg-slate-800'
-                    }`}
-                  >
-                    <Icon className={`w-3.5 h-3.5 ${active ? 'text-slate-950' : 'text-amber-400'}`} />
-                    <span>{item.shortLabel}</span>
-                    {item.badgeCount && item.badgeCount > 0 ? (
-                      <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                        active ? 'bg-slate-950 text-amber-400' : 'bg-red-500 text-white'
-                      }`}>
-                        {item.badgeCount}
-                      </span>
-                    ) : null}
-                  </button>
-                );
-              })}
-            </nav>
 
             {/* Pravá část: Progres a tlačítko Synchronizace */}
-            <div className="flex items-center gap-2.5 shrink-0 whitespace-nowrap">
-              {/* Progres indikátor */}
-              <div className="hidden sm:flex flex-col items-end text-xs shrink-0">
+            <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+              {/* Progres indikátor (viditelný od tabletů md:) */}
+              <div className="hidden md:flex flex-col items-end text-xs shrink-0">
                 <div className="flex items-center gap-1.5 text-slate-300 font-medium whitespace-nowrap">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                   <span>{progressPercent} % hotovo</span>
@@ -251,10 +224,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </div>
               </div>
 
-              {/* Tlačítko synchronizace k mobilu */}
+              {/* Tlačítko synchronizace k mobilu - kompaktní ikona s tečkou stavu na mobilu, plný text od sm: */}
               <button
                 onClick={onOpenSync}
-                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition-colors shadow-sm shrink-0 whitespace-nowrap group"
+                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition-colors shadow-sm shrink-0 group"
                 title={
                   syncStatus === 'connected'
                     ? 'Živé propojení aktivní – každá změna se ihned projeví na mobilu i PC'
@@ -264,6 +237,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     ? 'Offline – změny jsou bezpečně uloženy v zařízení'
                     : 'Sdílet postup mezi PC a mobilem'
                 }
+                aria-label="Sdílet postup mezi PC a mobilem"
               >
                 <span className="relative flex h-2 w-2 shrink-0">
                   {syncStatus === 'connected' && (
@@ -282,9 +256,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-400"></span>
                   )}
                 </span>
-                <Cloud className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <Cloud className="w-4 h-4 text-amber-400 shrink-0" />
                 <span className="hidden sm:inline text-slate-400">Kód:</span>
-                <span className="font-mono text-amber-400 font-bold group-hover:text-amber-300">
+                <span className="hidden sm:inline font-mono text-amber-400 font-bold group-hover:text-amber-300">
                   {progress.syncId || 'Sdílet'}
                 </span>
               </button>

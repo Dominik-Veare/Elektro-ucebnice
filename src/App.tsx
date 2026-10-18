@@ -226,10 +226,28 @@ export const App: React.FC = () => {
 
   // Smazání historie chyb
   const handleClearMistakes = () => {
+    const now = new Date().toISOString();
     updateProgress(prev => ({
       ...prev,
-      mistakes: {}
+      mistakes: {},
+      mistakesClearedAt: now,
     }));
+
+    // Okamžité odeslání do cloudu bez čekání na debounce pro okamžitou synchronizaci
+    if (progress.syncId && navigator.onLine) {
+      if (syncDebounceTimerRef.current) {
+        clearTimeout(syncDebounceTimerRef.current);
+      }
+      const updatedProg: UserProgress = {
+        ...progress,
+        mistakes: {},
+        mistakesClearedAt: now,
+      };
+      setSyncStatus('syncing');
+      broadcastProgress(updatedProg).finally(() => {
+        setSyncStatus('connected');
+      });
+    }
   };
 
   // Příprava otázek pro aktivní kvíz
@@ -239,7 +257,7 @@ export const App: React.FC = () => {
     : [];
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-amber-500 selection:text-slate-950">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-amber-500 selection:text-slate-950 overflow-x-hidden w-full">
       
       {/* Horní navigace a mobilní menu */}
       <Navbar

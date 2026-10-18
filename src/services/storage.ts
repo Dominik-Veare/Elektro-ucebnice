@@ -79,16 +79,20 @@ export function saveProgress(progress: UserProgress): void {
 
 // Sloučení dvou profilů postupu bez ztráty dat z kteréhokoliv zařízení (Union / Merge)
 export function mergeProgress(local: UserProgress, remote: UserProgress): UserProgress {
+  // Bezpečnostní ošetření a limitace počtu podkapitol (ochrana proti zahlcení localStorage)
   const mergedSubchapters = Array.from(
     new Set([...(local.completedSubchapters || []), ...(remote.completedSubchapters || [])])
-  );
+  )
+    .filter((id): id is string => typeof id === 'string' && id.length <= 64)
+    .slice(0, 150);
 
   const mergedScores: Record<number, { score: number; total: number; date: string }> = {
     ...(local.quizScores || {}),
   };
-  if (remote.quizScores) {
+  if (remote.quizScores && typeof remote.quizScores === 'object') {
     for (const [chIdStr, rScore] of Object.entries(remote.quizScores)) {
       const chId = Number(chIdStr);
+      if (isNaN(chId) || chId < 1 || chId > 20) continue;
       const lScore = mergedScores[chId];
       if (!lScore) {
         mergedScores[chId] = rScore;
@@ -102,15 +106,18 @@ export function mergeProgress(local: UserProgress, remote: UserProgress): UserPr
 
   const existingExamIds = new Set((local.examHistory || []).map((e) => e.id));
   const mergedExams = [...(local.examHistory || [])];
-  if (remote.examHistory) {
+  if (remote.examHistory && Array.isArray(remote.examHistory)) {
     for (const exam of remote.examHistory) {
-      if (!existingExamIds.has(exam.id)) {
+      if (exam && exam.id && !existingExamIds.has(exam.id)) {
         mergedExams.push(exam);
         existingExamIds.add(exam.id);
       }
     }
   }
-  mergedExams.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  // Uchováváme pouze 15 nejnovějších zkoušek (ochrana proti přetečení payloadu)
+  const cappedExams = mergedExams
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 15);
 
   // Porovnání času smazání chyb – pokud bylo smazání provedeno na kterémkoliv zařízení, zohlední se
   const localClearedAt = local.mistakesClearedAt ? new Date(local.mistakesClearedAt).getTime() : 0;
@@ -131,6 +138,7 @@ export function mergeProgress(local: UserProgress, remote: UserProgress): UserPr
   ];
 
   for (const [qId, val] of allMistakeEntries) {
+    if (!val || typeof val !== 'object') continue;
     const mistakeTime = val.lastAttemptDate ? new Date(val.lastAttemptDate).getTime() : 0;
     // Pokud chyba vznikla před nebo při posledním smazání historie chyb, nepřidáváme ji zpět
     if (effectiveClearedAt > 0 && mistakeTime <= effectiveClearedAt) {
@@ -142,7 +150,7 @@ export function mergeProgress(local: UserProgress, remote: UserProgress): UserPr
     } else {
       mergedMistakes[qId] = {
         questionId: qId,
-        mistakeCount: Math.max(mergedMistakes[qId].mistakeCount, val.mistakeCount),
+        mistakeCount: Math.min(999, Math.max(mergedMistakes[qId].mistakeCount, val.mistakeCount)),
         correctInRow: Math.min(mergedMistakes[qId].correctInRow, val.correctInRow),
         lastAttemptDate:
           new Date(mergedMistakes[qId].lastAttemptDate) > new Date(val.lastAttemptDate)
@@ -152,10 +160,18 @@ export function mergeProgress(local: UserProgress, remote: UserProgress): UserPr
     }
   }
 
+  // Omezení maximálního počtu chyb pro ochranu localStorage
+  const mistakeKeys = Object.keys(mergedMistakes);
+  if (mistakeKeys.length > 300) {
+    for (let i = 300; i < mistakeKeys.length; i++) {
+      delete mergedMistakes[mistakeKeys[i]];
+    }
+  }
+
   return {
     completedSubchapters: mergedSubchapters,
     quizScores: mergedScores,
-    examHistory: mergedExams,
+    examHistory: cappedExams,
     mistakes: mergedMistakes,
     mistakesClearedAt: effectiveClearedAtStr,
     syncId: local.syncId || remote.syncId,

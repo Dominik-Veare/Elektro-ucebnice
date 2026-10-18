@@ -1,0 +1,29 @@
+﻿domready(function () {
+  $('.vtk-header > button, .vsk-header > button').on('click', function () {
+    const $btn = $(this);
+    const $block = $btn.closest('.verejny-text-kvalifikace, .verejne-soubory-kvalifikace');
+    $block.find('.vtk-content, .verejne-soubory-kvalifikace-viewer').slideToggle();
+    $btn.toggleClass('panel-is-open');
+
+    var panelIsOpen = $btn.hasClass('panel-is-open');
+    $btn.attr('aria-expanded', panelIsOpen);
+  });
+
+  $('.vtk-content a').attr('target', '_blank');
+
+  const elementDatVerejnychSouboru = document.getElementById('verejne-soubory-kvalifikace-data');
+  if (elementDatVerejnychSouboru) {
+    const sablonaUrlProStazeniSouboru = '@Model.sablonaUrlProStazeniSouboru';
+    const dataVerejnychSouboru = JSON.parse(elementDatVerejnychSouboru.textContent);
+    if (dataVerejnychSouboru) {
+      const tree = new FileTreeViewer('.verejne-soubory-kvalifikace-viewer', {
+        data: dataVerejnychSouboru.knihovnaSouboru,
+        expandedByDefault: false,
+        sablonaUrlProStazeniSouboru: dataVerejnychSouboru.sablonaUrlProStazeniSouboru
+        //onFileClick: (fileInfo) => {
+        //  window.open(sablonaUrlProStazeniSouboru.replace('%soubor_id%', fileInfo.polozkaId.toString()));
+        //}
+      });
+    }
+  }
+});

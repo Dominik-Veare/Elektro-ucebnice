@@ -1,0 +1,91 @@
+.file-tree-viewer {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+    font-size: 14px;
+    line-height: 1.3;
+    user-select: none;
+    overflow: auto;
+    max-height: 500px;
+}
+
+.ftv-node {
+    display: flex;
+    align-items: center;
+    padding: 4px 8px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.15s ease;
+}
+
+.ftv-node:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.ftv-node.ftv-selected {
+    background-color: rgba(0, 120, 212, 0.1);
+}
+
+.ftv-icon {
+    margin-right: 6px;
+    font-size: 16px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+}
+
+.ftv-icon-img {
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.ftv-name {
+    flex: 0 1 auto;
+    /* overflow: hidden;
+    text-overflow: ellipsis; */
+    white-space: nowrap;
+}
+
+.ftv-size {
+    margin-left: 12px;
+    color: #888;
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+.ftv-date {
+    margin-left: 12px;
+    color: #888;
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+.ftv-children {
+    /* Children container */
+}
+
+.ftv-empty {
+    padding: 16px;
+    text-align: center;
+    color: #888;
+}
+
+.ftv-folder {
+    font-weight: 500;
+}
+
+.ftv-file:hover {
+    background-color: rgba(0, 0, 0, 0.08);
+}
+
+.ftv-annotation {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    margin-left: 5px;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><g fill="none"><rect width="28" height="28" x="2" y="2" fill="%2300a6ed" rx="4" /><path fill="%23fff" d="M16 9.971a1.978 1.978 0 1 0 0-3.956a1.978 1.978 0 0 0 0 3.956m1.61 3.747a1.75 1.75 0 1 0-3.5 0v10.59a1.75 1.75 0 1 0 3.5 0z" /></g></svg>');
+    opacity: 0.8;
+    background-size: contain;
+    background-repeat: no-repeat;
+    vertical-align: middle;
+}

@@ -147,7 +147,7 @@ export const CalculatorsView: React.FC = () => {
           <span className="p-2 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
             <Calculator className="w-5 h-5" />
           </span>
-          <h1 className="text-2xl font-black text-white leading-snug whitespace-nowrap">Elektrotechnické kalkulačky</h1>
+          <h1 className="text-xl sm:text-2xl font-black text-white leading-snug">Elektrotechnické kalkulačky</h1>
         </div>
         <p className="text-xs text-slate-400 text-pretty leading-relaxed">
           Oficiální výpočty zkoušejícího: Dimenzování (IB ≤ In ≤ Iz) a úbytek napětí dle ČSN 33 2000-5-52 a kontrola impedance smyčky Zs.
@@ -157,27 +157,29 @@ export const CalculatorsView: React.FC = () => {
         <div className="flex flex-wrap gap-2 mt-5">
           <button
             onClick={() => setActiveTab('dimenzovani')}
-            className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+            className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
               activeTab === 'dimenzovani'
                 ? 'bg-amber-500 text-slate-950 shadow-md'
                 : 'bg-slate-800 text-slate-300 hover:text-white'
             }`}
           >
-            Dimenzování (IB ≤ In ≤ Iz) & úbytek ΔU
+            <span className="sm:hidden">Dimenzování & ΔU</span>
+            <span className="hidden sm:inline">Dimenzování (IB ≤ In ≤ Iz) & úbytek ΔU</span>
           </button>
           <button
             onClick={() => setActiveTab('impedance')}
-            className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+            className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
               activeTab === 'impedance'
                 ? 'bg-amber-500 text-slate-950 shadow-md'
                 : 'bg-slate-800 text-slate-300 hover:text-white'
             }`}
           >
-            Impedance smyčky Zs (ČSN 33 2000-4-41)
+            <span className="sm:hidden">Impedance Zs</span>
+            <span className="hidden sm:inline">Impedance smyčky Zs (ČSN 33 2000-4-41)</span>
           </button>
           <button
             onClick={() => setActiveTab('ohm')}
-            className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+            className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
               activeTab === 'ohm'
                 ? 'bg-amber-500 text-slate-950 shadow-md'
                 : 'bg-slate-800 text-slate-300 hover:text-white'

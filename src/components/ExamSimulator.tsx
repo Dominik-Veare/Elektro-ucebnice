@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Clock, 
   AlertTriangle, 
@@ -41,6 +41,16 @@ export const ExamSimulator: React.FC<ExamSimulatorProps> = ({
   const [timeLeft, setTimeLeft] = useState(EXAM_DURATION);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [reviewMode, setReviewMode] = useState(false);
+
+  // Reference chránící před stale closure uvnitř časovače
+  const userAnswersRef = useRef(userAnswers);
+  userAnswersRef.current = userAnswers;
+
+  const examQuestionsRef = useRef(examQuestions);
+  examQuestionsRef.current = examQuestions;
+
+  const timeLeftRef = useRef(timeLeft);
+  timeLeftRef.current = timeLeft;
 
   // Fisher-Yates míchání pole
   const shuffleArray = <T,>(arr: T[]): T[] => {
@@ -94,7 +104,7 @@ export const ExamSimulator: React.FC<ExamSimulatorProps> = ({
       setTimeLeft(prev => {
         if (prev <= 1) {
           clearInterval(timer);
-          handleSubmitExam();
+          handleSubmitExam(userAnswersRef.current, examQuestionsRef.current, EXAM_DURATION);
           return 0;
         }
         return prev - 1;
@@ -102,23 +112,31 @@ export const ExamSimulator: React.FC<ExamSimulatorProps> = ({
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [hasStarted, isSubmitted]);
+  }, [hasStarted, isSubmitted, EXAM_DURATION]);
 
-  const handleSubmitExam = () => {
+  const handleSubmitExam = (
+    finalAnswers?: Record<string, string>,
+    finalQuestions?: Question[],
+    elapsedSeconds?: number
+  ) => {
     setIsSubmitted(true);
+
+    const answers = finalAnswers || userAnswersRef.current;
+    const questions = finalQuestions || examQuestionsRef.current;
+    const duration = elapsedSeconds !== undefined ? elapsedSeconds : (EXAM_DURATION - timeLeftRef.current);
 
     let calculatedScore = 0;
     const incorrectIds: string[] = [];
 
-    examQuestions.forEach(q => {
-      if (userAnswers[q.id] === q.correctOptionId) {
+    questions.forEach(q => {
+      if (answers[q.id] === q.correctOptionId) {
         calculatedScore++;
       } else {
         incorrectIds.push(q.id);
       }
     });
 
-    const percentage = Math.round((calculatedScore / examQuestions.length) * 100);
+    const percentage = questions.length > 0 ? Math.round((calculatedScore / questions.length) * 100) : 0;
     const passed = percentage >= 75; // 75% kritérium pro složení
 
     if (passed) {
@@ -131,10 +149,10 @@ export const ExamSimulator: React.FC<ExamSimulatorProps> = ({
 
     onFinishExam({
       score: calculatedScore,
-      total: examQuestions.length,
+      total: questions.length,
       percentage,
       passed,
-      durationSeconds: EXAM_DURATION - timeLeft,
+      durationSeconds: duration,
       incorrectQuestionIds: incorrectIds,
     });
   };
@@ -317,7 +335,7 @@ export const ExamSimulator: React.FC<ExamSimulatorProps> = ({
     <div className="max-w-4xl mx-auto space-y-5 animate-fadeIn pb-20">
       
       {/* Horní ovládací a časová lišta */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-center justify-between shadow-lg">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 sm:p-4 flex items-center justify-between gap-2 sm:gap-3 shadow-lg">
         <div className="flex items-center gap-3">
           <button
             onClick={onExit}
@@ -348,7 +366,7 @@ export const ExamSimulator: React.FC<ExamSimulatorProps> = ({
 
         {!reviewMode && (
           <button
-            onClick={handleSubmitExam}
+            onClick={() => handleSubmitExam()}
             className="px-4 py-1.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-md transition-colors"
           >
             Odevzdat test

@@ -57,8 +57,9 @@ export const WiringSimulator: React.FC = () => {
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              <Layers className="w-4 h-4" />
-              Montážní tabule (12 úloh + volné zapojení)
+              <Layers className="w-4 h-4 shrink-0" />
+              <span className="sm:hidden">Montážní tabule (12 úloh)</span>
+              <span className="hidden sm:inline">Montážní tabule (12 úloh + volné zapojení)</span>
             </button>
             <button
               onClick={() => setMainTab('catalog')}

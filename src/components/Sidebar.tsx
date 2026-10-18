@@ -11,7 +11,7 @@ import {
   Cloud, 
   ChevronRight
 } from 'lucide-react';
-import { UserProgress, QualificationId, QUALIFICATIONS } from '../types';
+import { UserProgress, QualificationId, QUALIFICATIONS, LiveSyncStatus } from '../types';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -22,6 +22,7 @@ interface SidebarProps {
   onOpenSync: () => void;
   totalSubchapters: number;
   activeQualification: QualificationId;
+  syncStatus?: LiveSyncStatus;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -33,6 +34,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenSync,
   totalSubchapters,
   activeQualification,
+  syncStatus = 'idle',
 }) => {
   if (!isOpen) return null;
 
@@ -186,10 +188,34 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-semibold text-slate-200 transition-colors"
           >
             <div className="flex items-center gap-2">
-              <Cloud className="w-4 h-4 text-amber-400" />
+              <span className="relative flex h-2 w-2 shrink-0">
+                {syncStatus === 'connected' && (
+                  <>
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </>
+                )}
+                {syncStatus === 'syncing' && (
+                  <span className="animate-spin relative inline-flex rounded-full h-2 w-2 border-2 border-amber-400 border-t-transparent"></span>
+                )}
+                {syncStatus === 'offline' && (
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-slate-500"></span>
+                )}
+                {(!syncStatus || syncStatus === 'idle') && (
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-400"></span>
+                )}
+              </span>
+              <Cloud className="w-4 h-4 text-amber-400 shrink-0" />
               <span>Sdílet s mobilem</span>
             </div>
-            <span className="font-mono text-amber-400 font-bold">{progress.syncId}</span>
+            <div className="flex items-center gap-1.5">
+              <span className="font-mono text-amber-400 font-bold">{progress.syncId}</span>
+              {syncStatus === 'connected' && (
+                <span className="text-[10px] text-emerald-400 font-semibold px-1 py-0.5 rounded bg-emerald-500/10">
+                  Live
+                </span>
+              )}
+            </div>
           </button>
         </div>
 

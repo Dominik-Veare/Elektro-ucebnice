@@ -539,7 +539,7 @@ Skutečná zatížitelnost se určí ze základní tabulkové hodnoty **Iz0** vy
       {
         id: '3-4',
         title: 'Přepěťové ochrany (SPD), hromosvody (LPS) a členění objektů',
-        standardRefs: ['ČSN EN 62305', 'ČSN 33 2000-5-534 ed. 2', 'Vyhláška č. 73/2010 Sb.'],
+        standardRefs: ['ČSN EN 62305', 'ČSN 33 2000-5-534 ed. 2', 'NV č. 190/2022 Sb.'],
         content: `**Svodiče bleskových proudů a přepětí (SPD – *Surge Protective Device*)** chrání elektrickou instalaci a elektroniku před atmosférickým přepětím (úder blesku) a spínacím přepětím v síti. Fungují jako třístupňová kaskáda:
 
 ### 1. SPD Typ 1 (T1, dříve třída B) – Svodič bleskových proudů (hrubá ochrana):
@@ -566,7 +566,9 @@ Skutečná zatížitelnost se určí ze základní tabulkové hodnoty **Iz0** vy
   1. **Metoda valící se koule (bleskové koule):** Univerzální geometrická metoda, která je vhodná **PRO VŠECHNY PŘÍPADY** (včetně tvarově složitých a členitých staveb). Poloměr koule závisí na třídě LPS (I = 20 m, II = 30 m, III = 45 m, IV = 60 m).
   2. **Metoda ochranného úhlu:** Pro jednoduché stavby a malé nástavby.
   3. **Metoda mřížové soustavy:** Pro rovinné střechy.
-* **Členění objektů dle vyhlášky č. 73/2010 Sb.:** Objekty se člení na **objekty bez nebezpečí výbuchu (skupina A)** a **objekty s nebezpečím výbuchu (skupina B)**.`,
+* **Členění vyhrazených el. zařízení a objektů (NV č. 190/2022 Sb.):**
+  * Dle platného **NV č. 190/2022 Sb.** se vyhrazená elektrická zařízení člení na **I. třídu** (nejrizikovější – prostory s nebezpečím výbuchu, shromaždiště nad 250 osob, zdravotnictví, zařízení nad 1 kV a hromosvody těchto objektů) a **II. třídu** (všechna ostatní vyhrazená zařízení, běžné bytové a občanské objekty apod.).
+  * *Poznámka ke starším testům:* Dřívější předpisy (zrušená vyhláška č. 73/2010 Sb.) členily objekty na **skupinu A** (bez nebezpečí výbuchu) a **skupinu B** (s nebezpečím výbuchu).`,
         keyTakeaways: [
           'T1 = bleskové proudy (jiskřiště, vlna 10/350 µs, vstup do budovy, vodič PE min. 16 mm² Cu).',
           'T2 = spínací a indukované přepětí (varistor, vlna 8/20 µs, podružný rozvaděč, vodič PE min. 6 mm² Cu).',

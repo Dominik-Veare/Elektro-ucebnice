@@ -39,7 +39,7 @@ export const DiagnosticsView: React.FC = () => {
           <span className="p-2 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
             <Search className="w-5 h-5" />
           </span>
-          <h1 className="text-2xl font-black text-white leading-snug whitespace-nowrap">Simulátor diagnostiky poruch</h1>
+          <h1 className="text-xl sm:text-2xl font-black text-white leading-snug">Simulátor diagnostiky poruch</h1>
         </div>
         <p className="text-xs text-slate-400 text-pretty leading-relaxed">
           Oficiální kritérium zkoušky 26-017-H: Vyhledávání simulovaných závad v instalaci a metodika jejich odstranění.

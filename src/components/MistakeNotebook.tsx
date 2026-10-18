@@ -165,7 +165,7 @@ export const MistakeNotebook: React.FC<MistakeNotebookProps> = ({
             <span className="p-2 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
               <AlertCircle className="w-5 h-5" />
             </span>
-            <h1 className="text-2xl font-black text-white leading-snug whitespace-nowrap">Kniha chyb</h1>
+            <h1 className="text-xl sm:text-2xl font-black text-white leading-snug">Kniha chyb</h1>
           </div>
           <p className="text-xs text-slate-400 max-w-xl text-pretty leading-relaxed">
             Inteligentní zásobník otázek, ve kterých jsi při testech udělal chybu. Otázka zmizí ze seznamu, jakmile ji <strong>dvakrát za sebou</strong> zodpovíš správně.
@@ -175,7 +175,7 @@ export const MistakeNotebook: React.FC<MistakeNotebookProps> = ({
         {activeQuestions.length > 0 && (
           <button
             onClick={startDrill}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-lg shadow-amber-500/20 transition-all hover:scale-105 shrink-0"
+            className="w-full sm:w-auto justify-center flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-lg shadow-amber-500/20 transition-all hover:scale-105 shrink-0"
           >
             <RefreshCw className="w-4 h-4" />
             <span>Procvičit aktivní chyby ({activeQuestions.length})</span>

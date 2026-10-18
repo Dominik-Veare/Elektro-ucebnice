@@ -1,14 +1,37 @@
-import { UserProgress } from '../types';
+import { UserProgress, LiveSyncStatus } from '../types';
 
 const STORAGE_KEY = 'elektroucebnice_progress_v1';
 
-// Generování náhodného 6-místného kódu pro synchronizaci (např. EL-4982)
+// Generování náhodného 6-místného kódu pro synchronizaci (např. EL-AB4982)
 export function generateSyncCode(): string {
   const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
   const nums = '23456789';
-  const l = letters[Math.floor(Math.random() * letters.length)] + letters[Math.floor(Math.random() * letters.length)];
-  const n = nums[Math.floor(Math.random() * nums.length)] + nums[Math.floor(Math.random() * nums.length)] + nums[Math.floor(Math.random() * nums.length)] + nums[Math.floor(Math.random() * nums.length)];
+  const l =
+    letters[Math.floor(Math.random() * letters.length)] +
+    letters[Math.floor(Math.random() * letters.length)];
+  const n =
+    nums[Math.floor(Math.random() * nums.length)] +
+    nums[Math.floor(Math.random() * nums.length)] +
+    nums[Math.floor(Math.random() * nums.length)] +
+    nums[Math.floor(Math.random() * nums.length)];
   return `EL-${l}${n}`;
+}
+
+// Unikátní ID této instance prohlížeče/zařízení pro eliminaci vlastního echa při live streamu
+export function getDeviceId(): string {
+  if (typeof window === 'undefined') return 'server';
+  let devId = window.localStorage.getItem('elektro_device_instance_id');
+  if (!devId) {
+    devId = 'dev_' + Math.random().toString(36).substring(2, 10);
+    window.localStorage.setItem('elektro_device_instance_id', devId);
+  }
+  return devId;
+}
+
+export interface SyncEnvelope {
+  senderId: string;
+  timestamp: number;
+  progress: UserProgress;
 }
 
 const DEFAULT_PROGRESS: UserProgress = {
@@ -52,35 +75,57 @@ export function saveProgress(progress: UserProgress): void {
   }
 }
 
-// Sloučení dvou stavů (lokálního a cloudového) tak, aby se nic neztratilo
+// Sloučení dvou profilů postupu bez ztráty dat z kteréhokoliv zařízení (Union / Merge)
 export function mergeProgress(local: UserProgress, remote: UserProgress): UserProgress {
-  const mergedSubchapters = Array.from(new Set([...local.completedSubchapters, ...remote.completedSubchapters]));
-  
-  const mergedScores = { ...local.quizScores };
-  for (const [key, val] of Object.entries(remote.quizScores)) {
-    const numKey = Number(key);
-    if (!mergedScores[numKey] || val.score > mergedScores[numKey].score) {
-      mergedScores[numKey] = val;
+  const mergedSubchapters = Array.from(
+    new Set([...(local.completedSubchapters || []), ...(remote.completedSubchapters || [])])
+  );
+
+  const mergedScores: Record<number, { score: number; total: number; date: string }> = {
+    ...(local.quizScores || {}),
+  };
+  if (remote.quizScores) {
+    for (const [chIdStr, rScore] of Object.entries(remote.quizScores)) {
+      const chId = Number(chIdStr);
+      const lScore = mergedScores[chId];
+      if (!lScore) {
+        mergedScores[chId] = rScore;
+      } else {
+        const lRatio = lScore.total > 0 ? lScore.score / lScore.total : 0;
+        const rRatio = rScore.total > 0 ? rScore.score / rScore.total : 0;
+        mergedScores[chId] = rRatio >= lRatio ? rScore : lScore;
+      }
     }
   }
 
-  // Sloučení historie zkoušek dle id
-  const examMap = new Map<string, typeof local.examHistory[0]>();
-  [...local.examHistory, ...remote.examHistory].forEach(e => examMap.set(e.id, e));
-  const mergedExams = Array.from(examMap.values()).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const existingExamIds = new Set((local.examHistory || []).map((e) => e.id));
+  const mergedExams = [...(local.examHistory || [])];
+  if (remote.examHistory) {
+    for (const exam of remote.examHistory) {
+      if (!existingExamIds.has(exam.id)) {
+        mergedExams.push(exam);
+        existingExamIds.add(exam.id);
+      }
+    }
+  }
+  mergedExams.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-  // Sloučení chyb
-  const mergedMistakes = { ...local.mistakes };
-  for (const [qId, val] of Object.entries(remote.mistakes)) {
-    if (!mergedMistakes[qId]) {
-      mergedMistakes[qId] = val;
-    } else {
-      mergedMistakes[qId] = {
-        questionId: qId,
-        mistakeCount: Math.max(mergedMistakes[qId].mistakeCount, val.mistakeCount),
-        correctInRow: Math.min(mergedMistakes[qId].correctInRow, val.correctInRow),
-        lastAttemptDate: new Date(mergedMistakes[qId].lastAttemptDate) > new Date(val.lastAttemptDate) ? mergedMistakes[qId].lastAttemptDate : val.lastAttemptDate
-      };
+  const mergedMistakes = { ...(local.mistakes || {}) };
+  if (remote.mistakes) {
+    for (const [qId, val] of Object.entries(remote.mistakes)) {
+      if (!mergedMistakes[qId]) {
+        mergedMistakes[qId] = val;
+      } else {
+        mergedMistakes[qId] = {
+          questionId: qId,
+          mistakeCount: Math.max(mergedMistakes[qId].mistakeCount, val.mistakeCount),
+          correctInRow: Math.min(mergedMistakes[qId].correctInRow, val.correctInRow),
+          lastAttemptDate:
+            new Date(mergedMistakes[qId].lastAttemptDate) > new Date(val.lastAttemptDate)
+              ? mergedMistakes[qId].lastAttemptDate
+              : val.lastAttemptDate,
+        };
+      }
     }
   }
 
@@ -94,7 +139,119 @@ export function mergeProgress(local: UserProgress, remote: UserProgress): UserPr
   };
 }
 
-// Cloudová synchronizace dat (PC ↔ Mobil) přes spolehlivý veřejný cloud relay
+// Okamžitý broadcast změny do cloudu přes live relay
+export async function broadcastProgress(progress: UserProgress): Promise<boolean> {
+  const code = (progress.syncId || '').trim().toUpperCase();
+  if (!code) return false;
+
+  const cleanTopicId = code.replace(/[^A-Z0-9]/gi, '');
+  const topicUrl = `https://ntfy.sh/elektro_sync_${cleanTopicId}`;
+
+  const envelope: SyncEnvelope = {
+    senderId: getDeviceId(),
+    timestamp: Date.now(),
+    progress,
+  };
+
+  try {
+    const res = await fetch(topicUrl, {
+      method: 'POST',
+      headers: {
+        Title: 'live_sync',
+        Tags: 'electric,books',
+      },
+      body: JSON.stringify(envelope),
+    });
+    return res.ok;
+  } catch (err) {
+    console.warn('Live sync broadcast selhal:', err);
+    return false;
+  }
+}
+
+// Odběr živého SSE proudu pro okamžitou synchronizaci změn na spárovaném zařízení
+export function subscribeToLiveSync(
+  syncCode: string,
+  onRemoteUpdate: (remote: UserProgress) => void,
+  onStatusChange: (status: LiveSyncStatus) => void
+): () => void {
+  const code = (syncCode || '').trim().toUpperCase();
+  const cleanTopicId = code.replace(/[^A-Z0-9]/gi, '');
+  if (!cleanTopicId) {
+    onStatusChange('idle');
+    return () => {};
+  }
+
+  if (typeof window === 'undefined') {
+    return () => {};
+  }
+
+  if (!navigator.onLine) {
+    onStatusChange('offline');
+  } else {
+    onStatusChange('connected');
+  }
+
+  const handleOnline = () => onStatusChange('connected');
+  const handleOffline = () => onStatusChange('offline');
+  window.addEventListener('online', handleOnline);
+  window.addEventListener('offline', handleOffline);
+
+  const sseUrl = `https://ntfy.sh/elektro_sync_${cleanTopicId}/sse`;
+  let eventSource: EventSource | null = null;
+  let isClosed = false;
+
+  try {
+    eventSource = new EventSource(sseUrl);
+
+    eventSource.onopen = () => {
+      if (!isClosed) onStatusChange('connected');
+    };
+
+    eventSource.onerror = () => {
+      if (!isClosed && !navigator.onLine) {
+        onStatusChange('offline');
+      }
+    };
+
+    eventSource.onmessage = (event) => {
+      if (isClosed) return;
+      try {
+        const raw = JSON.parse(event.data);
+        if (raw && raw.event === 'message' && raw.message) {
+          const payload = JSON.parse(raw.message);
+          // Ignorujeme vlastní echo ze stejného zařízení
+          if (payload && payload.senderId && payload.senderId === getDeviceId()) {
+            return;
+          }
+          const remote = payload.progress || payload;
+          if (remote && Array.isArray(remote.completedSubchapters)) {
+            onStatusChange('syncing');
+            onRemoteUpdate(remote);
+            setTimeout(() => {
+              if (!isClosed) onStatusChange('connected');
+            }, 600);
+          }
+        }
+      } catch {
+        // ignorujeme nevalidní zprávy
+      }
+    };
+  } catch (e) {
+    console.warn('Inicializace EventSource selhala:', e);
+  }
+
+  return () => {
+    isClosed = true;
+    window.removeEventListener('online', handleOnline);
+    window.removeEventListener('offline', handleOffline);
+    if (eventSource) {
+      eventSource.close();
+    }
+  };
+}
+
+// Manuální nebo jednorázová synchronizace dat s cloudem (načtení + zápis)
 export async function syncWithCloud(
   progress: UserProgress,
   customCode?: string
@@ -104,32 +261,37 @@ export async function syncWithCloud(
     return { success: false, progress, message: 'Chybí synchronizační kód.' };
   }
 
-  // Sanitizace kódu pro URL topic (odstraní pomlčky a mezery pro bezpečný topic)
   const cleanTopicId = code.replace(/[^A-Z0-9]/gi, '');
   const topicUrl = `https://ntfy.sh/elektro_sync_${cleanTopicId}`;
-
-  const isPairingWithOtherDevice = Boolean(customCode && customCode.trim().toUpperCase() !== progress.syncId);
+  const isPairingWithOtherDevice = Boolean(
+    customCode && customCode.trim().toUpperCase() !== progress.syncId
+  );
 
   try {
-    // 1. Zkusíme načíst uložená data z cloudu
     let remoteData: UserProgress | null = null;
     try {
-      const getRes = await fetch(`${topicUrl}/json?poll=1`, {
+      // Timeout 3.5s pro stažení historie, aby se zabránilo zasekávání
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3500);
+
+      const getRes = await fetch(`${topicUrl}/json?poll=1&since=24h`, {
         method: 'GET',
         cache: 'no-cache',
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
 
       if (getRes.ok) {
         const text = await getRes.text();
         const lines = text.trim().split('\n').filter(Boolean);
-        // Projdeme zprávy a najdeme nejnovější platný UserProgress
         for (const line of lines) {
           try {
             const entry = JSON.parse(line);
             if (entry && entry.message) {
               const parsed = JSON.parse(entry.message);
-              if (parsed && Array.isArray(parsed.completedSubchapters)) {
-                remoteData = remoteData ? mergeProgress(remoteData, parsed) : parsed;
+              const remote = parsed.progress || parsed;
+              if (remote && Array.isArray(remote.completedSubchapters)) {
+                remoteData = remoteData ? mergeProgress(remoteData, remote) : remote;
               }
             }
           } catch {
@@ -141,30 +303,33 @@ export async function syncWithCloud(
       console.warn('Nepodařilo se stáhnout data z cloudu:', e);
     }
 
-    // Pokud uživatel na mobilu zadal kód z PC, ale v cloudu pod tímto kódem nic není
     if (isPairingWithOtherDevice && !remoteData) {
       return {
         success: false,
         progress,
-        message: `Pod kódem ${code} nebyla v cloudu nalezena žádná data. Nejprve na prvním zařízení (PC) klikněte na „Synchronizovat s cloudem nyní“, aby se data nahrála.`,
+        message: `Pod kódem ${code} nebyla v cloudu nalezena žádná data. Nejprve na prvním zařízení (PC) klikněte na „Nahrát / Aktualizovat postup v cloudu“.`,
       };
     }
 
-    // Sloučení stavů
     const merged = remoteData
       ? mergeProgress(progress, remoteData)
       : { ...progress, syncId: code, lastSyncedAt: new Date().toISOString() };
     merged.syncId = code;
     merged.lastSyncedAt = new Date().toISOString();
 
-    // 2. Nahrajeme sloučený stav zpět do cloudu pro další synchronizace
+    const envelope: SyncEnvelope = {
+      senderId: getDeviceId(),
+      timestamp: Date.now(),
+      progress: merged,
+    };
+
     const postRes = await fetch(topicUrl, {
       method: 'POST',
       headers: {
-        'Title': 'sync',
-        'Tags': 'books',
+        Title: 'sync',
+        Tags: 'books',
       },
-      body: JSON.stringify(merged),
+      body: JSON.stringify(envelope),
     });
 
     if (postRes.ok) {
@@ -183,10 +348,9 @@ export async function syncWithCloud(
       return {
         success: true,
         progress: merged,
-        message: `Postup byl úspěšně nahrán do cloudu (Kód: ${code}). Nyní můžete tento kód zadat na mobilu.`,
+        message: `Postup byl úspěšně nahrán do cloudu (Kód: ${code}). Nyní je aktivní živé propojení.`,
       };
     } else {
-      // Pokud POST vrátil chybu, ale máme sloučený lokální stav
       saveProgress(merged);
       return {
         success: true,

@@ -260,7 +260,7 @@ export const ChapterView: React.FC<ChapterViewProps> = ({
 
             <button
               onClick={() => onStartQuiz(selectedChapter.id)}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 shadow-lg shadow-amber-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+              className="w-full sm:w-auto justify-center inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 shadow-lg shadow-amber-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
               <HelpCircle className="w-4 h-4 text-slate-950 font-black" />
               <span>Spustit test této kapitoly</span>

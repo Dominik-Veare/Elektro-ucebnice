@@ -1391,7 +1391,7 @@ export const QUESTIONS: Question[] = [
     id: 'q1-11',
     chapterId: 1,
     competencyCode: '26-017-H/01',
-    question: 'Jaký je povolený maximální výsledný odpor uzemnění vodiče PEN v síti TN-C u zdroje (transformátoru) lč. zemničů v okruhu do 200 m od zdroje dle ČSN 33 2000-4-41 ed. 3?',
+    question: 'Jaký je povolený maximální výsledný odpor uzemnění vodiče PEN v síti TN-C u zdroje (transformátoru) vč. zemničů v okruhu do 200 m od zdroje dle ČSN 33 2000-4-41 ed. 3?',
     options: [
       { id: 'a', text: 'Maximálně 2 Ω' },
       { id: 'b', text: 'Maximálně 15 Ω' },

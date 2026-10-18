@@ -14,7 +14,16 @@ export const FlashcardsView: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('vše');
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
-  const [knownCards, setKnownCards] = useState<Record<string, boolean>>({});
+  const STORAGE_KEY = 'elektroucebnice_known_flashcards_v1';
+
+  const [knownCards, setKnownCards] = useState<Record<string, boolean>>(() => {
+    try {
+      const saved = localStorage.getItem('elektroucebnice_known_flashcards_v1');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
 
   const categories = [
     { id: 'vše', label: 'Všechny kartičky' },
@@ -44,7 +53,15 @@ export const FlashcardsView: React.FC = () => {
 
   const handleMarkKnown = (known: boolean) => {
     if (currentCard) {
-      setKnownCards(prev => ({ ...prev, [currentCard.id]: known }));
+      setKnownCards(prev => {
+        const updated = { ...prev, [currentCard.id]: known };
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+        } catch {
+          // ignorujeme chybu úložiště
+        }
+        return updated;
+      });
       handleNext();
     }
   };
@@ -61,7 +78,7 @@ export const FlashcardsView: React.FC = () => {
             <span className="p-2 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
               <CreditCard className="w-5 h-5" />
             </span>
-            <h1 className="text-2xl font-black text-white leading-snug whitespace-nowrap">Kartičky pro ústní část</h1>
+            <h1 className="text-xl sm:text-2xl font-black text-white leading-snug">Kartičky pro ústní část</h1>
           </div>
           <p className="text-xs text-slate-400 text-pretty leading-relaxed">
             Otázky zkoušejícího, které musíš umět bez váhání odříkat nahlas u zkoušky.
@@ -153,35 +170,35 @@ export const FlashcardsView: React.FC = () => {
           </div>
 
           {/* Tlačítka znám / neznám a navigace */}
-          <div className="flex items-center justify-between gap-3 pt-2">
+          <div className="flex items-center justify-between gap-2 sm:gap-3 pt-2">
             <button
               onClick={handlePrev}
-              className="p-3 rounded-xl bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-300 transition-colors"
+              className="p-2.5 sm:p-3 rounded-xl bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-300 transition-colors shrink-0"
               title="Předchozí kartička"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 flex-1 justify-center max-w-xs">
               <button
                 onClick={() => handleMarkKnown(false)}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold bg-slate-900 hover:bg-red-500/10 text-red-400 border border-slate-800 hover:border-red-500/30 transition-colors"
+                className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2.5 rounded-xl text-xs font-bold bg-slate-900 hover:bg-red-500/10 text-red-400 border border-slate-800 hover:border-red-500/30 transition-colors whitespace-nowrap"
               >
-                <X className="w-4 h-4" />
+                <X className="w-4 h-4 shrink-0" />
                 <span>Ještě neumím</span>
               </button>
               <button
                 onClick={() => handleMarkKnown(true)}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-lg shadow-emerald-500/20 transition-all hover:scale-105"
+                className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2.5 rounded-xl text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-lg shadow-emerald-500/20 transition-all hover:scale-105 whitespace-nowrap"
               >
-                <Check className="w-4 h-4" />
+                <Check className="w-4 h-4 shrink-0" />
                 <span>Umím!</span>
               </button>
             </div>
 
             <button
               onClick={handleNext}
-              className="p-3 rounded-xl bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-300 transition-colors"
+              className="p-2.5 sm:p-3 rounded-xl bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-300 transition-colors shrink-0"
               title="Další kartička"
             >
               <ArrowRight className="w-5 h-5" />

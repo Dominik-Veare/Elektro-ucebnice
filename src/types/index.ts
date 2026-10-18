@@ -140,3 +140,5 @@ export interface UserProgress {
   syncId: string; // e.g. "ELEKTRO-7842"
   lastSyncedAt?: string;
 }
+
+export type LiveSyncStatus = 'connected' | 'syncing' | 'offline' | 'idle';

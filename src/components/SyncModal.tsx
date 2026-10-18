@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Cloud, Copy, Check, RefreshCw, Smartphone, Download, Upload, QrCode, Link2 } from 'lucide-react';
-import { UserProgress } from '../types';
+import { UserProgress, LiveSyncStatus } from '../types';
 import { syncWithCloud, saveProgress, loadProgress } from '../services/storage';
 
 interface SyncModalProps {
@@ -8,6 +8,7 @@ interface SyncModalProps {
   onClose: () => void;
   progress: UserProgress;
   onProgressUpdated: (newProgress: UserProgress) => void;
+  syncStatus?: LiveSyncStatus;
 }
 
 export const SyncModal: React.FC<SyncModalProps> = ({
@@ -15,6 +16,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
   onClose,
   progress,
   onProgressUpdated,
+  syncStatus = 'idle',
 }) => {
   const [copied, setCopied] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -116,6 +118,29 @@ export const SyncModal: React.FC<SyncModalProps> = ({
             </p>
           </div>
         </div>
+
+        {/* Živý stav propojení */}
+        {syncStatus === 'connected' ? (
+          <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs mb-4">
+            <span className="relative flex h-2 w-2 shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span>
+              <strong>Živé propojení je aktivní:</strong> Každé kliknutí se ihned přenáší na všechna spárovaná zařízení.
+            </span>
+          </div>
+        ) : syncStatus === 'syncing' ? (
+          <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs mb-4">
+            <span className="animate-spin relative inline-flex rounded-full h-2 w-2 border-2 border-amber-400 border-t-transparent shrink-0"></span>
+            <span>Probíhá odesílání / příjem změn v cloudu...</span>
+          </div>
+        ) : syncStatus === 'offline' ? (
+          <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 text-xs mb-4">
+            <span className="h-2 w-2 rounded-full bg-slate-500 shrink-0"></span>
+            <span>Zařízení je momentálně offline. Změny jsou bezpečně uloženy v zařízení a odešlou se po připojení.</span>
+          </div>
+        ) : null}
 
         {/* 1. Můj aktuální kód zařízení */}
         <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-4 mb-4">

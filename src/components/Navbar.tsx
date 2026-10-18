@@ -13,7 +13,7 @@ import {
   ChevronDown,
   Check
 } from 'lucide-react';
-import { UserProgress, QualificationId, QUALIFICATIONS } from '../types';
+import { UserProgress, QualificationId, QUALIFICATIONS, LiveSyncStatus } from '../types';
 
 interface NavbarProps {
   currentTab: string;
@@ -24,6 +24,7 @@ interface NavbarProps {
   onToggleSidebar: () => void;
   activeQualification: QualificationId;
   onSelectQualification: (id: QualificationId) => void;
+  syncStatus?: LiveSyncStatus;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -35,6 +36,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onToggleSidebar,
   activeQualification,
   onSelectQualification,
+  syncStatus = 'idle',
 }) => {
   const [isSwitcherOpen, setIsSwitcherOpen] = useState(false);
   const switcherRef = useRef<HTMLDivElement | null>(null);
@@ -136,7 +138,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
                       {/* Rozbalovací seznam 5 učebnic */}
                       {isSwitcherOpen && (
-                        <div className="absolute left-0 mt-2 w-80 sm:w-96 rounded-2xl bg-slate-900 border border-slate-700/90 shadow-2xl shadow-black/70 py-2 z-50 animate-fadeIn">
+                        <div className="fixed inset-x-3 top-16 sm:absolute sm:inset-x-auto sm:left-0 sm:top-full mt-2 w-auto sm:w-96 rounded-2xl bg-slate-900 border border-slate-700/90 shadow-2xl shadow-black/70 py-2 z-50 animate-fadeIn">
                           <div className="px-3.5 py-1.5 border-b border-slate-800 flex items-center justify-between">
                             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
                               Výběr učebnice (NSK)
@@ -204,6 +206,35 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
             </div>
 
+            {/* Desktopová navigační lišta záložek */}
+            <nav className="hidden lg:flex items-center gap-1 mx-2 overflow-x-auto py-1">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const active = currentTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setCurrentTab(item.id)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap relative ${
+                      active
+                        ? 'bg-amber-500 text-slate-950 font-bold shadow-md shadow-amber-500/20'
+                        : 'text-slate-300 hover:text-white hover:bg-slate-800'
+                    }`}
+                  >
+                    <Icon className={`w-3.5 h-3.5 ${active ? 'text-slate-950' : 'text-amber-400'}`} />
+                    <span>{item.shortLabel}</span>
+                    {item.badgeCount && item.badgeCount > 0 ? (
+                      <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                        active ? 'bg-slate-950 text-amber-400' : 'bg-red-500 text-white'
+                      }`}>
+                        {item.badgeCount}
+                      </span>
+                    ) : null}
+                  </button>
+                );
+              })}
+            </nav>
+
             {/* Pravá část: Progres a tlačítko Synchronizace */}
             <div className="flex items-center gap-2.5 shrink-0 whitespace-nowrap">
               {/* Progres indikátor */}
@@ -223,12 +254,39 @@ export const Navbar: React.FC<NavbarProps> = ({
               {/* Tlačítko synchronizace k mobilu */}
               <button
                 onClick={onOpenSync}
-                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 border border-slate-700 text-amber-400 hover:text-amber-300 transition-colors shadow-sm shrink-0 whitespace-nowrap"
-                title="Sdílet postup mezi PC a mobilem"
+                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition-colors shadow-sm shrink-0 whitespace-nowrap group"
+                title={
+                  syncStatus === 'connected'
+                    ? 'Živé propojení aktivní – každá změna se ihned projeví na mobilu i PC'
+                    : syncStatus === 'syncing'
+                    ? 'Probíhá synchronizace...'
+                    : syncStatus === 'offline'
+                    ? 'Offline – změny jsou bezpečně uloženy v zařízení'
+                    : 'Sdílet postup mezi PC a mobilem'
+                }
               >
-                <Cloud className="w-3.5 h-3.5 shrink-0" />
+                <span className="relative flex h-2 w-2 shrink-0">
+                  {syncStatus === 'connected' && (
+                    <>
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </>
+                  )}
+                  {syncStatus === 'syncing' && (
+                    <span className="animate-spin relative inline-flex rounded-full h-2 w-2 border-2 border-amber-400 border-t-transparent"></span>
+                  )}
+                  {syncStatus === 'offline' && (
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-slate-500"></span>
+                  )}
+                  {(!syncStatus || syncStatus === 'idle') && (
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-400"></span>
+                  )}
+                </span>
+                <Cloud className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                 <span className="hidden sm:inline text-slate-400">Kód:</span>
-                <span className="font-mono text-slate-100 font-bold">{progress.syncId || 'Sdílet'}</span>
+                <span className="font-mono text-amber-400 font-bold group-hover:text-amber-300">
+                  {progress.syncId || 'Sdílet'}
+                </span>
               </button>
             </div>
 
@@ -236,27 +294,49 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
       </header>
 
-      {/* Spodní mobilní navigace pro snadné ovládání palcem */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-lg border-t border-slate-800 px-1 py-1.5 flex justify-around items-center">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const active = currentTab === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => setCurrentTab(item.id)}
-              className={`flex flex-col items-center justify-center p-1 rounded-lg text-[10px] font-medium transition-all relative shrink-0 ${
-                active ? 'text-amber-400 font-bold' : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <Icon className={`w-5 h-5 mb-0.5 shrink-0 ${active ? 'text-amber-400 scale-110' : 'text-slate-400'}`} />
-              <span className="whitespace-nowrap tracking-tight">{item.shortLabel}</span>
-              {item.badgeCount && item.badgeCount > 0 ? (
-                <span className="absolute top-0.5 right-1.5 w-2 h-2 rounded-full bg-red-500 ring-2 ring-slate-900" />
-              ) : null}
-            </button>
-          );
-        })}
+      {/* Spodní mobilní navigace pro snadné ovládání palcem - přesná 7sloupcová symetrická mřížka */}
+      <nav
+        aria-label="Mobilní navigace"
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-lg border-t border-slate-800/90 shadow-[0_-4px_20px_rgba(0,0,0,0.5)]"
+        style={{ paddingBottom: 'max(0.35rem, env(safe-area-inset-bottom, 0px))' }}
+      >
+        <div className="grid grid-cols-7 w-full items-stretch py-1 px-1">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const active = currentTab === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setCurrentTab(item.id)}
+                className={`flex flex-col items-center justify-center py-1.5 px-0.5 rounded-xl transition-all relative w-full min-w-0 select-none group ${
+                  active
+                    ? 'text-amber-400 font-bold bg-amber-500/10'
+                    : 'text-slate-400 hover:text-slate-200 active:bg-slate-800/60'
+                }`}
+              >
+                {/* Ikona s notifikačním odznakem vázaným přímo na ikonu */}
+                <div className="relative flex items-center justify-center">
+                  <Icon
+                    className={`w-5 h-5 mb-0.5 shrink-0 transition-transform duration-200 ${
+                      active ? 'text-amber-400 scale-110' : 'text-slate-400 group-hover:text-slate-200'
+                    }`}
+                  />
+                  {item.badgeCount && item.badgeCount > 0 ? (
+                    <span className="absolute -top-1 -right-1.5 min-w-[14px] h-3.5 px-1 rounded-full bg-red-500 text-white font-mono text-[9px] font-black flex items-center justify-center ring-2 ring-slate-900 shadow-sm pointer-events-none">
+                      {item.badgeCount > 9 ? '9+' : item.badgeCount}
+                    </span>
+                  ) : null}
+                </div>
+
+                {/* Popisek - dokonale vycentrovaný v 1/7 šířky s ochranou proti přetečení */}
+                <span className="w-full text-center text-[9px] min-[380px]:text-[10px] leading-tight tracking-tight truncate px-0.5 block font-medium">
+                  {item.shortLabel}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </nav>
     </>
   );

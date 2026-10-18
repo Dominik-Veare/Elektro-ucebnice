@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { BookOpen } from 'lucide-react';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
@@ -385,6 +386,9 @@ export const App: React.FC = () => {
           />
         )}
       </Suspense>
+
+      {/* Vercel Web Analytics */}
+      <Analytics />
 
     </div>
   );

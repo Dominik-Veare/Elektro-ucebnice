@@ -377,13 +377,61 @@ export const ELECTRICAL_DEVICES_CATALOG: DeviceSpec[] = [
     code: 'Svorka Bernard',
     name: 'Zemnicí páska (svorka Bernard) na kovovém potrubí',
     category: 'appliance',
-    categoryLabel: '5. Krabice, svítidla a pospojování',
+    categoryLabel: '5. Krabice, svítidla a spotřebiče',
     standard: 'ČSN 33 2000-5-54 ed. 3',
     terminals: [
       { id: 'PE', label: 'Svorka pospojování (⏚)', role: 'PE', description: 'Připojení zeleno-žlutého vodiče ochranného pospojování (s očkem nebo dutinkou)' }
     ],
     examRule: 'Kovové potrubí musí být v místě montáže svorky očištěno od barvy a koroze na čistý kov. Průřez vodiče: hlavní pospojování min. 6 mm² Cu, doplňkové pospojování min. 2,5 mm² Cu (chráněné) nebo 4 mm² Cu (nechráněné).',
     commonMistake: 'Utažení svorky Bernard přes vrstvu laku/barvy na trubce (při měření spojitosti proudem ≥ 200 mA pak spoj nevyhoví).'
+  },
+  {
+    id: 'contactor-km',
+    code: 'KM (Stykač 3P)',
+    name: 'Instalační stykač 3pólový na DIN lištu (25 A, cívka 230 V)',
+    category: 'din',
+    categoryLabel: '1. Přístroje na DIN lištu',
+    standard: 'ČSN EN 61095, ČSN 33 2130 ed. 3',
+    terminals: [
+      { id: 'A1', label: 'A1 (cívka L)', role: 'CTRL', description: 'Ovládací přívod cívky stykače (z HDO nebo spínače/termostatu jištěného B6/B10)' },
+      { id: 'A2', label: 'A2 (cívka N)', role: 'N', description: 'Připojení cívky stykače na střední vodič N (modrá)' },
+      { id: '1', label: '1 / 3 / 5 (vstupy L1, L2, L3)', role: 'L', description: 'Silové přívody fází L1, L2, L3 ze silového jističe B16' },
+      { id: '2', label: '2 / 4 / 6 (výstupy T1, T2, T3)', role: 'K', description: 'Spínané silové výstupy do bojleru nebo elektrických akumulačních kamen' }
+    ],
+    examRule: 'Když je na cívku A1–A2 přivedeno ovládací napětí 230 V, elektromagnet přitáhne kotvu a sepne silové kontakty 1–2, 3–4, 5–6. Ovládací obvod cívky se jistí samostatným jističem (např. B6/B10).',
+    commonMistake: 'Absence samostatného jištění ovládacího obvodu cívky A1 nebo zapojení silového spotřebiče přes spínací kontakt HDO místo přes silové kontakty stykače.'
+  },
+  {
+    id: 'boiler-1f',
+    code: 'Bojler (230 V)',
+    name: 'Elektrický zásobníkový ohřívač vody – bojler (230 V / 2,2 kW, tř. I)',
+    category: 'appliance',
+    categoryLabel: '5. Krabice, svítidla a spotřebiče',
+    standard: 'ČSN 33 2130 ed. 3, ČSN 33 2000-7-701 ed. 2',
+    terminals: [
+      { id: 'L', label: 'L (fáze ze stykače)', role: 'L', description: 'Spínaný fázový přívod L z výstupu instalačního stykače KM (jištěno B16 + RCD 30 mA)' },
+      { id: 'N', label: 'N (modrá)', role: 'N', description: 'Střední vodič N ze sběrnice N příslušného proudového chrániče' },
+      { id: 'PE', label: 'PE (kostra ⏚)', role: 'PE', description: 'Ochranný vodič PE na kovovou kostru bojleru' }
+    ],
+    examRule: 'Bojler (≥ 2 kW) musí mít samostatný obvod (kabel Cu 2,5 mm², jistič B16, v koupelně vždy RCD ≤ 30 mA) a při ohřevu v nízkém tarifu (HDO) je spínán instalačním stykačem KM v rozvaděči.',
+    commonMistake: 'Chybějící proudový chránič 30 mA u bojleru instalovaného v koupelně.'
+  },
+  {
+    id: 'stove-3f',
+    code: 'Kamna / Sporák 400 V',
+    name: 'Třífázová elektrická akumulační kamna / sporák (400 V / 3N~, pevný přívod)',
+    category: 'appliance',
+    categoryLabel: '5. Krabice, svítidla a spotřebiče',
+    standard: 'ČSN 33 2130 ed. 3',
+    terminals: [
+      { id: 'L1', label: 'L1 (hnědá)', role: 'L', description: '1. fáze z 3pólového jističe B16 / stykače KM (výstup 2)' },
+      { id: 'L2', label: 'L2 (černá)', role: 'L', description: '2. fáze z 3pólového jističe B16 / stykače KM (výstup 4)' },
+      { id: 'L3', label: 'L3 (šedá)', role: 'L', description: '3. fáze z 3pólového jističe B16 / stykače KM (výstup 6)' },
+      { id: 'N', label: 'N (modrá)', role: 'N', description: 'Střední vodič N' },
+      { id: 'PE', label: 'PE (kostra ⏚)', role: 'PE', description: 'Ochranný vodič PE (zeleno-žlutá) na kostru spotřebiče' }
+    ],
+    examRule: 'Elektrická akumulační kamna a 3f sporáky musí být připojeny PEVNÝM PŘÍVODEM (přes přístrojovou svorkovnici a spínač/stykač, nikdy běžnou vidlicí!). Jistí se 3pólovým jističem (např. B16 3P).',
+    commonMistake: 'Použití tří samostatných jednopólových jističů místo 3pólového jističe se společnou páčkou.'
   },
 
   // 6. MĚŘICÍ PŘÍSTROJE
@@ -777,6 +825,95 @@ export const DeviceSvgPreview: React.FC<{ deviceId: string; activeState?: boolea
           <text x="162" y="154" textAnchor="middle" fill="#fff" fontSize="9" fontWeight="bold">N/PE</text>
           <text x="130" y="206" textAnchor="middle" fill="#fde047" fontSize="11" fontWeight="bold" fontFamily="monospace">
             DVOUPÓLOVÁ ZKOUŠEČKA &amp; EUROTEST
+          </text>
+        </svg>
+      );
+
+    case 'contactor-km':
+      return (
+        <svg viewBox="0 0 260 220" className="w-full max-w-[260px] h-auto mx-auto">
+          <rect x="15" y="92" width="230" height="36" fill="#334155" stroke="#475569" strokeWidth="1.5" rx="2" />
+          <rect x="45" y="20" width="170" height="180" rx="8" fill="#f8fafc" stroke="#94a3b8" strokeWidth="2.5" />
+          {/* Horní svorky A1, 1(L1), 3(L2), 5(L3) */}
+          {[
+            { cx: 68, lbl: 'A1', col: '#d97706' },
+            { cx: 110, lbl: '1(L1)', col: '#b45309' },
+            { cx: 150, lbl: '3(L2)', col: '#334155' },
+            { cx: 190, lbl: '5(L3)', col: '#64748b' }
+          ].map((p) => (
+            <g key={p.lbl}>
+              <circle cx={p.cx} cy="38" r="9" fill="#e2e8f0" stroke={p.col} strokeWidth="2" />
+              <text x={p.cx} y="14" textAnchor="middle" fill="#fbbf24" fontSize="10" fontWeight="bold" fontFamily="monospace">{p.lbl}</text>
+            </g>
+          ))}
+          <rect x="58" y="62" width="144" height="58" rx="5" fill="#0f172a" />
+          <text x="130" y="82" textAnchor="middle" fill="#38bdf8" fontSize="12" fontWeight="bold" fontFamily="monospace">STYKAČ KM (25 A)</text>
+          <text x="130" y="99" textAnchor="middle" fill="#94a3b8" fontSize="9.5" fontFamily="monospace">Cívka A1–A2: 230 V~</text>
+          <text x="130" y="113" textAnchor="middle" fill={activeState ? '#4ade80' : '#f87171'} fontSize="10" fontWeight="bold" fontFamily="monospace">
+            {activeState ? 'KONTAKTY 1-2, 3-4, 5-6: SEPNUTO' : 'KONTAKTY: ROZEPNUTO'}
+          </text>
+          {/* Dolní svorky A2, 2(T1), 4(T2), 6(T3) */}
+          {[
+            { cx: 68, lbl: 'A2(N)', col: '#2563eb' },
+            { cx: 110, lbl: '2(T1)', col: '#b45309' },
+            { cx: 150, lbl: '4(T2)', col: '#334155' },
+            { cx: 190, lbl: '6(T3)', col: '#64748b' }
+          ].map((p) => (
+            <g key={p.lbl}>
+              <circle cx={p.cx} cy="182" r="9" fill="#e2e8f0" stroke={p.col} strokeWidth="2" />
+              <text x={p.cx} y="214" textAnchor="middle" fill="#38bdf8" fontSize="10" fontWeight="bold" fontFamily="monospace">{p.lbl}</text>
+            </g>
+          ))}
+        </svg>
+      );
+
+    case 'boiler-1f':
+      return (
+        <svg viewBox="0 0 260 220" className="w-full max-w-[260px] h-auto mx-auto">
+          <rect x="65" y="16" width="130" height="175" rx="36" fill="#f8fafc" stroke="#64748b" strokeWidth="3" />
+          <circle cx="130" cy="65" r="22" fill="#0f172a" stroke="#ef4444" strokeWidth="2.5" />
+          <text x="130" y="69" textAnchor="middle" fill="#f87171" fontSize="11" fontWeight="bold" fontFamily="monospace">65 °C</text>
+          <text x="130" y="112" textAnchor="middle" fill="#0f172a" fontSize="12" fontWeight="bold" fontFamily="monospace">BOJLER 2,2 kW</text>
+          <rect x="82" y="135" width="96" height="32" rx="5" fill="#1e293b" />
+          <text x="98" y="155" textAnchor="middle" fill="#f59e0b" fontSize="10" fontWeight="bold" fontFamily="monospace">L</text>
+          <text x="130" y="155" textAnchor="middle" fill="#38bdf8" fontSize="10" fontWeight="bold" fontFamily="monospace">N</text>
+          <text x="162" y="155" textAnchor="middle" fill="#4ade80" fontSize="10" fontWeight="bold" fontFamily="monospace">PE⏚</text>
+          <text x="130" y="210" textAnchor="middle" fill="#f8fafc" fontSize="11" fontWeight="bold" fontFamily="monospace">
+            OHŘÍVAČ VODY (230 V • Třída I)
+          </text>
+        </svg>
+      );
+
+    case 'stove-3f':
+      return (
+        <svg viewBox="0 0 260 220" className="w-full max-w-[260px] h-auto mx-auto">
+          <rect x="35" y="20" width="190" height="165" rx="12" fill="#1e293b" stroke="#94a3b8" strokeWidth="3" />
+          {/* Topné články / plotýnky */}
+          <rect x="52" y="36" width="156" height="72" rx="6" fill="#0f172a" stroke="#ef4444" strokeWidth="2" />
+          <text x="130" y="68" textAnchor="middle" fill="#f87171" fontSize="12" fontWeight="bold" fontFamily="monospace">
+            EL. AKUMULAČNÍ KAMNA
+          </text>
+          <text x="130" y="88" textAnchor="middle" fill="#fbbf24" fontSize="10" fontWeight="bold" fontFamily="monospace">
+            3N~ 400 V / 6 kW (pevný přívod)
+          </text>
+          {/* 5pólová přístrojová svorkovnice L1, L2, L3, N, PE */}
+          <rect x="48" y="126" width="164" height="38" rx="5" fill="#090d16" stroke="#475569" />
+          {['L1', 'L2', 'L3', 'N', 'PE⏚'].map((lbl, idx) => (
+            <text
+              key={lbl}
+              x={66 + idx * 32}
+              y="149"
+              textAnchor="middle"
+              fill={lbl === 'N' ? '#38bdf8' : lbl === 'PE⏚' ? '#4ade80' : '#f59e0b'}
+              fontSize="10"
+              fontWeight="bold"
+              fontFamily="monospace"
+            >
+              {lbl}
+            </text>
+          ))}
+          <text x="130" y="206" textAnchor="middle" fill="#f8fafc" fontSize="11" fontWeight="bold" fontFamily="monospace">
+            3F SPOTŘEBIČ 400 V (L1, L2, L3, N, PE)
           </text>
         </svg>
       );

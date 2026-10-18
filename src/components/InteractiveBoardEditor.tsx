@@ -2,602 +2,868 @@ import React, { useState, useRef, useMemo } from 'react';
 import {
   Plus,
   Trash2,
-  Zap,
   RotateCcw,
   CheckCircle2,
   AlertTriangle,
-  ShieldAlert,
-  Move,
   Sparkles,
-  Power,
-  Layers
+  Eye,
+  Unplug,
 } from 'lucide-react';
 
-export type BoardWireColor = 'brown' | 'black' | 'grey' | 'blue' | 'green-yellow' | 'comb';
+// ============================================================================
+// TYPY PRO MONTÁŽNÍ TABULI
+// ============================================================================
 
-export type MountZone = 'din' | 'busbar' | 'wall';
+export type PlacementZone = 'din' | 'busbar' | 'wall' | 'fixed';
 
-export type BoardDeviceType =
-  | 'supply-in'      // Přívod sítě 230/400 V (L1, N, PEN, PE)
-  | 'qm-1p'          // Hlavní vypínač
-  | 'mcb-b10'        // Jistič B10 (1P)
-  | 'mcb-b16'        // Jistič B16 (1P)
-  | 'rcd-2p'         // Proudový chránič 2P (30 mA)
-  | 'spd-t2'         // Svodič přepětí SPD T2
-  | 'relay-ka'       // Impulzní relé KA
-  | 'busbar-pe'      // Ochranná sběrnice PE (5 samostatných šroubů)
-  | 'busbar-n'       // Nulová sběrnice N (5 šroubů)
-  | 'wago-3'         // WAGO 221 (3pólová svorka v krabici)
-  | 'sw-1'           // Vypínač č. 1 (jednopólový)
-  | 'sw-5'           // Přepínač č. 5 (lustrový dvouklapkový)
-  | 'sw-6'           // Přepínač č. 6 (schodišťový)
-  | 'sw-7'           // Přepínač č. 7 (křížový)
-  | 'sw-push'        // Tlačítko č. 1/0 (pro impulzní relé)
-  | 'socket-230'     // Zásuvka 230 V (L vlevo, PE nahoře, N vpravo)
-  | 'lamp-e27'       // Svítidlo E27 (L střed, N závit, PE kostra)
-  | 'lamp-dual'      // Dvojitý lustr (L1, L2, N, PE)
-  | 'pipe-bernard';  // Kovové potrubí se svorkou Bernard (pospojování)
+export type WireColor = 'L' | 'N' | 'PE' | 'SW1' | 'SW2';
 
-export interface PinDef {
+export interface TerminalDef {
   id: string;
   label: string;
-  dx: number; // Relativní X vůči levému hornímu rohu prvku
-  dy: number; // Relativní Y vůči levému hornímu rohu prvku
-  exitDir: 'up' | 'down' | 'left' | 'right'; // Směr kolmého vývodu ze svorky mimo tělo modulu
-  roleHint?: 'L' | 'N' | 'PE' | 'K';
+  relX: number;
+  relY: number;
+  hintColor?: WireColor;
 }
 
-export interface PaletteItem {
-  type: BoardDeviceType;
+export interface PaletteItemDef {
+  type: string;
   name: string;
-  shortLabel: string;
-  zone: MountZone;
+  shortName: string;
+  zone: PlacementZone;
   width: number;
   height: number;
-  pins: PinDef[];
+  description: string;
+  terminals: TerminalDef[];
 }
 
-export const PALETTE_ITEMS: PaletteItem[] = [
-  // --- MODULY NA DIN LIŠTU (zone: 'din') ---
-  {
-    type: 'qm-1p',
-    name: 'Hlavní vypínač QM (63 A)',
-    shortLabel: 'QM 63A',
-    zone: 'din',
-    width: 70,
-    height: 120,
-    pins: [
-      { id: '1', label: '1', dx: 35, dy: 12, exitDir: 'up', roleHint: 'L' },
-      { id: '2', label: '2', dx: 35, dy: 108, exitDir: 'down', roleHint: 'L' }
-    ]
-  },
-  {
-    type: 'mcb-b10',
-    name: 'Jistič B10 (světla)',
-    shortLabel: 'FA B10',
-    zone: 'din',
-    width: 70,
-    height: 120,
-    pins: [
-      { id: '1', label: '1', dx: 35, dy: 12, exitDir: 'up', roleHint: 'L' },
-      { id: '2', label: '2', dx: 35, dy: 108, exitDir: 'down', roleHint: 'L' }
-    ]
-  },
-  {
-    type: 'mcb-b16',
-    name: 'Jistič B16 (zásuvky)',
-    shortLabel: 'FA B16',
-    zone: 'din',
-    width: 70,
-    height: 120,
-    pins: [
-      { id: '1', label: '1', dx: 35, dy: 12, exitDir: 'up', roleHint: 'L' },
-      { id: '2', label: '2', dx: 35, dy: 108, exitDir: 'down', roleHint: 'L' }
-    ]
-  },
-  {
-    type: 'rcd-2p',
-    name: 'Proudový chránič RCD 30 mA',
-    shortLabel: 'RCD 30mA',
-    zone: 'din',
-    width: 100,
-    height: 120,
-    pins: [
-      { id: '1', label: '1(L)', dx: 30, dy: 12, exitDir: 'up', roleHint: 'L' },
-      { id: 'N-in', label: 'N(in)', dx: 70, dy: 12, exitDir: 'up', roleHint: 'N' },
-      { id: '2', label: '2(L)', dx: 30, dy: 108, exitDir: 'down', roleHint: 'L' },
-      { id: 'N-out', label: 'N(out)', dx: 70, dy: 108, exitDir: 'down', roleHint: 'N' }
-    ]
-  },
-  {
-    type: 'relay-ka',
-    name: 'Impulzní relé KA (paměťové)',
-    shortLabel: 'Relé KA',
-    zone: 'din',
-    width: 100,
-    height: 120,
-    pins: [
-      { id: 'A1', label: 'A1', dx: 30, dy: 12, exitDir: 'up', roleHint: 'K' },
-      { id: '1', label: '1(L)', dx: 70, dy: 12, exitDir: 'up', roleHint: 'L' },
-      { id: 'A2', label: 'A2(N)', dx: 30, dy: 108, exitDir: 'down', roleHint: 'N' },
-      { id: '2', label: '2(Sv)', dx: 70, dy: 108, exitDir: 'down', roleHint: 'K' }
-    ]
-  },
-  {
-    type: 'spd-t2',
-    name: 'Svodič přepětí SPD T2',
-    shortLabel: 'SPD T2',
-    zone: 'din',
-    width: 90,
-    height: 120,
-    pins: [
-      { id: 'L', label: 'L', dx: 25, dy: 12, exitDir: 'up', roleHint: 'L' },
-      { id: 'N', label: 'N', dx: 65, dy: 12, exitDir: 'up', roleHint: 'N' },
-      { id: 'PE', label: 'PE⏚', dx: 45, dy: 108, exitDir: 'down', roleHint: 'PE' }
-    ]
-  },
-
-  // --- MŮSTKY A SBĚRNICE V ROZVADĚČI (zone: 'busbar') ---
-  {
-    type: 'busbar-pe',
-    name: 'Ochranný můstek PE (5 šroubů)',
-    shortLabel: 'Můstek PE (⏚)',
-    zone: 'busbar',
-    width: 170,
-    height: 50,
-    pins: [
-      { id: 'PE1', label: 'PE1', dx: 25, dy: 38, exitDir: 'down', roleHint: 'PE' },
-      { id: 'PE2', label: 'PE2', dx: 55, dy: 38, exitDir: 'down', roleHint: 'PE' },
-      { id: 'PE3', label: 'PE3', dx: 85, dy: 38, exitDir: 'down', roleHint: 'PE' },
-      { id: 'PE4', label: 'PE4', dx: 115, dy: 38, exitDir: 'down', roleHint: 'PE' },
-      { id: 'PE5', label: 'PE5', dx: 145, dy: 38, exitDir: 'down', roleHint: 'PE' }
-    ]
-  },
-  {
-    type: 'busbar-n',
-    name: 'Nulový můstek N (izolovaný, 5 šroubů)',
-    shortLabel: 'Můstek N',
-    zone: 'busbar',
-    width: 170,
-    height: 50,
-    pins: [
-      { id: 'N1', label: 'N1', dx: 25, dy: 38, exitDir: 'down', roleHint: 'N' },
-      { id: 'N2', label: 'N2', dx: 55, dy: 38, exitDir: 'down', roleHint: 'N' },
-      { id: 'N3', label: 'N3', dx: 85, dy: 38, exitDir: 'down', roleHint: 'N' },
-      { id: 'N4', label: 'N4', dx: 115, dy: 38, exitDir: 'down', roleHint: 'N' },
-      { id: 'N5', label: 'N5', dx: 145, dy: 38, exitDir: 'down', roleHint: 'N' }
-    ]
-  },
-
-  // --- PRVKY NA MONTÁŽNÍ TABULI / STĚNU (zone: 'wall') ---
-  {
-    type: 'wago-3',
-    name: 'WAGO 221 svorka (3pólová propojovací)',
-    shortLabel: 'WAGO 3P',
-    zone: 'wall',
-    width: 100,
-    height: 50,
-    pins: [
-      { id: 'W1', label: '1', dx: 20, dy: 38, exitDir: 'down' },
-      { id: 'W2', label: '2', dx: 50, dy: 38, exitDir: 'down' },
-      { id: 'W3', label: '3', dx: 80, dy: 38, exitDir: 'down' }
-    ]
-  },
-  {
-    type: 'sw-1',
-    name: 'Vypínač řazení č. 1 (jednopólový)',
-    shortLabel: 'Spínač č. 1',
-    zone: 'wall',
-    width: 110,
-    height: 110,
-    pins: [
-      { id: 'L', label: 'L(in)', dx: 55, dy: 14, exitDir: 'up', roleHint: 'L' },
-      { id: '1', label: '1(out)', dx: 55, dy: 96, exitDir: 'down', roleHint: 'K' }
-    ]
-  },
-  {
-    type: 'sw-5',
-    name: 'Přepínač řazení č. 5 (lustrový 2 klapky)',
-    shortLabel: 'Spínač č. 5',
-    zone: 'wall',
-    width: 110,
-    height: 110,
-    pins: [
-      { id: 'L', label: 'L(in)', dx: 55, dy: 14, exitDir: 'up', roleHint: 'L' },
-      { id: '1', label: '1(A)', dx: 30, dy: 96, exitDir: 'down', roleHint: 'K' },
-      { id: '2', label: '2(B)', dx: 80, dy: 96, exitDir: 'down', roleHint: 'K' }
-    ]
-  },
-  {
-    type: 'sw-6',
-    name: 'Přepínač řazení č. 6 (schodišťový)',
-    shortLabel: 'Přepínač č. 6',
-    zone: 'wall',
-    width: 110,
-    height: 110,
-    pins: [
-      { id: 'L', label: 'L(km)', dx: 55, dy: 14, exitDir: 'up', roleHint: 'L' },
-      { id: '1', label: 'K1', dx: 30, dy: 96, exitDir: 'down', roleHint: 'K' },
-      { id: '2', label: 'K2', dx: 80, dy: 96, exitDir: 'down', roleHint: 'K' }
-    ]
-  },
-  {
-    type: 'sw-7',
-    name: 'Přepínač řazení č. 7 (křížový)',
-    shortLabel: 'Křížák č. 7',
-    zone: 'wall',
-    width: 110,
-    height: 110,
-    pins: [
-      { id: '1', label: '1(in↑)', dx: 30, dy: 14, exitDir: 'up', roleHint: 'K' },
-      { id: '2', label: '2(in↑)', dx: 80, dy: 14, exitDir: 'up', roleHint: 'K' },
-      { id: '3', label: '3(out↓)', dx: 30, dy: 96, exitDir: 'down', roleHint: 'K' },
-      { id: '4', label: '4(out↓)', dx: 80, dy: 96, exitDir: 'down', roleHint: 'K' }
-    ]
-  },
-  {
-    type: 'sw-push',
-    name: 'Tlačítko č. 1/0 (pro impulzní relé)',
-    shortLabel: 'Tlačítko 1/0',
-    zone: 'wall',
-    width: 110,
-    height: 110,
-    pins: [
-      { id: 'L', label: 'L(in)', dx: 55, dy: 14, exitDir: 'up', roleHint: 'L' },
-      { id: '1', label: '1(imp)', dx: 55, dy: 96, exitDir: 'down', roleHint: 'K' }
-    ]
-  },
-  {
-    type: 'socket-230',
-    name: 'Zásuvka 230 V (L vlevo, PE nahoře, N vpravo)',
-    shortLabel: 'Zásuvka 230V',
-    zone: 'wall',
-    width: 130,
-    height: 110,
-    pins: [
-      { id: 'L', label: 'L(vlevo)', dx: 30, dy: 14, exitDir: 'up', roleHint: 'L' },
-      { id: 'PE', label: 'PE(kolík)', dx: 65, dy: 14, exitDir: 'up', roleHint: 'PE' },
-      { id: 'N', label: 'N(vpravo)', dx: 100, dy: 14, exitDir: 'up', roleHint: 'N' }
-    ]
-  },
-  {
-    type: 'lamp-e27',
-    name: 'Svítidlo E27 (třída I – střed L, závit N, kostra PE)',
-    shortLabel: 'Svítidlo E27',
-    zone: 'wall',
-    width: 130,
-    height: 110,
-    pins: [
-      { id: 'L', label: 'L(střed)', dx: 30, dy: 14, exitDir: 'up', roleHint: 'K' },
-      { id: 'N', label: 'N(závit)', dx: 65, dy: 14, exitDir: 'up', roleHint: 'N' },
-      { id: 'PE', label: 'PE(kostra)', dx: 100, dy: 14, exitDir: 'up', roleHint: 'PE' }
-    ]
-  },
-  {
-    type: 'lamp-dual',
-    name: 'Dvojitý lustr (L1, L2, N, PE)',
-    shortLabel: 'Lustr (2 větvě)',
-    zone: 'wall',
-    width: 150,
-    height: 110,
-    pins: [
-      { id: 'L1', label: 'L1', dx: 25, dy: 14, exitDir: 'up', roleHint: 'K' },
-      { id: 'L2', label: 'L2', dx: 60, dy: 14, exitDir: 'up', roleHint: 'K' },
-      { id: 'N', label: 'N', dx: 95, dy: 14, exitDir: 'up', roleHint: 'N' },
-      { id: 'PE', label: 'PE⏚', dx: 125, dy: 14, exitDir: 'up', roleHint: 'PE' }
-    ]
-  },
-  {
-    type: 'pipe-bernard',
-    name: 'Kovové potrubí + svorka Bernard (pospojování)',
-    shortLabel: 'Potrubí (Bernard)',
-    zone: 'wall',
-    width: 130,
-    height: 70,
-    pins: [
-      { id: 'PE', label: 'PE(⏚)', dx: 65, dy: 14, exitDir: 'up', roleHint: 'PE' }
-    ]
-  }
-];
-
-export interface PlacedDevice {
+export interface PlacedItem {
   instanceId: string;
-  type: BoardDeviceType;
+  type: string;
   label: string;
   x: number;
   y: number;
-  stateA: boolean;
-  stateB: boolean;
+  state: number; // 0 = OFF/pos0, 1 = ON/pos1, 2 = Left ON, 3 = Both ON
 }
 
 export interface BoardWire {
   id: string;
   fromInstanceId: string;
-  fromPinId: string;
+  fromTerminalId: string;
   toInstanceId: string;
-  toPinId: string;
-  color: BoardWireColor;
+  toTerminalId: string;
+  color: WireColor;
 }
 
-const WIRE_PALETTE: { id: BoardWireColor; label: string; hex: string; dash?: string }[] = [
-  { id: 'brown', label: 'Hnědá (Fáze L)', hex: '#d97706' },
-  { id: 'black', label: 'Černá (Koresp. / Spínaná)', hex: '#94a3b8' },
-  { id: 'grey', label: 'Šedá (Koresp. / L3)', hex: '#cbd5e1' },
-  { id: 'blue', label: 'Modrá (Střední N)', hex: '#3b82f6' },
-  { id: 'green-yellow', label: 'Zeleno-žlutá (Ochranný PE)', hex: '#22c55e', dash: '8 4' },
-  { id: 'comb', label: 'Fázový hřeben (DIN propojka)', hex: '#b45309' }
-];
+export type DifficultyLevel = 1 | 2 | 3;
 
-const SUPPLY_DEVICE: PaletteItem = {
-  type: 'supply-in',
-  name: 'Přívod ze sítě 230 V (L, N, PE)',
-  shortLabel: 'SÍŤ 230V',
-  zone: 'busbar',
-  width: 130,
-  height: 50,
-  pins: [
-    { id: 'L', label: 'L(230V)', dx: 25, dy: 38, exitDir: 'down', roleHint: 'L' },
-    { id: 'N', label: 'N', dx: 65, dy: 38, exitDir: 'down', roleHint: 'N' },
-    { id: 'PE', label: 'PE(⏚)', dx: 105, dy: 38, exitDir: 'down', roleHint: 'PE' }
-  ]
+export interface BoardTask {
+  id: string;
+  level: DifficultyLevel;
+  number: number;
+  title: string;
+  subtitle: string;
+  assignment: string;
+  items: PlacedItem[];
+  solutionWires: BoardWire[];
+  check: (
+    items: PlacedItem[],
+    wires: BoardWire[],
+    sim: SimulationResult
+  ) => { ok: boolean; messages: string[] };
+}
+
+interface SimulationResult {
+  liveNodes: Set<string>;
+  neutralNodes: Set<string>;
+  peNodes: Set<string>;
+  nodePhases: Map<string, Set<'L1' | 'L2' | 'L3'>>;
+  shortCircuit: boolean;
+  rcdTripped: boolean;
+  energizedContactors: Set<string>;
+  diagnostics: string[];
+}
+
+// ============================================================================
+// BARVY VODIČŮ DLE ČSN EN 60445
+// ============================================================================
+
+const WIRE_COLORS: Record<
+  WireColor,
+  { name: string; stroke: string; badgeBg: string; desc: string }
+> = {
+  L: {
+    name: 'Hnědá / Černá (L1/L2/L3)',
+    stroke: '#b45309',
+    badgeBg: 'bg-amber-700',
+    desc: 'Fázový vodič L1, L2, L3',
+  },
+  N: {
+    name: 'Modrá (N)',
+    stroke: '#2563eb',
+    badgeBg: 'bg-blue-600',
+    desc: 'Střední (nulový) vodič N',
+  },
+  PE: {
+    name: 'Zeleno-žlutá (PE)',
+    stroke: '#16a34a',
+    badgeBg: 'bg-emerald-600',
+    desc: 'Ochranný vodič PE / pospojování',
+  },
+  SW1: {
+    name: 'Černá (spínaná / koresp.)',
+    stroke: '#475569',
+    badgeBg: 'bg-slate-600',
+    desc: 'Spínaná fáze nebo korespondenční vodič',
+  },
+  SW2: {
+    name: 'Šedá / Oranžová (ovládací)',
+    stroke: '#ea580c',
+    badgeBg: 'bg-orange-600',
+    desc: 'Druhý korespondenční nebo ovládací vodič A1',
+  },
 };
 
-// Výchozí nepřekrývající se sestava s dostatečnými instalačními kanály pro ortogonální vodiče
-const INITIAL_DEVICES: PlacedDevice[] = [
-  // Horní lišta můstků (y = 20)
-  { instanceId: 'supply', type: 'supply-in', label: 'Přívod 230V', x: 30, y: 20, stateA: true, stateB: false },
-  { instanceId: 'pe-bar', type: 'busbar-pe', label: 'Můstek PE', x: 240, y: 20, stateA: true, stateB: false },
-  { instanceId: 'n-bar', type: 'busbar-n', label: 'Můstek N (za RCD)', x: 470, y: 20, stateA: true, stateB: false },
-  // DIN lišta (y = 120)
-  { instanceId: 'rcd1', type: 'rcd-2p', label: 'FI1 (RCD 30mA)', x: 60, y: 120, stateA: true, stateB: false },
-  { instanceId: 'b10', type: 'mcb-b10', label: 'FA1 (B10 Světla)', x: 200, y: 120, stateA: true, stateB: false },
-  { instanceId: 'b16', type: 'mcb-b16', label: 'FA2 (B16 Zásuvky)', x: 310, y: 120, stateA: true, stateB: false },
-  // Montážní deska stěny (y = 350)
-  { instanceId: 'sw6a', type: 'sw-6', label: 'Přepínač 6A (dole)', x: 50, y: 350, stateA: false, stateB: false },
-  { instanceId: 'sw6b', type: 'sw-6', label: 'Přepínač 6B (nahoře)', x: 220, y: 350, stateA: false, stateB: false },
-  { instanceId: 'lamp1', type: 'lamp-e27', label: 'Svítidlo E27', x: 400, y: 350, stateA: false, stateB: false },
-  { instanceId: 'sock1', type: 'socket-230', label: 'Zásuvka 230 V', x: 600, y: 350, stateA: false, stateB: false }
+// ============================================================================
+// KATALOG PRVKŮ PRO UMÍSTĚNÍ NA TABULI
+// ============================================================================
+
+const PALETTE_ITEMS: PaletteItemDef[] = [
+  // Pevný 3fázový přívod sítě
+  {
+    type: 'supply',
+    name: 'Přívod sítě 3× 230/400 V (TN-S)',
+    shortName: 'SÍŤ 3F TN-S',
+    zone: 'fixed',
+    width: 112,
+    height: 76,
+    description: 'Třífázový přívod L1, L2, L3, N, PE (230/400 V AC)',
+    terminals: [
+      { id: 'L1', label: 'L1', relX: 16, relY: 66, hintColor: 'L' },
+      { id: 'L2', label: 'L2', relX: 36, relY: 66, hintColor: 'L' },
+      { id: 'L3', label: 'L3', relX: 56, relY: 66, hintColor: 'L' },
+      { id: 'N', label: 'N', relX: 76, relY: 66, hintColor: 'N' },
+      { id: 'PE', label: 'PE', relX: 96, relY: 66, hintColor: 'PE' },
+    ],
+  },
+
+  // Můstky N / PE / MET
+  {
+    type: 'busbar-n',
+    name: 'Sběrnice N (modrá)',
+    shortName: 'Můstek N',
+    zone: 'busbar',
+    width: 140,
+    height: 36,
+    description: 'Propojený nulový můstek N (5 svorek)',
+    terminals: [
+      { id: 'N1', label: '1', relX: 20, relY: 24, hintColor: 'N' },
+      { id: 'N2', label: '2', relX: 45, relY: 24, hintColor: 'N' },
+      { id: 'N3', label: '3', relX: 70, relY: 24, hintColor: 'N' },
+      { id: 'N4', label: '4', relX: 95, relY: 24, hintColor: 'N' },
+      { id: 'N5', label: '5', relX: 120, relY: 24, hintColor: 'N' },
+    ],
+  },
+  {
+    type: 'busbar-pe',
+    name: 'Sběrnice PE (zeleno-žlutá)',
+    shortName: 'Můstek PE',
+    zone: 'busbar',
+    width: 140,
+    height: 36,
+    description: 'Propojený ochranný můstek PE (5 svorek)',
+    terminals: [
+      { id: 'PE1', label: '1', relX: 20, relY: 24, hintColor: 'PE' },
+      { id: 'PE2', label: '2', relX: 45, relY: 24, hintColor: 'PE' },
+      { id: 'PE3', label: '3', relX: 70, relY: 24, hintColor: 'PE' },
+      { id: 'PE4', label: '4', relX: 95, relY: 24, hintColor: 'PE' },
+      { id: 'PE5', label: '5', relX: 120, relY: 24, hintColor: 'PE' },
+    ],
+  },
+  {
+    type: 'met-hop',
+    name: 'Svorkovnice MET / HOP',
+    shortName: 'MET / HOP',
+    zone: 'busbar',
+    width: 130,
+    height: 36,
+    description: 'Hlavní ochranná přípojnice zemnění a pospojování',
+    terminals: [
+      { id: 'E1', label: 'Zem', relX: 20, relY: 24, hintColor: 'PE' },
+      { id: 'E2', label: 'PE', relX: 55, relY: 24, hintColor: 'PE' },
+      { id: 'E3', label: 'Voda', relX: 85, relY: 24, hintColor: 'PE' },
+      { id: 'E4', label: 'SPD', relX: 112, relY: 24, hintColor: 'PE' },
+    ],
+  },
+
+  // DIN LIŠTA – 1F a 3F moduly
+  {
+    type: 'qm-3p',
+    name: 'Hlavní vypínač 3P (40 A)',
+    shortName: 'Vypínač 3P',
+    zone: 'din',
+    width: 82,
+    height: 112,
+    description: 'Třípólový hlavní vypínač rozvaděče (1-2, 3-4, 5-6)',
+    terminals: [
+      { id: '1', label: '1', relX: 18, relY: 12, hintColor: 'L' },
+      { id: '3', label: '3', relX: 41, relY: 12, hintColor: 'L' },
+      { id: '5', label: '5', relX: 64, relY: 12, hintColor: 'L' },
+      { id: '2', label: '2', relX: 18, relY: 100, hintColor: 'L' },
+      { id: '4', label: '4', relX: 41, relY: 100, hintColor: 'L' },
+      { id: '6', label: '6', relX: 64, relY: 100, hintColor: 'L' },
+    ],
+  },
+  {
+    type: 'mcb-b10',
+    name: 'Jistič 1P B10 (světla)',
+    shortName: 'FA B10',
+    zone: 'din',
+    width: 50,
+    height: 112,
+    description: 'Jednopólový jistič B10 A (1 = vstup, 2 = výstup)',
+    terminals: [
+      { id: '1', label: '1', relX: 25, relY: 12, hintColor: 'L' },
+      { id: '2', label: '2', relX: 25, relY: 100, hintColor: 'L' },
+    ],
+  },
+  {
+    type: 'mcb-b16',
+    name: 'Jistič 1P B16 (zásuvky)',
+    shortName: 'FA B16',
+    zone: 'din',
+    width: 50,
+    height: 112,
+    description: 'Jednopólový jistič B16 A (1 = vstup, 2 = výstup)',
+    terminals: [
+      { id: '1', label: '1', relX: 25, relY: 12, hintColor: 'L' },
+      { id: '2', label: '2', relX: 25, relY: 100, hintColor: 'L' },
+    ],
+  },
+  {
+    type: 'mcb-3p',
+    name: 'Jistič 3P B16 (3f spotřebiče)',
+    shortName: 'FA 3P B16',
+    zone: 'din',
+    width: 82,
+    height: 112,
+    description: 'Třípólový jistič B16 A pro 400 V (1-2, 3-4, 5-6)',
+    terminals: [
+      { id: '1', label: '1', relX: 18, relY: 12, hintColor: 'L' },
+      { id: '3', label: '3', relX: 41, relY: 12, hintColor: 'L' },
+      { id: '5', label: '5', relX: 64, relY: 12, hintColor: 'L' },
+      { id: '2', label: '2', relX: 18, relY: 100, hintColor: 'L' },
+      { id: '4', label: '4', relX: 41, relY: 100, hintColor: 'L' },
+      { id: '6', label: '6', relX: 64, relY: 100, hintColor: 'L' },
+    ],
+  },
+  {
+    type: 'rcd-2p',
+    name: 'Proudový chránič 2P 30mA',
+    shortName: 'RCD 2P',
+    zone: 'din',
+    width: 78,
+    height: 112,
+    description: 'Dvoupólový proudový chránič FI (1-2 fáze, N_in - N_out)',
+    terminals: [
+      { id: '1', label: '1(L)', relX: 24, relY: 12, hintColor: 'L' },
+      { id: 'N_in', label: 'N', relX: 54, relY: 12, hintColor: 'N' },
+      { id: '2', label: '2(L)', relX: 24, relY: 100, hintColor: 'L' },
+      { id: 'N_out', label: 'N', relX: 54, relY: 100, hintColor: 'N' },
+    ],
+  },
+  {
+    type: 'rcd-4p',
+    name: 'Proudový chránič 4P 30mA (3f)',
+    shortName: 'RCD 4P',
+    zone: 'din',
+    width: 108,
+    height: 112,
+    description: 'Čtyřpólový proudový chránič pro 3f rozvody (1,3,5,N -> 2,4,6,N)',
+    terminals: [
+      { id: '1', label: '1', relX: 18, relY: 12, hintColor: 'L' },
+      { id: '3', label: '3', relX: 42, relY: 12, hintColor: 'L' },
+      { id: '5', label: '5', relX: 66, relY: 12, hintColor: 'L' },
+      { id: 'N_in', label: 'N', relX: 90, relY: 12, hintColor: 'N' },
+      { id: '2', label: '2', relX: 18, relY: 100, hintColor: 'L' },
+      { id: '4', label: '4', relX: 42, relY: 100, hintColor: 'L' },
+      { id: '6', label: '6', relX: 66, relY: 100, hintColor: 'L' },
+      { id: 'N_out', label: 'N', relX: 90, relY: 100, hintColor: 'N' },
+    ],
+  },
+  {
+    type: 'rcbo-1p',
+    name: 'Jističochránič RCBO B16/30mA',
+    shortName: 'RCBO B16',
+    zone: 'din',
+    width: 78,
+    height: 112,
+    description: 'Kombinovaný proudový chránič s jističem 1P+N (B16 / 30 mA)',
+    terminals: [
+      { id: '1', label: '1(L)', relX: 24, relY: 12, hintColor: 'L' },
+      { id: 'N_in', label: 'N', relX: 54, relY: 12, hintColor: 'N' },
+      { id: '2', label: '2(L)', relX: 24, relY: 100, hintColor: 'L' },
+      { id: 'N_out', label: 'N', relX: 54, relY: 100, hintColor: 'N' },
+    ],
+  },
+  {
+    type: 'contactor-km',
+    name: 'Instalační stykač KM (3P + cívka A1/A2)',
+    shortName: 'Stykač KM',
+    zone: 'din',
+    width: 110,
+    height: 112,
+    description: '3pólový stykač: cívka A1-A2 spíná silové kontakty 1-2, 3-4, 5-6',
+    terminals: [
+      { id: 'A1', label: 'A1', relX: 16, relY: 12, hintColor: 'SW2' },
+      { id: '1', label: '1', relX: 42, relY: 12, hintColor: 'L' },
+      { id: '3', label: '3', relX: 68, relY: 12, hintColor: 'L' },
+      { id: '5', label: '5', relX: 94, relY: 12, hintColor: 'L' },
+      { id: 'A2', label: 'A2', relX: 16, relY: 100, hintColor: 'N' },
+      { id: '2', label: '2', relX: 42, relY: 100, hintColor: 'L' },
+      { id: '4', label: '4', relX: 68, relY: 100, hintColor: 'L' },
+      { id: '6', label: '6', relX: 94, relY: 100, hintColor: 'L' },
+    ],
+  },
+  {
+    type: 'relay-ka',
+    name: 'Impulzní relé KA (krokové)',
+    shortName: 'Relé KA',
+    zone: 'din',
+    width: 78,
+    height: 112,
+    description: 'Krokové relé: cívka A1-A2, spínací kontakt 1-2',
+    terminals: [
+      { id: 'A1', label: 'A1', relX: 24, relY: 12, hintColor: 'SW1' },
+      { id: '1', label: '1(L)', relX: 54, relY: 12, hintColor: 'L' },
+      { id: 'A2', label: 'A2', relX: 24, relY: 100, hintColor: 'N' },
+      { id: '2', label: '2(L′)', relX: 54, relY: 100, hintColor: 'SW1' },
+    ],
+  },
+  {
+    type: 'spd-t2',
+    name: 'Svodič přepětí SPD T1+T2 (3P+N)',
+    shortName: 'SPD 3P+N',
+    zone: 'din',
+    width: 108,
+    height: 112,
+    description: 'Chránič přepětí 3P+N: nahoře L1, L2, L3, N, dole svorka PE do MET',
+    terminals: [
+      { id: 'L1', label: 'L1', relX: 18, relY: 12, hintColor: 'L' },
+      { id: 'L2', label: 'L2', relX: 42, relY: 12, hintColor: 'L' },
+      { id: 'L3', label: 'L3', relX: 66, relY: 12, hintColor: 'L' },
+      { id: 'N', label: 'N', relX: 90, relY: 12, hintColor: 'N' },
+      { id: 'PE', label: 'PE', relX: 54, relY: 100, hintColor: 'PE' },
+    ],
+  },
+
+  // MONTÁŽNÍ PANEL (spínače, krabice, spotřebiče)
+  {
+    type: 'wago-box',
+    name: 'Odbočná krabice (3× WAGO)',
+    shortName: 'Krabice WAGO',
+    zone: 'wall',
+    width: 136,
+    height: 82,
+    description: '3 nezávislé WAGO svorky (A, B, C) – každá má 3 propojené vstupy',
+    terminals: [
+      { id: 'A1', label: 'A', relX: 22, relY: 16 },
+      { id: 'A2', label: 'A', relX: 22, relY: 41 },
+      { id: 'A3', label: 'A', relX: 22, relY: 66 },
+      { id: 'B1', label: 'B', relX: 68, relY: 16 },
+      { id: 'B2', label: 'B', relX: 68, relY: 41 },
+      { id: 'B3', label: 'B', relX: 68, relY: 66 },
+      { id: 'C1', label: 'C', relX: 114, relY: 16 },
+      { id: 'C2', label: 'C', relX: 114, relY: 41 },
+      { id: 'C3', label: 'C', relX: 114, relY: 66 },
+    ],
+  },
+  {
+    type: 'switch-1',
+    name: 'Spínač jednopólový (řazení 1)',
+    shortName: 'Spínač č. 1',
+    zone: 'wall',
+    width: 86,
+    height: 86,
+    description: 'Klasický vypínač: L = přívod fáze, 1 = spínaný vývod ke světlu',
+    terminals: [
+      { id: 'L', label: 'L', relX: 43, relY: 14, hintColor: 'L' },
+      { id: '1', label: '1', relX: 43, relY: 72, hintColor: 'SW1' },
+    ],
+  },
+  {
+    type: 'switch-5',
+    name: 'Sériový (lustrový) přepínač č. 5',
+    shortName: 'Lustrový č. 5',
+    zone: 'wall',
+    width: 92,
+    height: 86,
+    description: 'Dvě klapky: L = společný přívod, 1 = větev 1, 2 = větev 2',
+    terminals: [
+      { id: 'L', label: 'L', relX: 46, relY: 14, hintColor: 'L' },
+      { id: '1', label: '1', relX: 26, relY: 72, hintColor: 'SW1' },
+      { id: '2', label: '2', relX: 66, relY: 72, hintColor: 'SW2' },
+    ],
+  },
+  {
+    type: 'switch-6',
+    name: 'Schodišťový přepínač (řazení 6)',
+    shortName: 'Schodišťák č. 6',
+    zone: 'wall',
+    width: 92,
+    height: 86,
+    description: 'Přepíná společnou svorku L mezi korespondenčními svorkami 1 a 2',
+    terminals: [
+      { id: 'L', label: 'L/P', relX: 46, relY: 14, hintColor: 'L' },
+      { id: '1', label: '1', relX: 26, relY: 72, hintColor: 'SW1' },
+      { id: '2', label: '2', relX: 66, relY: 72, hintColor: 'SW2' },
+    ],
+  },
+  {
+    type: 'switch-7',
+    name: 'Křížový přepínač (řazení 7)',
+    shortName: 'Křížový č. 7',
+    zone: 'wall',
+    width: 96,
+    height: 86,
+    description: 'Mezi dva schodišťáky: přímé (1-3, 2-4) nebo křížové (1-4, 2-3)',
+    terminals: [
+      { id: '1', label: '1', relX: 28, relY: 14, hintColor: 'SW1' },
+      { id: '2', label: '2', relX: 68, relY: 14, hintColor: 'SW2' },
+      { id: '3', label: '3', relX: 28, relY: 72, hintColor: 'SW1' },
+      { id: '4', label: '4', relX: 68, relY: 72, hintColor: 'SW2' },
+    ],
+  },
+  {
+    type: 'pushbutton',
+    name: 'Tlačítko zapínací č. 1/0 (NO)',
+    shortName: 'Tlačítko 1/0',
+    zone: 'wall',
+    width: 86,
+    height: 86,
+    description: 'Spíná obvod cívky stykače nebo relé (L -> 1)',
+    terminals: [
+      { id: 'L', label: 'L', relX: 43, relY: 14, hintColor: 'L' },
+      { id: '1', label: '1', relX: 43, relY: 72, hintColor: 'SW1' },
+    ],
+  },
+  {
+    type: 'lamp-1',
+    name: 'Svítidlo E27 (230 V)',
+    shortName: 'Světlo E27',
+    zone: 'wall',
+    width: 96,
+    height: 86,
+    description: 'Svítidlo se svorkami L, N, PE. Rozsvítí se při L + N.',
+    terminals: [
+      { id: 'L', label: 'L', relX: 22, relY: 72, hintColor: 'SW1' },
+      { id: 'PE', label: 'PE', relX: 48, relY: 72, hintColor: 'PE' },
+      { id: 'N', label: 'N', relX: 74, relY: 72, hintColor: 'N' },
+    ],
+  },
+  {
+    type: 'lamp-2',
+    name: 'Lustr dvouvětvový (L1, L2, N, PE)',
+    shortName: 'Lustr 2-větv.',
+    zone: 'wall',
+    width: 112,
+    height: 86,
+    description: 'Dva světelné okruhy L1 a L2 se společným N a PE',
+    terminals: [
+      { id: 'L1', label: 'L1', relX: 18, relY: 72, hintColor: 'SW1' },
+      { id: 'L2', label: 'L2', relX: 42, relY: 72, hintColor: 'SW2' },
+      { id: 'PE', label: 'PE', relX: 68, relY: 72, hintColor: 'PE' },
+      { id: 'N', label: 'N', relX: 94, relY: 72, hintColor: 'N' },
+    ],
+  },
+  {
+    type: 'socket-230',
+    name: 'Zásuvka 230 V / 16 A',
+    shortName: 'Zásuvka 230V',
+    zone: 'wall',
+    width: 96,
+    height: 86,
+    description: 'ČSN: Fáze L vlevo, ochranný kolík PE uprostřed, N vpravo',
+    terminals: [
+      { id: 'L', label: 'L', relX: 22, relY: 72, hintColor: 'L' },
+      { id: 'PE', label: 'PE', relX: 48, relY: 72, hintColor: 'PE' },
+      { id: 'N', label: 'N', relX: 74, relY: 72, hintColor: 'N' },
+    ],
+  },
+  {
+    type: 'socket-400',
+    name: 'Třífázová zásuvka 400 V (5P 16 A)',
+    shortName: 'Zásuvka 400V',
+    zone: 'wall',
+    width: 120,
+    height: 90,
+    description: 'Pětipólová zásuvka 400 V: L1, L2, L3, N, PE',
+    terminals: [
+      { id: 'L1', label: 'L1', relX: 18, relY: 76, hintColor: 'L' },
+      { id: 'L2', label: 'L2', relX: 40, relY: 76, hintColor: 'L' },
+      { id: 'L3', label: 'L3', relX: 62, relY: 76, hintColor: 'L' },
+      { id: 'N', label: 'N', relX: 84, relY: 76, hintColor: 'N' },
+      { id: 'PE', label: 'PE', relX: 104, relY: 76, hintColor: 'PE' },
+    ],
+  },
+  {
+    type: 'boiler-1f',
+    name: 'Elektrický bojler 230 V (2,2 kW)',
+    shortName: 'Bojler 230V',
+    zone: 'wall',
+    width: 102,
+    height: 92,
+    description: 'Zásobníkový ohřívač vody 230 V se svorkami L, N, PE',
+    terminals: [
+      { id: 'L', label: 'L', relX: 24, relY: 78, hintColor: 'L' },
+      { id: 'N', label: 'N', relX: 51, relY: 78, hintColor: 'N' },
+      { id: 'PE', label: 'PE', relX: 78, relY: 78, hintColor: 'PE' },
+    ],
+  },
+  {
+    type: 'stove-3f',
+    name: 'Elektrická kamna / sporák 400 V (3F)',
+    shortName: 'Kamna 400V 3F',
+    zone: 'wall',
+    width: 126,
+    height: 92,
+    description: 'Třífázový spotřebič 400 V (L1, L2, L3, N, PE)',
+    terminals: [
+      { id: 'L1', label: 'L1', relX: 18, relY: 78, hintColor: 'L' },
+      { id: 'L2', label: 'L2', relX: 41, relY: 78, hintColor: 'L' },
+      { id: 'L3', label: 'L3', relX: 64, relY: 78, hintColor: 'L' },
+      { id: 'N', label: 'N', relX: 87, relY: 78, hintColor: 'N' },
+      { id: 'PE', label: 'PE', relX: 108, relY: 78, hintColor: 'PE' },
+    ],
+  },
+  {
+    type: 'water-pipe',
+    name: 'Kovové potrubí vody (pospojování)',
+    shortName: 'Potrubí vody',
+    zone: 'wall',
+    width: 106,
+    height: 60,
+    description: 'Zemnicí pásek Bernard na vodovodním potrubí pro pospojování k MET',
+    terminals: [{ id: 'PE', label: 'PE', relX: 53, relY: 16, hintColor: 'PE' }],
+  },
 ];
 
-const INITIAL_WIRES: BoardWire[] = [
-  { id: 'w1', fromInstanceId: 'supply', fromPinId: 'PE', toInstanceId: 'pe-bar', toPinId: 'PE1', color: 'green-yellow' },
-  { id: 'w2', fromInstanceId: 'supply', fromPinId: 'L', toInstanceId: 'rcd1', toPinId: '1', color: 'brown' },
-  { id: 'w3', fromInstanceId: 'supply', fromPinId: 'N', toInstanceId: 'rcd1', toPinId: 'N-in', color: 'blue' },
-  { id: 'w4', fromInstanceId: 'rcd1', fromPinId: 'N-out', toInstanceId: 'n-bar', toPinId: 'N1', color: 'blue' },
-  { id: 'w5', fromInstanceId: 'rcd1', fromPinId: '2', toInstanceId: 'b10', toPinId: '1', color: 'comb' },
-  { id: 'w6', fromInstanceId: 'b10', fromPinId: '1', toInstanceId: 'b16', toPinId: '1', color: 'comb' },
-  { id: 'w7', fromInstanceId: 'b10', fromPinId: '2', toInstanceId: 'sw6a', toPinId: 'L', color: 'brown' },
-  { id: 'w8', fromInstanceId: 'sw6a', fromPinId: '1', toInstanceId: 'sw6b', toPinId: '1', color: 'black' },
-  { id: 'w9', fromInstanceId: 'sw6a', fromPinId: '2', toInstanceId: 'sw6b', toPinId: '2', color: 'grey' },
-  { id: 'w10', fromInstanceId: 'sw6b', fromPinId: 'L', toInstanceId: 'lamp1', toPinId: 'L', color: 'brown' },
-  { id: 'w11', fromInstanceId: 'n-bar', fromPinId: 'N2', toInstanceId: 'lamp1', toPinId: 'N', color: 'blue' },
-  { id: 'w12', fromInstanceId: 'pe-bar', fromPinId: 'PE2', toInstanceId: 'lamp1', toPinId: 'PE', color: 'green-yellow' },
-  { id: 'w13', fromInstanceId: 'b16', fromPinId: '2', toInstanceId: 'sock1', toPinId: 'L', color: 'brown' },
-  { id: 'w14', fromInstanceId: 'n-bar', fromPinId: 'N3', toInstanceId: 'sock1', toPinId: 'N', color: 'blue' },
-  { id: 'w15', fromInstanceId: 'pe-bar', fromPinId: 'PE3', toInstanceId: 'sock1', toPinId: 'PE', color: 'green-yellow' }
-];
+const PALETTE_MAP: Record<string, PaletteItemDef> = Object.fromEntries(
+  PALETTE_ITEMS.map((p) => [p.type, p])
+);
 
 // ============================================================================
-// ORTOGONÁLNÍ ROUTER VODIČŮ (A* na mřížce 10×10 px s vyhýbáním se modulům!)
+// KONSTANTY ZÓN NA TABULI A DETEKCE KOLIZÍ
 // ============================================================================
-const GRID_STEP = 10;
-const BOARD_W = 820;
-const BOARD_H = 590;
-const COLS = Math.floor(BOARD_W / GRID_STEP); // 82
-const ROWS = Math.floor(BOARD_H / GRID_STEP); // 59
 
-function getSpecStatic(type: BoardDeviceType): PaletteItem {
-  if (type === 'supply-in') return SUPPLY_DEVICE;
-  return PALETTE_ITEMS.find((p) => p.type === type) || PALETTE_ITEMS[0];
-}
+const BOARD_WIDTH = 820;
+const BOARD_HEIGHT = 590;
 
-/**
- * Kontrola překryvu (kolize) dvou obdélníků s povinným odstupem (gap) pro instalační kanál vodičů.
- */
+const BUSBAR_ROW_Y = 30;
+const DIN_RAIL_ITEM_Y = 98;
+const WALL_ZONE_MIN_Y = 250;
+const WALL_ZONE_MAX_Y = 485;
+const MODULE_GAP = 8;
+
 function boxesOverlap(
-  x1: number,
-  y1: number,
-  w1: number,
-  h1: number,
-  x2: number,
-  y2: number,
-  w2: number,
-  h2: number,
-  gap: number = 20
+  ax: number,
+  ay: number,
+  aw: number,
+  ah: number,
+  bx: number,
+  by: number,
+  bw: number,
+  bh: number,
+  gap = MODULE_GAP
 ): boolean {
-  return !(
-    x1 + w1 + gap <= x2 ||
-    x2 + w2 + gap <= x1 ||
-    y1 + h1 + gap <= y2 ||
-    y2 + h2 + gap <= y1
+  return (
+    ax < bx + bw + gap &&
+    ax + aw + gap > bx &&
+    ay < by + bh + gap &&
+    ay + ah + gap > by
   );
 }
 
-/**
- * Vypočítá ortogonální (vodorovnou a svislou) trasu vodiče mezi dvěma svorkami,
- * která NIKDY neprochází skrz žádný umístěný modul a vyhýbá se obsazeným trasám.
- */
+function hasCollision(
+  candidateId: string,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  items: PlacedItem[]
+): boolean {
+  for (const other of items) {
+    if (other.instanceId === candidateId) continue;
+    const def = PALETTE_MAP[other.type];
+    if (!def) continue;
+    if (boxesOverlap(x, y, w, h, other.x, other.y, def.width, def.height)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function findFreePosition(
+  type: string,
+  items: PlacedItem[]
+): { x: number; y: number } | null {
+  const def = PALETTE_MAP[type];
+  if (!def) return null;
+
+  if (def.zone === 'busbar') {
+    for (let x = 180; x <= BOARD_WIDTH - def.width - 20; x += 10) {
+      if (!hasCollision('__new__', x, BUSBAR_ROW_Y, def.width, def.height, items)) {
+        return { x, y: BUSBAR_ROW_Y };
+      }
+    }
+    return null;
+  }
+
+  if (def.zone === 'din') {
+    for (let x = 180; x <= BOARD_WIDTH - def.width - 20; x += 10) {
+      if (!hasCollision('__new__', x, DIN_RAIL_ITEM_Y, def.width, def.height, items)) {
+        return { x, y: DIN_RAIL_ITEM_Y };
+      }
+    }
+    return null;
+  }
+
+  for (let y = 260; y <= WALL_ZONE_MAX_Y; y += 20) {
+    for (let x = 30; x <= BOARD_WIDTH - def.width - 20; x += 20) {
+      if (!hasCollision('__new__', x, y, def.width, def.height, items)) {
+        return { x, y };
+      }
+    }
+  }
+  return null;
+}
+
+// ============================================================================
+// ORTOGONÁLNÍ (PRAVOÚHLÉ) ROUTOVÁNÍ VODIČŮ S OBCHÁZENÍM MODULŮ (A*)
+// ============================================================================
+
+const GRID_STEP = 10;
+const GRID_COLS = Math.ceil(BOARD_WIDTH / GRID_STEP);
+const GRID_ROWS = Math.ceil(BOARD_HEIGHT / GRID_STEP);
+
+interface TerminalExit {
+  gx: number;
+  gy: number;
+  stubX: number;
+  stubY: number;
+}
+
+function getTerminalExit(item: PlacedItem, termId: string): TerminalExit | null {
+  const def = PALETTE_MAP[item.type];
+  if (!def) return null;
+  const term = def.terminals.find((t) => t.id === termId);
+  if (!term) return null;
+
+  const absX = item.x + term.relX;
+  const absY = item.y + term.relY;
+
+  const distTop = term.relY;
+  const distBottom = def.height - term.relY;
+  const distLeft = term.relX;
+  const distRight = def.width - term.relX;
+  const minDist = Math.min(distTop, distBottom, distLeft, distRight);
+
+  let exitX = absX;
+  let exitY = absY;
+
+  if (minDist === distTop) {
+    exitY = item.y - 10;
+  } else if (minDist === distBottom) {
+    exitY = item.y + def.height + 10;
+  } else if (minDist === distLeft) {
+    exitX = item.x - 10;
+  } else {
+    exitX = item.x + def.width + 10;
+  }
+
+  const gx = Math.max(1, Math.min(GRID_COLS - 2, Math.round(exitX / GRID_STEP)));
+  const gy = Math.max(1, Math.min(GRID_ROWS - 2, Math.round(exitY / GRID_STEP)));
+
+  return {
+    gx,
+    gy,
+    stubX: gx * GRID_STEP,
+    stubY: gy * GRID_STEP,
+  };
+}
+
 function computeOrthogonalWirePaths(
-  devices: PlacedDevice[],
+  items: PlacedItem[],
   wires: BoardWire[]
 ): Record<string, string> {
-  // 1. Vytvoříme mapu překážek (všechny moduly na tabuli jsou neprůchodné)
-  const blocked = new Uint8Array(COLS * ROWS);
-  for (const dev of devices) {
-    const spec = getSpecStatic(dev.type);
-    const cMin = Math.max(0, Math.floor(dev.x / GRID_STEP));
-    const cMax = Math.min(COLS - 1, Math.ceil((dev.x + spec.width) / GRID_STEP));
-    const rMin = Math.max(0, Math.floor(dev.y / GRID_STEP));
-    const rMax = Math.min(ROWS - 1, Math.ceil((dev.y + spec.height) / GRID_STEP));
-    for (let r = rMin; r <= rMax; r++) {
-      for (let c = cMin; c <= cMax; c++) {
-        blocked[r * COLS + c] = 1;
+  const blocked = new Uint8Array(GRID_COLS * GRID_ROWS);
+  const itemMap = new Map<string, PlacedItem>();
+
+  for (const it of items) {
+    itemMap.set(it.instanceId, it);
+    const def = PALETTE_MAP[it.type];
+    if (!def) continue;
+
+    const c0 = Math.max(0, Math.floor((it.x - 4) / GRID_STEP));
+    const c1 = Math.min(GRID_COLS - 1, Math.ceil((it.x + def.width + 4) / GRID_STEP));
+    const r0 = Math.max(0, Math.floor((it.y - 4) / GRID_STEP));
+    const r1 = Math.min(GRID_ROWS - 1, Math.ceil((it.y + def.height + 4) / GRID_STEP));
+
+    for (let r = r0; r <= r1; r++) {
+      for (let c = c0; c <= c1; c++) {
+        blocked[r * GRID_COLS + c] = 1;
       }
     }
   }
 
-  // Mapa obsazenosti kanálů předchozími vodiči, aby šly souběžné vodiče úhledně vedle sebe
-  const usedCells = new Uint16Array(COLS * ROWS);
-  const resultPaths: Record<string, string> = {};
+  const usedCells = new Uint16Array(GRID_COLS * GRID_ROWS);
+  const paths: Record<string, string> = {};
 
-  const getPinInfo = (instId: string, pinId: string) => {
-    const dev = devices.find((d) => d.instanceId === instId);
-    if (!dev) return null;
-    const spec = getSpecStatic(dev.type);
-    const pin = spec.pins.find((p) => p.id === pinId);
-    if (!pin) return null;
+  const dirs = [
+    { dc: 1, dr: 0 },
+    { dc: -1, dr: 0 },
+    { dc: 0, dr: 1 },
+    { dc: 0, dr: -1 },
+  ];
 
-    const px = dev.x + pin.dx;
-    const py = dev.y + pin.dy;
+  wires.forEach((w) => {
+    const fromItem = itemMap.get(w.fromInstanceId);
+    const toItem = itemMap.get(w.toInstanceId);
+    if (!fromItem || !toItem) return;
 
-    // Kolmý vývod ze svorky ven z těla modulu na první volný bod mřížky
-    let ex = px;
-    let ey = py;
-    if (pin.exitDir === 'up') {
-      ey = dev.y - 10;
-    } else if (pin.exitDir === 'down') {
-      ey = dev.y + spec.height + 10;
-    } else if (pin.exitDir === 'left') {
-      ex = dev.x - 10;
-    } else {
-      ex = dev.x + spec.width + 10;
-    }
+    const fromDef = PALETTE_MAP[fromItem.type];
+    const toDef = PALETTE_MAP[toItem.type];
+    const fromTerm = fromDef?.terminals.find((t) => t.id === w.fromTerminalId);
+    const toTerm = toDef?.terminals.find((t) => t.id === w.toTerminalId);
+    if (!fromTerm || !toTerm) return;
 
-    const gc = Math.max(1, Math.min(COLS - 2, Math.round(ex / GRID_STEP)));
-    const gr = Math.max(1, Math.min(ROWS - 2, Math.round(ey / GRID_STEP)));
+    const startAbsX = fromItem.x + fromTerm.relX;
+    const startAbsY = fromItem.y + fromTerm.relY;
+    const endAbsX = toItem.x + toTerm.relX;
+    const endAbsY = toItem.y + toTerm.relY;
 
-    return { px, py, ex: gc * GRID_STEP, ey: gr * GRID_STEP, gc, gr };
-  };
+    const startExit = getTerminalExit(fromItem, w.fromTerminalId);
+    const endExit = getTerminalExit(toItem, w.toTerminalId);
+    if (!startExit || !endExit) return;
 
-  // Směry: 0 = nahoru, 1 = doprava, 2 = dolů, 3 = doleva
-  const dCol = [0, 1, 0, -1];
-  const dRow = [-1, 0, 1, 0];
+    const startIdx = startExit.gy * GRID_COLS + startExit.gx;
+    const endIdx = endExit.gy * GRID_COLS + endExit.gx;
 
-  for (const w of wires) {
-    const start = getPinInfo(w.fromInstanceId, w.fromPinId);
-    const end = getPinInfo(w.toInstanceId, w.toPinId);
-    if (!start || !end) continue;
+    const prevBlockedStart = blocked[startIdx];
+    const prevBlockedEnd = blocked[endIdx];
+    blocked[startIdx] = 0;
+    blocked[endIdx] = 0;
 
-    // Dočasně odblokujeme samotný výstupní a vstupní bod mřížky
-    const startCell = start.gr * COLS + start.gc;
-    const endCell = end.gr * COLS + end.gc;
+    const totalStates = GRID_COLS * GRID_ROWS * 5;
+    const gScore = new Float32Array(totalStates);
+    gScore.fill(1e9);
+    const parentState = new Int32Array(totalStates);
+    parentState.fill(-1);
 
-    // Stav v A*: (row, col, dir) -> index = (row * COLS + col) * 4 + dir
-    const totalStates = COLS * ROWS * 4;
-    const gScore = new Int32Array(totalStates).fill(1e9);
-    const parent = new Int32Array(totalStates).fill(-1);
-    const closed = new Uint8Array(totalStates);
+    const openSet: number[] = [];
+    const startState = startIdx * 5 + 4;
+    gScore[startState] = 0;
+    openSet.push(startState);
 
-    // Jednoduchá prioritní fronta
-    const openStates: number[] = [];
-    const openF: number[] = [];
+    let goalState = -1;
 
-    const pushOpen = (stateIdx: number, fVal: number) => {
-      openStates.push(stateIdx);
-      openF.push(fVal);
-    };
-
-    const popBest = (): number => {
-      let bestIdx = 0;
-      for (let i = 1; i < openF.length; i++) {
-        if (openF[i] < openF[bestIdx]) bestIdx = i;
+    while (openSet.length > 0) {
+      let bestPos = 0;
+      let bestF = 1e9;
+      for (let i = 0; i < openSet.length; i++) {
+        const st = openSet[i];
+        const cellIdx = Math.floor(st / 5);
+        const c = cellIdx % GRID_COLS;
+        const r = Math.floor(cellIdx / GRID_COLS);
+        const h = (Math.abs(c - endExit.gx) + Math.abs(r - endExit.gy)) * 10;
+        const f = gScore[st] + h;
+        if (f < bestF) {
+          bestF = f;
+          bestPos = i;
+        }
       }
-      const st = openStates[bestIdx];
-      openStates[bestIdx] = openStates[openStates.length - 1];
-      openF[bestIdx] = openF[openF.length - 1];
-      openStates.pop();
-      openF.pop();
-      return st;
-    };
 
-    const hDist = (c: number, r: number) => (Math.abs(c - end.gc) + Math.abs(r - end.gr)) * 10;
+      const currentState = openSet[bestPos];
+      openSet.splice(bestPos, 1);
 
-    for (let dir = 0; dir < 4; dir++) {
-      const st = startCell * 4 + dir;
-      gScore[st] = 0;
-      pushOpen(st, hDist(start.gc, start.gr));
-    }
+      const cellIdx = Math.floor(currentState / 5);
+      const dirIdx = currentState % 5;
 
-    let reachedState = -1;
-
-    while (openStates.length > 0) {
-      const curr = popBest();
-      if (closed[curr]) continue;
-      closed[curr] = 1;
-
-      const cell = curr >> 2;
-      const dir = curr & 3;
-      if (cell === endCell) {
-        reachedState = curr;
+      if (cellIdx === endIdx) {
+        goalState = currentState;
         break;
       }
 
-      const r = Math.floor(cell / COLS);
-      const c = cell % COLS;
+      const c = cellIdx % GRID_COLS;
+      const r = Math.floor(cellIdx / GRID_COLS);
 
-      for (let ndir = 0; ndir < 4; ndir++) {
-        // Zákaz okamžitého obratu o 180°
-        if ((ndir ^ 2) === dir) continue;
-        const nr = r + dRow[ndir];
-        const nc = c + dCol[ndir];
-        if (nr < 1 || nr >= ROWS - 1 || nc < 1 || nc >= COLS - 1) continue;
+      for (let d = 0; d < 4; d++) {
+        const nc = c + dirs[d].dc;
+        const nr = r + dirs[d].dr;
+        if (nc < 1 || nc >= GRID_COLS - 1 || nr < 1 || nr >= GRID_ROWS - 1) continue;
 
-        const nCell = nr * COLS + nc;
-        if (blocked[nCell] && nCell !== endCell && nCell !== startCell) continue;
+        const nCell = nr * GRID_COLS + nc;
+        if (blocked[nCell] && nCell !== endIdx) continue;
 
-        const turnPenalty = ndir === dir ? 0 : 28; // Penalizace za ohyb 90°, aby trasa měla minimum rohů
-        const crowdingPenalty = usedCells[nCell] * 18; // Aby šly kabely vedle sebe
-        const stepCost = 10 + turnPenalty + crowdingPenalty;
+        const turnPenalty = dirIdx !== 4 && dirIdx !== d ? 16 : 0;
+        const overlapPenalty = usedCells[nCell] * 14;
+        const tentativeG = gScore[currentState] + 10 + turnPenalty + overlapPenalty;
 
-        const nState = nCell * 4 + ndir;
-        const tentativeG = gScore[curr] + stepCost;
-        if (tentativeG < gScore[nState]) {
-          gScore[nState] = tentativeG;
-          parent[nState] = curr;
-          pushOpen(nState, tentativeG + hDist(nc, nr));
+        const nextState = nCell * 5 + d;
+        if (tentativeG < gScore[nextState]) {
+          gScore[nextState] = tentativeG;
+          parentState[nextState] = currentState;
+          if (!openSet.includes(nextState)) {
+            openSet.push(nextState);
+          }
         }
       }
     }
 
-    const pts: { x: number; y: number }[] = [];
-    pts.push({ x: start.px, y: start.py });
-    pts.push({ x: start.ex, y: start.ey });
+    blocked[startIdx] = prevBlockedStart;
+    blocked[endIdx] = prevBlockedEnd;
 
-    if (reachedState !== -1) {
-      const gridPath: { x: number; y: number }[] = [];
-      let cur = reachedState;
+    const pts: Array<{ x: number; y: number }> = [{ x: startAbsX, y: startAbsY }];
+
+    if (goalState !== -1) {
+      const gridPath: Array<{ x: number; y: number; cell: number }> = [];
+      let cur = goalState;
       while (cur !== -1) {
-        const cell = cur >> 2;
-        usedCells[cell] += 1;
-        const r = Math.floor(cell / COLS);
-        const c = cell % COLS;
-        gridPath.push({ x: c * GRID_STEP, y: r * GRID_STEP });
-        cur = parent[cur];
+        const cell = Math.floor(cur / 5);
+        const c = cell % GRID_COLS;
+        const r = Math.floor(cell / GRID_COLS);
+        gridPath.push({ x: c * GRID_STEP, y: r * GRID_STEP, cell });
+        cur = parentState[cur];
       }
       gridPath.reverse();
-      for (const gp of gridPath) {
-        pts.push(gp);
+
+      if (gridPath.length > 0) {
+        pts.push({ x: gridPath[0].x, y: startAbsY });
+        for (const gp of gridPath) {
+          usedCells[gp.cell] += 1;
+          pts.push({ x: gp.x, y: gp.y });
+        }
+        const last = gridPath[gridPath.length - 1];
+        pts.push({ x: last.x, y: endAbsY });
       }
     } else {
-      // Záložní ortogonální propojení přes volný středový kanál (y = 280), pokud by byla přímá cesta uzavřena
-      pts.push({ x: start.ex, y: 280 });
-      pts.push({ x: end.ex, y: 280 });
+      const midY = Math.round((startExit.stubY + endExit.stubY) / 2);
+      pts.push({ x: startExit.stubX, y: startAbsY });
+      pts.push({ x: startExit.stubX, y: midY });
+      pts.push({ x: endExit.stubX, y: midY });
+      pts.push({ x: endExit.stubX, y: endAbsY });
     }
 
-    pts.push({ x: end.ex, y: end.ey });
-    pts.push({ x: end.px, y: end.py });
+    pts.push({ x: endAbsX, y: endAbsY });
 
-    // Zjednodušení kolineárních bodů na čisté vodorovné a svislé úseky
-    const simplified: { x: number; y: number }[] = [];
+    const simplified: Array<{ x: number; y: number }> = [];
     for (const p of pts) {
-      if (simplified.length > 0) {
-        const last = simplified[simplified.length - 1];
-        if (last.x === p.x && last.y === p.y) continue;
-      }
+      const prev = simplified[simplified.length - 1];
+      if (prev && prev.x === p.x && prev.y === p.y) continue;
       if (simplified.length >= 2) {
-        const pPrev = simplified[simplified.length - 2];
-        const pMid = simplified[simplified.length - 1];
-        if ((pPrev.x === pMid.x && pMid.x === p.x) || (pPrev.y === pMid.y && pMid.y === p.y)) {
+        const p1 = simplified[simplified.length - 2];
+        const p2 = simplified[simplified.length - 1];
+        if ((p1.x === p2.x && p2.x === p.x) || (p1.y === p2.y && p2.y === p.y)) {
           simplified[simplified.length - 1] = p;
           continue;
         }
@@ -605,369 +871,609 @@ function computeOrthogonalWirePaths(
       simplified.push(p);
     }
 
-    const dStr = simplified.map((pt, idx) => `${idx === 0 ? 'M' : 'L'} ${pt.x} ${pt.y}`).join(' ');
-    resultPaths[w.id] = dStr;
-  }
+    paths[w.id] = simplified
+      .map((p, idx) => `${idx === 0 ? 'M' : 'L'} ${p.x} ${p.y}`)
+      .join(' ');
+  });
 
-  return resultPaths;
+  return paths;
 }
 
-export const InteractiveBoardEditor: React.FC = () => {
-  const [devices, setDevices] = useState<PlacedDevice[]>(INITIAL_DEVICES);
-  const [wires, setWires] = useState<BoardWire[]>(INITIAL_WIRES);
-  const [selectedColor, setSelectedColor] = useState<BoardWireColor>('brown');
-  const [activePin, setActivePin] = useState<{ instanceId: string; pinId: string } | null>(null);
-  const [powerOn, setPowerOn] = useState<boolean>(true);
-  const [ruleMessage, setRuleMessage] = useState<{ type: 'error' | 'info' | 'success'; text: string } | null>(null);
+// ============================================================================
+// 12 VÝUKOVÝCH ÚLOH (3 ÚROVNĚ OBTÍŽNOSTI × 4 ÚLOHY)
+// ============================================================================
 
-  const svgRef = useRef<SVGSVGElement | null>(null);
-  const [draggingId, setDraggingId] = useState<string | null>(null);
-  const [dragOffset, setDragOffset] = useState<{ dx: number; dy: number }>({ dx: 0, dy: 0 });
-
-  const getSpec = (type: BoardDeviceType): PaletteItem => getSpecStatic(type);
-
-  /**
-   * Zkontroluje, zda pozice (candX, candY) pro prvek `ignoreId` o rozměrech (w, h)
-   * nekoliduje s žádným jiným umístěným prvkem na tabuli (včetně instalační mezery 20 px).
-   */
-  const hasCollision = (
-    candX: number,
-    candY: number,
-    w: number,
-    h: number,
-    ignoreId: string,
-    list: PlacedDevice[] = devices
-  ): boolean => {
-    for (const other of list) {
-      if (other.instanceId === ignoreId) continue;
-      const oSpec = getSpec(other.type);
-      if (boxesOverlap(candX, candY, w, h, other.x, other.y, oSpec.width, oSpec.height, 20)) {
-        return true;
+const BOARD_TASKS: BoardTask[] = [
+  // --------------------------------------------------------------------------
+  // ÚROVEŇ 1 – ZÁKLADNÍ (4 ÚLOHY)
+  // --------------------------------------------------------------------------
+  {
+    id: 'u1-1',
+    level: 1,
+    number: 1,
+    title: 'Spínač č. 1 a svítidlo E27',
+    subtitle: 'Základní světelný obvod jištěný jističem B10',
+    assignment:
+      'Zapojte světelný obvod: L1 z přívodu sítě přes jistič FA B10 na spínač č. 1 (svorka L) a spínaný vývod (1) na svítidlo E27 (L). Nulový vodič N a ochranný vodič PE veďte přes můstky N a PE.',
+    items: [
+      { instanceId: 'supply', type: 'supply', label: 'Přívod 3F TN-S', x: 24, y: 24, state: 1 },
+      { instanceId: 'bus-n', type: 'busbar-n', label: 'Můstek N', x: 230, y: BUSBAR_ROW_Y, state: 1 },
+      { instanceId: 'bus-pe', type: 'busbar-pe', label: 'Můstek PE', x: 430, y: BUSBAR_ROW_Y, state: 1 },
+      { instanceId: 'mcb-1', type: 'mcb-b10', label: 'FA1 B10', x: 250, y: DIN_RAIL_ITEM_Y, state: 1 },
+      { instanceId: 'sw-1', type: 'switch-1', label: 'Spínač č. 1', x: 220, y: 340, state: 1 },
+      { instanceId: 'lamp-1', type: 'lamp-1', label: 'Svítidlo E27', x: 470, y: 340, state: 0 },
+    ],
+    solutionWires: [
+      { id: 'w1', fromInstanceId: 'supply', fromTerminalId: 'L1', toInstanceId: 'mcb-1', toTerminalId: '1', color: 'L' },
+      { id: 'w2', fromInstanceId: 'supply', fromTerminalId: 'N', toInstanceId: 'bus-n', toTerminalId: 'N1', color: 'N' },
+      { id: 'w3', fromInstanceId: 'supply', fromTerminalId: 'PE', toInstanceId: 'bus-pe', toTerminalId: 'PE1', color: 'PE' },
+      { id: 'w4', fromInstanceId: 'mcb-1', fromTerminalId: '2', toInstanceId: 'sw-1', toTerminalId: 'L', color: 'L' },
+      { id: 'w5', fromInstanceId: 'sw-1', fromTerminalId: '1', toInstanceId: 'lamp-1', toTerminalId: 'L', color: 'SW1' },
+      { id: 'w6', fromInstanceId: 'bus-n', fromTerminalId: 'N2', toInstanceId: 'lamp-1', toTerminalId: 'N', color: 'N' },
+      { id: 'w7', fromInstanceId: 'bus-pe', fromTerminalId: 'PE2', toInstanceId: 'lamp-1', toTerminalId: 'PE', color: 'PE' },
+    ],
+    check: (_items, _wires, sim) => {
+      const msgs: string[] = [];
+      const lampL = sim.liveNodes.has('lamp-1:L');
+      const lampN = sim.neutralNodes.has('lamp-1:N');
+      const lampPE = sim.peNodes.has('lamp-1:PE');
+      if (!lampN) msgs.push('Chybí připojený nulový vodič N na svítidle E27.');
+      if (!lampPE) msgs.push('Chybí ochranný vodič PE na kostře svítidla E27.');
+      if (!lampL) msgs.push('Svítidlo nesvítí – zkontrolujte jistič FA1 B10 a sepnutí spínače č. 1.');
+      return { ok: msgs.length === 0 && !sim.shortCircuit, messages: msgs };
+    },
+  },
+  {
+    id: 'u1-2',
+    level: 1,
+    number: 2,
+    title: 'Zásuvka 230 V přes chránič RCD a jistič B16',
+    subtitle: 'Ochrana zásuvkového obvodu proudovým chráničem 30 mA',
+    assignment:
+      'Zapojte zásuvku 230 V: L1 a N ze sítě přiveďte do proudového chrániče RCD 2P (1 a N). Výstup fáze z RCD (2) veďte přes jistič FA B16 na levou zdířku zásuvky (L). Výstup N z chrániče připojte na N zásuvky, PE z můstku PE na ochranný kolík.',
+    items: [
+      { instanceId: 'supply', type: 'supply', label: 'Přívod 3F TN-S', x: 24, y: 24, state: 1 },
+      { instanceId: 'bus-pe', type: 'busbar-pe', label: 'Můstek PE', x: 350, y: BUSBAR_ROW_Y, state: 1 },
+      { instanceId: 'rcd-1', type: 'rcd-2p', label: 'FI1 30mA', x: 220, y: DIN_RAIL_ITEM_Y, state: 1 },
+      { instanceId: 'mcb-16', type: 'mcb-b16', label: 'FA1 B16', x: 340, y: DIN_RAIL_ITEM_Y, state: 1 },
+      { instanceId: 'sock-1', type: 'socket-230', label: 'Zásuvka 230 V', x: 320, y: 350, state: 0 },
+    ],
+    solutionWires: [
+      { id: 'w1', fromInstanceId: 'supply', fromTerminalId: 'L1', toInstanceId: 'rcd-1', toTerminalId: '1', color: 'L' },
+      { id: 'w2', fromInstanceId: 'supply', fromTerminalId: 'N', toInstanceId: 'rcd-1', toTerminalId: 'N_in', color: 'N' },
+      { id: 'w3', fromInstanceId: 'supply', fromTerminalId: 'PE', toInstanceId: 'bus-pe', toTerminalId: 'PE1', color: 'PE' },
+      { id: 'w4', fromInstanceId: 'rcd-1', fromTerminalId: '2', toInstanceId: 'mcb-16', toTerminalId: '1', color: 'L' },
+      { id: 'w5', fromInstanceId: 'mcb-16', fromTerminalId: '2', toInstanceId: 'sock-1', toTerminalId: 'L', color: 'L' },
+      { id: 'w6', fromInstanceId: 'rcd-1', fromTerminalId: 'N_out', toInstanceId: 'sock-1', toTerminalId: 'N', color: 'N' },
+      { id: 'w7', fromInstanceId: 'bus-pe', fromTerminalId: 'PE2', toInstanceId: 'sock-1', toTerminalId: 'PE', color: 'PE' },
+    ],
+    check: (_items, _wires, sim) => {
+      const msgs: string[] = [];
+      if (!sim.liveNodes.has('sock-1:L')) msgs.push('Na levé zdířce L zásuvky není fáze.');
+      if (!sim.neutralNodes.has('sock-1:N')) msgs.push('Na pravé zdířce N zásuvky chybí pracovní nula.');
+      if (!sim.peNodes.has('sock-1:PE')) msgs.push('Na ochranném kolíku PE zásuvky chybí vodič PE!');
+      if (!sim.liveNodes.has('rcd-1:2')) msgs.push('Proud musí procházet přes proudový chránič FI1.');
+      return { ok: msgs.length === 0 && !sim.shortCircuit, messages: msgs };
+    },
+  },
+  {
+    id: 'u1-3',
+    level: 1,
+    number: 3,
+    title: 'Sériový přepínač č. 5 a dvouvětvový lustr',
+    subtitle: 'Nezávislé ovládání dvou okruhů lustru z jednoho místa',
+    assignment:
+      'Zapojte lustrový spínač č. 5: fázi z jističe B10 přiveďte na svorku L spínače. Vývody 1 a 2 připojte na svorky L1 a L2 dvouvětvového lustru. Doplňte N a PE.',
+    items: [
+      { instanceId: 'supply', type: 'supply', label: 'Přívod 3F TN-S', x: 24, y: 24, state: 1 },
+      { instanceId: 'bus-n', type: 'busbar-n', label: 'Můstek N', x: 230, y: BUSBAR_ROW_Y, state: 1 },
+      { instanceId: 'bus-pe', type: 'busbar-pe', label: 'Můstek PE', x: 430, y: BUSBAR_ROW_Y, state: 1 },
+      { instanceId: 'mcb-1', type: 'mcb-b10', label: 'FA1 B10', x: 250, y: DIN_RAIL_ITEM_Y, state: 1 },
+      { instanceId: 'sw-5', type: 'switch-5', label: 'Lustrový č. 5', x: 220, y: 340, state: 3 },
+      { instanceId: 'lustr-1', type: 'lamp-2', label: 'Lustr 2-větv.', x: 470, y: 340, state: 0 },
+    ],
+    solutionWires: [
+      { id: 'w1', fromInstanceId: 'supply', fromTerminalId: 'L1', toInstanceId: 'mcb-1', toTerminalId: '1', color: 'L' },
+      { id: 'w2', fromInstanceId: 'supply', fromTerminalId: 'N', toInstanceId: 'bus-n', toTerminalId: 'N1', color: 'N' },
+      { id: 'w3', fromInstanceId: 'supply', fromTerminalId: 'PE', toInstanceId: 'bus-pe', toTerminalId: 'PE1', color: 'PE' },
+      { id: 'w4', fromInstanceId: 'mcb-1', fromTerminalId: '2', toInstanceId: 'sw-5', toTerminalId: 'L', color: 'L' },
+      { id: 'w5', fromInstanceId: 'sw-5', fromTerminalId: '1', toInstanceId: 'lustr-1', toTerminalId: 'L1', color: 'SW1' },
+      { id: 'w6', fromInstanceId: 'sw-5', fromTerminalId: '2', toInstanceId: 'lustr-1', toTerminalId: 'L2', color: 'SW2' },
+      { id: 'w7', fromInstanceId: 'bus-n', fromTerminalId: 'N2', toInstanceId: 'lustr-1', toTerminalId: 'N', color: 'N' },
+      { id: 'w8', fromInstanceId: 'bus-pe', fromTerminalId: 'PE2', toInstanceId: 'lustr-1', toTerminalId: 'PE', color: 'PE' },
+    ],
+    check: (_items, _wires, sim) => {
+      const msgs: string[] = [];
+      if (!sim.liveNodes.has('lustr-1:L1') || !sim.liveNodes.has('lustr-1:L2')) {
+        msgs.push('Zapněte obě klapky spínače č. 5 a ověřte přívod fáze na L1 i L2 lustru.');
       }
-    }
-    return false;
-  };
-
-  // Přidání nového prvku na tabuli na první volné nepřekrývající se místo v dané zóně
-  const handleAddDevice = (item: PaletteItem) => {
-    const id = `${item.type}-${Date.now().toString().slice(-4)}`;
-
-    if (item.zone === 'din') {
-      const y = 120;
-      for (let x = 40; x <= BOARD_W - item.width - 20; x += 10) {
-        if (!hasCollision(x, y, item.width, item.height, id)) {
-          setDevices((prev) => [
-            ...prev,
-            { instanceId: id, type: item.type, label: item.shortLabel, x, y, stateA: true, stateB: false }
-          ]);
-          setRuleMessage({
-            type: 'info',
-            text: `Modul „${item.name}“ byl nacvaknut na volné místo na 35mm DIN liště.`
-          });
-          return;
-        }
+      if (!sim.neutralNodes.has('lustr-1:N')) msgs.push('Chybí vodič N na lustru.');
+      if (!sim.peNodes.has('lustr-1:PE')) msgs.push('Chybí ochranný vodič PE na lustru.');
+      return { ok: msgs.length === 0 && !sim.shortCircuit, messages: msgs };
+    },
+  },
+  {
+    id: 'u1-4',
+    level: 1,
+    number: 4,
+    title: 'Jističochránič RCBO a pospojování potrubí',
+    subtitle: 'Samostatný obvod s kombinovaným přístrojem RCBO B16/30mA a MET',
+    assignment:
+      'Zapojte zásuvku 230 V přes jističochránič RCBO (vstupy 1 a N, výstupy 2 a N). Ochranný vodič PE přiveďte do svorkovnice MET/HOP a z ní pospojujte jak kolík zásuvky, tak kovové vodovodní potrubí.',
+    items: [
+      { instanceId: 'supply', type: 'supply', label: 'Přívod 3F TN-S', x: 24, y: 24, state: 1 },
+      { instanceId: 'met-1', type: 'met-hop', label: 'MET / HOP', x: 350, y: BUSBAR_ROW_Y, state: 1 },
+      { instanceId: 'rcbo-1', type: 'rcbo-1p', label: 'RCBO B16', x: 230, y: DIN_RAIL_ITEM_Y, state: 1 },
+      { instanceId: 'sock-1', type: 'socket-230', label: 'Zásuvka 230V', x: 240, y: 350, state: 0 },
+      { instanceId: 'pipe-1', type: 'water-pipe', label: 'Vodovodní potrubí', x: 480, y: 360, state: 0 },
+    ],
+    solutionWires: [
+      { id: 'w1', fromInstanceId: 'supply', fromTerminalId: 'L1', toInstanceId: 'rcbo-1', toTerminalId: '1', color: 'L' },
+      { id: 'w2', fromInstanceId: 'supply', fromTerminalId: 'N', toInstanceId: 'rcbo-1', toTerminalId: 'N_in', color: 'N' },
+      { id: 'w3', fromInstanceId: 'supply', fromTerminalId: 'PE', toInstanceId: 'met-1', toTerminalId: 'E1', color: 'PE' },
+      { id: 'w4', fromInstanceId: 'rcbo-1', fromTerminalId: '2', toInstanceId: 'sock-1', toTerminalId: 'L', color: 'L' },
+      { id: 'w5', fromInstanceId: 'rcbo-1', fromTerminalId: 'N_out', toInstanceId: 'sock-1', toTerminalId: 'N', color: 'N' },
+      { id: 'w6', fromInstanceId: 'met-1', fromTerminalId: 'E2', toInstanceId: 'sock-1', toTerminalId: 'PE', color: 'PE' },
+      { id: 'w7', fromInstanceId: 'met-1', fromTerminalId: 'E3', toInstanceId: 'pipe-1', toTerminalId: 'PE', color: 'PE' },
+    ],
+    check: (_items, _wires, sim) => {
+      const msgs: string[] = [];
+      if (!sim.liveNodes.has('sock-1:L') || !sim.neutralNodes.has('sock-1:N')) {
+        msgs.push('Zásuvka nemá napájení L + N z jističochrániče RCBO.');
       }
-      setRuleMessage({
-        type: 'error',
-        text: 'DIN lišta v rozvaděči je plná (moduly se nesmí překrývat)! Posuň nebo odstraň některý modul.'
-      });
-      return;
-    }
+      if (!sim.peNodes.has('sock-1:PE')) msgs.push('Chybí PE na kolíku zásuvky.');
+      if (!sim.peNodes.has('pipe-1:PE')) msgs.push('Kovové potrubí vody není pospojováno se svorkovnicí MET!');
+      return { ok: msgs.length === 0 && !sim.shortCircuit, messages: msgs };
+    },
+  },
 
-    if (item.zone === 'busbar') {
-      const y = 20;
-      for (let x = 30; x <= BOARD_W - item.width - 20; x += 10) {
-        if (!hasCollision(x, y, item.width, item.height, id)) {
-          setDevices((prev) => [
-            ...prev,
-            { instanceId: id, type: item.type, label: item.shortLabel, x, y, stateA: true, stateB: false }
-          ]);
-          setRuleMessage({
-            type: 'info',
-            text: `Můstek „${item.name}“ byl osazen na volné místo v držáku sběrnic.`
-          });
-          return;
-        }
+  // --------------------------------------------------------------------------
+  // ÚROVEŇ 2 – POKROČILÁ (4 ÚLOHY)
+  // --------------------------------------------------------------------------
+  {
+    id: 'u2-1',
+    level: 2,
+    number: 5,
+    title: 'Schodišťové zapojení ze 2 míst (č. 6 + č. 6)',
+    subtitle: 'Ovládání svítidla ze dvou konců chodby pomocí korespondenčních vodičů',
+    assignment:
+      'Zapojte dva schodišťové přepínače č. 6: fázi z jističe B10 přiveďte na svorku L prvního přepínače. Svorky 1–1 a 2–2 obou přepínačů propojte korespondenčními vodiči. Ze svorky L druhého přepínače veďte spínanou fázi na svítidlo E27.',
+    items: [
+      { instanceId: 'supply', type: 'supply', label: 'Přívod 3F TN-S', x: 24, y: 24, state: 1 },
+      { instanceId: 'bus-n', type: 'busbar-n', label: 'Můstek N', x: 230, y: BUSBAR_ROW_Y, state: 1 },
+      { instanceId: 'bus-pe', type: 'busbar-pe', label: 'Můstek PE', x: 430, y: BUSBAR_ROW_Y, state: 1 },
+      { instanceId: 'mcb-1', type: 'mcb-b10', label: 'FA1 B10', x: 250, y: DIN_RAIL_ITEM_Y, state: 1 },
+      { instanceId: 'sw6-a', type: 'switch-6', label: 'Schodišťák A (č. 6)', x: 140, y: 340, state: 0 },
+      { instanceId: 'sw6-b', type: 'switch-6', label: 'Schodišťák B (č. 6)', x: 340, y: 340, state: 0 },
+      { instanceId: 'lamp-1', type: 'lamp-1', label: 'Svítidlo E27', x: 560, y: 340, state: 0 },
+    ],
+    solutionWires: [
+      { id: 'w1', fromInstanceId: 'supply', fromTerminalId: 'L1', toInstanceId: 'mcb-1', toTerminalId: '1', color: 'L' },
+      { id: 'w2', fromInstanceId: 'supply', fromTerminalId: 'N', toInstanceId: 'bus-n', toTerminalId: 'N1', color: 'N' },
+      { id: 'w3', fromInstanceId: 'supply', fromTerminalId: 'PE', toInstanceId: 'bus-pe', toTerminalId: 'PE1', color: 'PE' },
+      { id: 'w4', fromInstanceId: 'mcb-1', fromTerminalId: '2', toInstanceId: 'sw6-a', toTerminalId: 'L', color: 'L' },
+      { id: 'w5', fromInstanceId: 'sw6-a', fromTerminalId: '1', toInstanceId: 'sw6-b', toTerminalId: '1', color: 'SW1' },
+      { id: 'w6', fromInstanceId: 'sw6-a', fromTerminalId: '2', toInstanceId: 'sw6-b', toTerminalId: '2', color: 'SW2' },
+      { id: 'w7', fromInstanceId: 'sw6-b', fromTerminalId: 'L', toInstanceId: 'lamp-1', toTerminalId: 'L', color: 'SW1' },
+      { id: 'w8', fromInstanceId: 'bus-n', fromTerminalId: 'N2', toInstanceId: 'lamp-1', toTerminalId: 'N', color: 'N' },
+      { id: 'w9', fromInstanceId: 'bus-pe', fromTerminalId: 'PE2', toInstanceId: 'lamp-1', toTerminalId: 'PE', color: 'PE' },
+    ],
+    check: (_items, _wires, sim) => {
+      const msgs: string[] = [];
+      if (!sim.liveNodes.has('lamp-1:L')) msgs.push('Svítidlo nesvítí – zkontrolujte korespondenční vodiče 1-1, 2-2 a polohu přepínačů.');
+      if (!sim.neutralNodes.has('lamp-1:N')) msgs.push('Chybí vodič N na svítidle.');
+      if (!sim.peNodes.has('lamp-1:PE')) msgs.push('Chybí ochranný vodič PE na svítidle.');
+      return { ok: msgs.length === 0 && !sim.shortCircuit, messages: msgs };
+    },
+  },
+  {
+    id: 'u2-2',
+    level: 2,
+    number: 6,
+    title: 'Impulzní relé KA ovládané 2 paralelními tlačítky',
+    subtitle: 'Ovládání osvětlení z více míst s krokovým relé na DIN liště',
+    assignment:
+      'Zapojte impulzní relé KA: fázi z jističe B10 přiveďte na silový vstup relé (1) a na vstupy L obou tlačítek. Výstupy tlačítek (1) spojte na cívku relé A1, svorku A2 připojte na N. Výstup relé (2) napájí svítidlo E27.',
+    items: [
+      { instanceId: 'supply', type: 'supply', label: 'Přívod 3F TN-S', x: 24, y: 24, state: 1 },
+      { instanceId: 'bus-n', type: 'busbar-n', label: 'Můstek N', x: 230, y: BUSBAR_ROW_Y, state: 1 },
+      { instanceId: 'bus-pe', type: 'busbar-pe', label: 'Můstek PE', x: 430, y: BUSBAR_ROW_Y, state: 1 },
+      { instanceId: 'mcb-1', type: 'mcb-b10', label: 'FA1 B10', x: 230, y: DIN_RAIL_ITEM_Y, state: 1 },
+      { instanceId: 'ka-1', type: 'relay-ka', label: 'Relé KA', x: 350, y: DIN_RAIL_ITEM_Y, state: 1 },
+      { instanceId: 'btn-1', type: 'pushbutton', label: 'Tlačítko 1', x: 140, y: 340, state: 0 },
+      { instanceId: 'btn-2', type: 'pushbutton', label: 'Tlačítko 2', x: 300, y: 340, state: 0 },
+      { instanceId: 'lamp-1', type: 'lamp-1', label: 'Svítidlo E27', x: 520, y: 340, state: 0 },
+    ],
+    solutionWires: [
+      { id: 'w1', fromInstanceId: 'supply', fromTerminalId: 'L1', toInstanceId: 'mcb-1', toTerminalId: '1', color: 'L' },
+      { id: 'w2', fromInstanceId: 'supply', fromTerminalId: 'N', toInstanceId: 'bus-n', toTerminalId: 'N1', color: 'N' },
+      { id: 'w3', fromInstanceId: 'supply', fromTerminalId: 'PE', toInstanceId: 'bus-pe', toTerminalId: 'PE1', color: 'PE' },
+      { id: 'w4', fromInstanceId: 'mcb-1', fromTerminalId: '2', toInstanceId: 'ka-1', toTerminalId: '1', color: 'L' },
+      { id: 'w5', fromInstanceId: 'mcb-1', fromTerminalId: '2', toInstanceId: 'btn-1', toTerminalId: 'L', color: 'L' },
+      { id: 'w6', fromInstanceId: 'btn-1', fromTerminalId: 'L', toInstanceId: 'btn-2', toTerminalId: 'L', color: 'L' },
+      { id: 'w7', fromInstanceId: 'btn-1', fromTerminalId: '1', toInstanceId: 'ka-1', toTerminalId: 'A1', color: 'SW1' },
+      { id: 'w8', fromInstanceId: 'btn-2', fromTerminalId: '1', toInstanceId: 'ka-1', toTerminalId: 'A1', color: 'SW1' },
+      { id: 'w9', fromInstanceId: 'bus-n', fromTerminalId: 'N2', toInstanceId: 'ka-1', toTerminalId: 'A2', color: 'N' },
+      { id: 'w10', fromInstanceId: 'ka-1', fromTerminalId: '2', toInstanceId: 'lamp-1', toTerminalId: 'L', color: 'SW2' },
+      { id: 'w11', fromInstanceId: 'bus-n', fromTerminalId: 'N3', toInstanceId: 'lamp-1', toTerminalId: 'N', color: 'N' },
+      { id: 'w12', fromInstanceId: 'bus-pe', fromTerminalId: 'PE2', toInstanceId: 'lamp-1', toTerminalId: 'PE', color: 'PE' },
+    ],
+    check: (_items, _wires, sim) => {
+      const msgs: string[] = [];
+      if (!sim.neutralNodes.has('ka-1:A2')) msgs.push('Cívka relé KA (svorka A2) nemá připojený vodič N.');
+      if (!sim.liveNodes.has('lamp-1:L')) msgs.push('Svítidlo nesvítí – sepněte kontakt relé KA a ověřte přívod fáze na svorku 1.');
+      if (!sim.neutralNodes.has('lamp-1:N') || !sim.peNodes.has('lamp-1:PE')) {
+        msgs.push('Doplňte N a PE na svítidlo E27.');
       }
-      setRuleMessage({
-        type: 'error',
-        text: 'Držák sběrnic PE/N v horní části rozvaděče je již plný!'
-      });
-      return;
-    }
-
-    // Zóna stěny (y >= 310) – hledáme první volné místo v mřížce bez překryvu
-    for (let y = 320; y <= BOARD_H - item.height - 20; y += 20) {
-      for (let x = 40; x <= BOARD_W - item.width - 20; x += 20) {
-        if (!hasCollision(x, y, item.width, item.height, id)) {
-          setDevices((prev) => [
-            ...prev,
-            { instanceId: id, type: item.type, label: item.shortLabel, x, y, stateA: false, stateB: false }
-          ]);
-          setRuleMessage({
-            type: 'info',
-            text: `Prvek „${item.name}“ byl umístěn na volné místo montážní desky.`
-          });
-          return;
-        }
+      return { ok: msgs.length === 0 && !sim.shortCircuit, messages: msgs };
+    },
+  },
+  {
+    id: 'u2-3',
+    level: 2,
+    number: 7,
+    title: 'Elektrický bojler 230 V spínaný stykačem KM',
+    subtitle: 'Silové spínání bojleru instalačním stykačem ovládaným spínačem HDO / termostatem',
+    assignment:
+      'Zapojte elektrický bojler 230 V přes stykač KM: silovou fázi z jističe B16 přiveďte na kontakt 1 stykače a z výstupu 2 na bojler (L). Ovládací fázi z jističe B10 veďte přes spínač č. 1 (simulace HDO) na cívku stykače A1. Svorku A2 cívky i N bojleru připojte na můstek N, kostru bojleru na PE.',
+    items: [
+      { instanceId: 'supply', type: 'supply', label: 'Přívod 3F TN-S', x: 24, y: 24, state: 1 },
+      { instanceId: 'bus-n', type: 'busbar-n', label: 'Můstek N', x: 230, y: BUSBAR_ROW_Y, state: 1 },
+      { instanceId: 'bus-pe', type: 'busbar-pe', label: 'Můstek PE', x: 430, y: BUSBAR_ROW_Y, state: 1 },
+      { instanceId: 'mcb-16', type: 'mcb-b16', label: 'FA1 B16 (bojler)', x: 210, y: DIN_RAIL_ITEM_Y, state: 1 },
+      { instanceId: 'mcb-10', type: 'mcb-b10', label: 'FA2 B10 (ovl.)', x: 290, y: DIN_RAIL_ITEM_Y, state: 1 },
+      { instanceId: 'km-1', type: 'contactor-km', label: 'Stykač KM', x: 380, y: DIN_RAIL_ITEM_Y, state: 0 },
+      { instanceId: 'sw-hdo', type: 'switch-1', label: 'Spínač HDO', x: 180, y: 340, state: 1 },
+      { instanceId: 'boiler-1', type: 'boiler-1f', label: 'Bojler 230 V', x: 450, y: 340, state: 0 },
+    ],
+    solutionWires: [
+      { id: 'w1', fromInstanceId: 'supply', fromTerminalId: 'L1', toInstanceId: 'mcb-16', toTerminalId: '1', color: 'L' },
+      { id: 'w2', fromInstanceId: 'supply', fromTerminalId: 'L1', toInstanceId: 'mcb-10', toTerminalId: '1', color: 'L' },
+      { id: 'w3', fromInstanceId: 'supply', fromTerminalId: 'N', toInstanceId: 'bus-n', toTerminalId: 'N1', color: 'N' },
+      { id: 'w4', fromInstanceId: 'supply', fromTerminalId: 'PE', toInstanceId: 'bus-pe', toTerminalId: 'PE1', color: 'PE' },
+      { id: 'w5', fromInstanceId: 'mcb-16', fromTerminalId: '2', toInstanceId: 'km-1', toTerminalId: '1', color: 'L' },
+      { id: 'w6', fromInstanceId: 'km-1', fromTerminalId: '2', toInstanceId: 'boiler-1', toTerminalId: 'L', color: 'L' },
+      { id: 'w7', fromInstanceId: 'mcb-10', fromTerminalId: '2', toInstanceId: 'sw-hdo', toTerminalId: 'L', color: 'L' },
+      { id: 'w8', fromInstanceId: 'sw-hdo', fromTerminalId: '1', toInstanceId: 'km-1', toTerminalId: 'A1', color: 'SW2' },
+      { id: 'w9', fromInstanceId: 'bus-n', fromTerminalId: 'N2', toInstanceId: 'km-1', toTerminalId: 'A2', color: 'N' },
+      { id: 'w10', fromInstanceId: 'bus-n', fromTerminalId: 'N3', toInstanceId: 'boiler-1', toTerminalId: 'N', color: 'N' },
+      { id: 'w11', fromInstanceId: 'bus-pe', fromTerminalId: 'PE2', toInstanceId: 'boiler-1', toTerminalId: 'PE', color: 'PE' },
+    ],
+    check: (_items, _wires, sim) => {
+      const msgs: string[] = [];
+      if (!sim.energizedContactors.has('km-1')) {
+        msgs.push('Cívka stykače KM (A1–A2) není pod napětím – zkontrolujte ovládací obvod přes spínač HDO a vodič N na A2.');
       }
-    }
-
-    setRuleMessage({
-      type: 'error',
-      text: 'Montážní deska stěny je plná! Uvolni místo odstraněním nebo posunutím některého prvku.'
-    });
-  };
-
-  const handleRemoveDevice = (instanceId: string) => {
-    if (instanceId === 'supply') {
-      setRuleMessage({ type: 'error', text: 'Hlavní přívod sítě 230 V nelze z rozvaděče odstranit.' });
-      return;
-    }
-    setDevices((prev) => prev.filter((d) => d.instanceId !== instanceId));
-    setWires((prev) => prev.filter((w) => w.fromInstanceId !== instanceId && w.toInstanceId !== instanceId));
-    if (activePin?.instanceId === instanceId) setActivePin(null);
-  };
-
-  // Kliknutí na svorku (pin) – propojení vodičem s kontrolou pravidel
-  const handlePinClick = (instanceId: string, pinId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!activePin) {
-      setActivePin({ instanceId, pinId });
-      return;
-    }
-    if (activePin.instanceId === instanceId && activePin.pinId === pinId) {
-      setActivePin(null);
-      return;
-    }
-
-    const fromDev = devices.find((d) => d.instanceId === activePin.instanceId);
-    const toDev = devices.find((d) => d.instanceId === instanceId);
-    if (!fromDev || !toDev) return;
-
-    const fromZone = getSpec(fromDev.type).zone;
-    const toZone = getSpec(toDev.type).zone;
-
-    if (selectedColor === 'comb' && (fromZone !== 'din' || toZone !== 'din')) {
-      setRuleMessage({
-        type: 'error',
-        text: 'Pravidlo montáže: Fázovou hřebenovou lištou lze propojovat výhradně modulové přístroje na DIN liště!'
-      });
-      setActivePin(null);
-      return;
-    }
-
-    const checkPeScrewLimit = (dev: PlacedDevice, pId: string) => {
-      if (dev.type === 'busbar-pe') {
-        const count = wires.filter(
-          (w) =>
-            (w.fromInstanceId === dev.instanceId && w.fromPinId === pId) ||
-            (w.toInstanceId === dev.instanceId && w.toPinId === pId)
-        ).length;
-        if (count >= 1) return true;
+      if (!sim.liveNodes.has('boiler-1:L')) msgs.push('Bojler nemá fázi L ze silového kontaktu 2 stykače KM.');
+      if (!sim.neutralNodes.has('boiler-1:N')) msgs.push('Chybí vodič N na bojleru.');
+      if (!sim.peNodes.has('boiler-1:PE')) msgs.push('Chybí ochranný vodič PE na bojleru.');
+      return { ok: msgs.length === 0 && !sim.shortCircuit, messages: msgs };
+    },
+  },
+  {
+    id: 'u2-4',
+    level: 2,
+    number: 8,
+    title: 'Chránič přepětí SPD 3P+N a hlavní pospojování',
+    subtitle: 'Ochrana třífázového rozvaděče proti přepětí a pospojování MET',
+    assignment:
+      'Připojte třífázový svodič přepětí SPD T1+T2: ze sítě přiveďte L1, L2, L3 na svorky L1, L2, L3 svodiče a vodič N přes můstek N na svorku N svodiče. Spodní zemnicí svorku PE svodiče i vodovodní potrubí připojte do hlavní ochranné přípojnice MET/HOP.',
+    items: [
+      { instanceId: 'supply', type: 'supply', label: 'Přívod 3F TN-S', x: 24, y: 24, state: 1 },
+      { instanceId: 'bus-n', type: 'busbar-n', label: 'Můstek N', x: 230, y: BUSBAR_ROW_Y, state: 1 },
+      { instanceId: 'met-1', type: 'met-hop', label: 'MET / HOP', x: 430, y: BUSBAR_ROW_Y, state: 1 },
+      { instanceId: 'spd-1', type: 'spd-t2', label: 'SPD T1+T2 3P+N', x: 260, y: DIN_RAIL_ITEM_Y, state: 1 },
+      { instanceId: 'pipe-1', type: 'water-pipe', label: 'Vodovodní potrubí', x: 380, y: 350, state: 0 },
+    ],
+    solutionWires: [
+      { id: 'w1', fromInstanceId: 'supply', fromTerminalId: 'L1', toInstanceId: 'spd-1', toTerminalId: 'L1', color: 'L' },
+      { id: 'w2', fromInstanceId: 'supply', fromTerminalId: 'L2', toInstanceId: 'spd-1', toTerminalId: 'L2', color: 'L' },
+      { id: 'w3', fromInstanceId: 'supply', fromTerminalId: 'L3', toInstanceId: 'spd-1', toTerminalId: 'L3', color: 'L' },
+      { id: 'w4', fromInstanceId: 'supply', fromTerminalId: 'N', toInstanceId: 'bus-n', toTerminalId: 'N1', color: 'N' },
+      { id: 'w5', fromInstanceId: 'bus-n', fromTerminalId: 'N2', toInstanceId: 'spd-1', toTerminalId: 'N', color: 'N' },
+      { id: 'w6', fromInstanceId: 'supply', fromTerminalId: 'PE', toInstanceId: 'met-1', toTerminalId: 'E1', color: 'PE' },
+      { id: 'w7', fromInstanceId: 'spd-1', fromTerminalId: 'PE', toInstanceId: 'met-1', toTerminalId: 'E4', color: 'PE' },
+      { id: 'w8', fromInstanceId: 'met-1', fromTerminalId: 'E3', toInstanceId: 'pipe-1', toTerminalId: 'PE', color: 'PE' },
+    ],
+    check: (_items, _wires, sim) => {
+      const msgs: string[] = [];
+      if (
+        !sim.liveNodes.has('spd-1:L1') ||
+        !sim.liveNodes.has('spd-1:L2') ||
+        !sim.liveNodes.has('spd-1:L3')
+      ) {
+        msgs.push('Svodič přepětí SPD musí mít připojené všechny 3 fáze (L1, L2, L3).');
       }
-      return false;
-    };
+      if (!sim.neutralNodes.has('spd-1:N')) msgs.push('Chybí připojený vodič N na svodiči přepětí SPD.');
+      if (!sim.peNodes.has('spd-1:PE')) msgs.push('Svodič přepětí SPD není uzemněn na svorkovnici MET/HOP!');
+      if (!sim.peNodes.has('pipe-1:PE')) msgs.push('Chybí pospojování vodovodního potrubí s MET/HOP.');
+      return { ok: msgs.length === 0 && !sim.shortCircuit, messages: msgs };
+    },
+  },
 
-    if (checkPeScrewLimit(fromDev, activePin.pinId) || checkPeScrewLimit(toDev, pinId)) {
-      setRuleMessage({
-        type: 'error',
-        text: 'Norma ČSN 33 2000-5-54 ed. 3: Pod jeden šroub na ochranném můstku PE smí být připojen VŽDY POUZE 1 vodič! Zvol vedlejší volný šroub (PE1–PE5).'
-      });
-      setActivePin(null);
-      return;
-    }
+  // --------------------------------------------------------------------------
+  // ÚROVEŇ 3 – MISTROVSKÁ / 3FÁZOVÁ (4 ÚLOHY)
+  // --------------------------------------------------------------------------
+  {
+    id: 'u3-1',
+    level: 3,
+    number: 9,
+    title: 'Křížové zapojení ze 3 míst (6 – 7 – 6)',
+    subtitle: 'Kompletní ovládání osvětlení ze tří míst pomocí křížového přepínače č. 7',
+    assignment:
+      'Zapojte ovládání svítidla ze 3 míst: fázi z jističe B10 přiveďte na L prvního schodišťáku č. 6. Jeho vývody 1 a 2 veďte na vstupy 1 a 2 křížového přepínače č. 7. Výstupy 3 a 4 křížového přepínače veďte na 1 a 2 druhého schodišťáku č. 6 a jeho svorku L připojte na svítidlo E27.',
+    items: [
+      { instanceId: 'supply', type: 'supply', label: 'Přívod 3F TN-S', x: 24, y: 24, state: 1 },
+      { instanceId: 'bus-n', type: 'busbar-n', label: 'Můstek N', x: 230, y: BUSBAR_ROW_Y, state: 1 },
+      { instanceId: 'bus-pe', type: 'busbar-pe', label: 'Můstek PE', x: 430, y: BUSBAR_ROW_Y, state: 1 },
+      { instanceId: 'mcb-1', type: 'mcb-b10', label: 'FA1 B10', x: 250, y: DIN_RAIL_ITEM_Y, state: 1 },
+      { instanceId: 'sw6-a', type: 'switch-6', label: 'Schodišťák A (6)', x: 80, y: 340, state: 0 },
+      { instanceId: 'sw7-m', type: 'switch-7', label: 'Křížový (7)', x: 260, y: 340, state: 0 },
+      { instanceId: 'sw6-b', type: 'switch-6', label: 'Schodišťák B (6)', x: 440, y: 340, state: 0 },
+      { instanceId: 'lamp-1', type: 'lamp-1', label: 'Svítidlo E27', x: 630, y: 340, state: 0 },
+    ],
+    solutionWires: [
+      { id: 'w1', fromInstanceId: 'supply', fromTerminalId: 'L1', toInstanceId: 'mcb-1', toTerminalId: '1', color: 'L' },
+      { id: 'w2', fromInstanceId: 'supply', fromTerminalId: 'N', toInstanceId: 'bus-n', toTerminalId: 'N1', color: 'N' },
+      { id: 'w3', fromInstanceId: 'supply', fromTerminalId: 'PE', toInstanceId: 'bus-pe', toTerminalId: 'PE1', color: 'PE' },
+      { id: 'w4', fromInstanceId: 'mcb-1', fromTerminalId: '2', toInstanceId: 'sw6-a', toTerminalId: 'L', color: 'L' },
+      { id: 'w5', fromInstanceId: 'sw6-a', fromTerminalId: '1', toInstanceId: 'sw7-m', toTerminalId: '1', color: 'SW1' },
+      { id: 'w6', fromInstanceId: 'sw6-a', fromTerminalId: '2', toInstanceId: 'sw7-m', toTerminalId: '2', color: 'SW2' },
+      { id: 'w7', fromInstanceId: 'sw7-m', fromTerminalId: '3', toInstanceId: 'sw6-b', toTerminalId: '1', color: 'SW1' },
+      { id: 'w8', fromInstanceId: 'sw7-m', fromTerminalId: '4', toInstanceId: 'sw6-b', toTerminalId: '2', color: 'SW2' },
+      { id: 'w9', fromInstanceId: 'sw6-b', fromTerminalId: 'L', toInstanceId: 'lamp-1', toTerminalId: 'L', color: 'SW1' },
+      { id: 'w10', fromInstanceId: 'bus-n', fromTerminalId: 'N2', toInstanceId: 'lamp-1', toTerminalId: 'N', color: 'N' },
+      { id: 'w11', fromInstanceId: 'bus-pe', fromTerminalId: 'PE2', toInstanceId: 'lamp-1', toTerminalId: 'PE', color: 'PE' },
+    ],
+    check: (_items, _wires, sim) => {
+      const msgs: string[] = [];
+      if (!sim.liveNodes.has('lamp-1:L')) {
+        msgs.push('Svítidlo nesvítí – zkontrolujte propojení 6 -> 7 -> 6 a sepněte přepínače do průchozí polohy.');
+      }
+      if (!sim.neutralNodes.has('lamp-1:N')) msgs.push('Chybí vodič N na svítidle.');
+      if (!sim.peNodes.has('lamp-1:PE')) msgs.push('Chybí vodič PE na svítidle.');
+      return { ok: msgs.length === 0 && !sim.shortCircuit, messages: msgs };
+    },
+  },
+  {
+    id: 'u3-2',
+    level: 3,
+    number: 10,
+    title: 'Třífázová zásuvka 400 V (5P) přes 4P chránič a 3P jistič',
+    subtitle: 'Jištění a ochrana třífázové pětipólové zásuvky 400 V / 16 A',
+    assignment:
+      'Zapojte 3fázovou zásuvku 400 V: L1, L2, L3 a N ze sítě přiveďte do 4pólového chrániče RCD 4P (1, 3, 5, N). Fázové výstupy (2, 4, 6) veďte přes 3pólový jistič FA 3P B16 na svorky L1, L2, L3 zásuvky 400 V. Nulový výstup N z RCD přiveďte na N zásuvky, PE z můstku PE.',
+    items: [
+      { instanceId: 'supply', type: 'supply', label: 'Přívod 3F TN-S', x: 24, y: 24, state: 1 },
+      { instanceId: 'bus-pe', type: 'busbar-pe', label: 'Můstek PE', x: 350, y: BUSBAR_ROW_Y, state: 1 },
+      { instanceId: 'rcd-4p', type: 'rcd-4p', label: 'RCD 4P 30mA', x: 210, y: DIN_RAIL_ITEM_Y, state: 1 },
+      { instanceId: 'mcb-3p', type: 'mcb-3p', label: 'FA 3P B16', x: 360, y: DIN_RAIL_ITEM_Y, state: 1 },
+      { instanceId: 'sock-400', type: 'socket-400', label: 'Zásuvka 400V 5P', x: 300, y: 350, state: 0 },
+    ],
+    solutionWires: [
+      { id: 'w1', fromInstanceId: 'supply', fromTerminalId: 'L1', toInstanceId: 'rcd-4p', toTerminalId: '1', color: 'L' },
+      { id: 'w2', fromInstanceId: 'supply', fromTerminalId: 'L2', toInstanceId: 'rcd-4p', toTerminalId: '3', color: 'L' },
+      { id: 'w3', fromInstanceId: 'supply', fromTerminalId: 'L3', toInstanceId: 'rcd-4p', toTerminalId: '5', color: 'L' },
+      { id: 'w4', fromInstanceId: 'supply', fromTerminalId: 'N', toInstanceId: 'rcd-4p', toTerminalId: 'N_in', color: 'N' },
+      { id: 'w5', fromInstanceId: 'supply', fromTerminalId: 'PE', toInstanceId: 'bus-pe', toTerminalId: 'PE1', color: 'PE' },
+      { id: 'w6', fromInstanceId: 'rcd-4p', fromTerminalId: '2', toInstanceId: 'mcb-3p', toTerminalId: '1', color: 'L' },
+      { id: 'w7', fromInstanceId: 'rcd-4p', fromTerminalId: '4', toInstanceId: 'mcb-3p', toTerminalId: '3', color: 'L' },
+      { id: 'w8', fromInstanceId: 'rcd-4p', fromTerminalId: '6', toInstanceId: 'mcb-3p', toTerminalId: '5', color: 'L' },
+      { id: 'w9', fromInstanceId: 'mcb-3p', fromTerminalId: '2', toInstanceId: 'sock-400', toTerminalId: 'L1', color: 'L' },
+      { id: 'w10', fromInstanceId: 'mcb-3p', fromTerminalId: '4', toInstanceId: 'sock-400', toTerminalId: 'L2', color: 'L' },
+      { id: 'w11', fromInstanceId: 'mcb-3p', fromTerminalId: '6', toInstanceId: 'sock-400', toTerminalId: 'L3', color: 'L' },
+      { id: 'w12', fromInstanceId: 'rcd-4p', fromTerminalId: 'N_out', toInstanceId: 'sock-400', toTerminalId: 'N', color: 'N' },
+      { id: 'w13', fromInstanceId: 'bus-pe', fromTerminalId: 'PE2', toInstanceId: 'sock-400', toTerminalId: 'PE', color: 'PE' },
+    ],
+    check: (_items, _wires, sim) => {
+      const msgs: string[] = [];
+      const p1 = sim.nodePhases.get('sock-400:L1')?.has('L1');
+      const p2 = sim.nodePhases.get('sock-400:L2')?.has('L2');
+      const p3 = sim.nodePhases.get('sock-400:L3')?.has('L3');
+      if (!p1 || !p2 || !p3) {
+        msgs.push('Zásuvka 400 V musí mít na svorkách L1, L2, L3 všechny tři fáze L1, L2, L3.');
+      }
+      if (!sim.neutralNodes.has('sock-400:N')) msgs.push('Chybí vodič N na 3f zásuvce.');
+      if (!sim.peNodes.has('sock-400:PE')) msgs.push('Chybí ochranný vodič PE na 3f zásuvce.');
+      return { ok: msgs.length === 0 && !sim.shortCircuit, messages: msgs };
+    },
+  },
+  {
+    id: 'u3-3',
+    level: 3,
+    number: 11,
+    title: 'Třífázová elektrická kamna (400 V) spínaná stykačem KM',
+    subtitle: 'Třífázový tepelný spotřebič spínaný 3pólovým stykačem na DIN liště',
+    assignment:
+      'Zapojte 3fázová elektrická kamna 400 V: fáze L1, L2, L3 veďte přes 3P jistič B16 na vstupy 1, 3, 5 stykače KM a z výstupů 2, 4, 6 na svorky L1, L2, L3 kamen. Ovládací obvod cívky A1 veďte z jističe B10 přes spínač č. 1 (termostat). Doplňte N (na A2 i kamna) a PE.',
+    items: [
+      { instanceId: 'supply', type: 'supply', label: 'Přívod 3F TN-S', x: 24, y: 24, state: 1 },
+      { instanceId: 'bus-n', type: 'busbar-n', label: 'Můstek N', x: 230, y: BUSBAR_ROW_Y, state: 1 },
+      { instanceId: 'bus-pe', type: 'busbar-pe', label: 'Můstek PE', x: 430, y: BUSBAR_ROW_Y, state: 1 },
+      { instanceId: 'mcb-3p', type: 'mcb-3p', label: 'FA1 3P B16', x: 200, y: DIN_RAIL_ITEM_Y, state: 1 },
+      { instanceId: 'mcb-10', type: 'mcb-b10', label: 'FA2 B10', x: 310, y: DIN_RAIL_ITEM_Y, state: 1 },
+      { instanceId: 'km-1', type: 'contactor-km', label: 'Stykač KM 3P', x: 400, y: DIN_RAIL_ITEM_Y, state: 0 },
+      { instanceId: 'sw-term', type: 'switch-1', label: 'Termostat', x: 180, y: 350, state: 1 },
+      { instanceId: 'stove-1', type: 'stove-3f', label: 'Kamna 400V 3F', x: 430, y: 350, state: 0 },
+    ],
+    solutionWires: [
+      { id: 'w1', fromInstanceId: 'supply', fromTerminalId: 'L1', toInstanceId: 'mcb-3p', toTerminalId: '1', color: 'L' },
+      { id: 'w2', fromInstanceId: 'supply', fromTerminalId: 'L2', toInstanceId: 'mcb-3p', toTerminalId: '3', color: 'L' },
+      { id: 'w3', fromInstanceId: 'supply', fromTerminalId: 'L3', toInstanceId: 'mcb-3p', toTerminalId: '5', color: 'L' },
+      { id: 'w4', fromInstanceId: 'supply', fromTerminalId: 'L1', toInstanceId: 'mcb-10', toTerminalId: '1', color: 'L' },
+      { id: 'w5', fromInstanceId: 'supply', fromTerminalId: 'N', toInstanceId: 'bus-n', toTerminalId: 'N1', color: 'N' },
+      { id: 'w6', fromInstanceId: 'supply', fromTerminalId: 'PE', toInstanceId: 'bus-pe', toTerminalId: 'PE1', color: 'PE' },
+      { id: 'w7', fromInstanceId: 'mcb-3p', fromTerminalId: '2', toInstanceId: 'km-1', toTerminalId: '1', color: 'L' },
+      { id: 'w8', fromInstanceId: 'mcb-3p', fromTerminalId: '4', toInstanceId: 'km-1', toTerminalId: '3', color: 'L' },
+      { id: 'w9', fromInstanceId: 'mcb-3p', fromTerminalId: '6', toInstanceId: 'km-1', toTerminalId: '5', color: 'L' },
+      { id: 'w10', fromInstanceId: 'km-1', fromTerminalId: '2', toInstanceId: 'stove-1', toTerminalId: 'L1', color: 'L' },
+      { id: 'w11', fromInstanceId: 'km-1', fromTerminalId: '4', toInstanceId: 'stove-1', toTerminalId: 'L2', color: 'L' },
+      { id: 'w12', fromInstanceId: 'km-1', fromTerminalId: '6', toInstanceId: 'stove-1', toTerminalId: 'L3', color: 'L' },
+      { id: 'w13', fromInstanceId: 'mcb-10', fromTerminalId: '2', toInstanceId: 'sw-term', toTerminalId: 'L', color: 'L' },
+      { id: 'w14', fromInstanceId: 'sw-term', fromTerminalId: '1', toInstanceId: 'km-1', toTerminalId: 'A1', color: 'SW2' },
+      { id: 'w15', fromInstanceId: 'bus-n', fromTerminalId: 'N2', toInstanceId: 'km-1', toTerminalId: 'A2', color: 'N' },
+      { id: 'w16', fromInstanceId: 'bus-n', fromTerminalId: 'N3', toInstanceId: 'stove-1', toTerminalId: 'N', color: 'N' },
+      { id: 'w17', fromInstanceId: 'bus-pe', fromTerminalId: 'PE2', toInstanceId: 'stove-1', toTerminalId: 'PE', color: 'PE' },
+    ],
+    check: (_items, _wires, sim) => {
+      const msgs: string[] = [];
+      if (!sim.energizedContactors.has('km-1')) {
+        msgs.push('Cívka stykače KM není sepnutá (zkontrolujte A1 a A2).');
+      }
+      const p1 = sim.nodePhases.get('stove-1:L1')?.has('L1');
+      const p2 = sim.nodePhases.get('stove-1:L2')?.has('L2');
+      const p3 = sim.nodePhases.get('stove-1:L3')?.has('L3');
+      if (!p1 || !p2 || !p3) {
+        msgs.push('Elektrická kamna nemají přivedeny všechny 3 fáze L1, L2, L3 přes stykač KM.');
+      }
+      if (!sim.neutralNodes.has('stove-1:N')) msgs.push('Chybí vodič N na elektrických kamnech.');
+      if (!sim.peNodes.has('stove-1:PE')) msgs.push('Chybí ochranný vodič PE na elektrických kamnech.');
+      return { ok: msgs.length === 0 && !sim.shortCircuit, messages: msgs };
+    },
+  },
+  {
+    id: 'u3-4',
+    level: 3,
+    number: 12,
+    title: 'Kompletní 3f rozvaděč: Hlavní vypínač, SPD, RCBO a bojler',
+    subtitle: 'Souhrnná zkoušková úloha rozvaděče s přepěťovou ochranou a jističochráničem',
+    assignment:
+      'Zapojte rozvaděč: L1, L2, L3 ze sítě přiveďte přes hlavní vypínač 3P (1,3,5 -> 2,4,6) na svodič přepětí SPD (L1, L2, L3). Fázi z výstupu hlavního vypínače (2) a N z můstku N přiveďte do jističochrániče RCBO (1, N), který napájí bojler 230 V. Nezapomeňte uzemnit SPD i bojler přes MET.',
+    items: [
+      { instanceId: 'supply', type: 'supply', label: 'Přívod 3F TN-S', x: 24, y: 24, state: 1 },
+      { instanceId: 'bus-n', type: 'busbar-n', label: 'Můstek N', x: 230, y: BUSBAR_ROW_Y, state: 1 },
+      { instanceId: 'met-1', type: 'met-hop', label: 'MET / HOP', x: 430, y: BUSBAR_ROW_Y, state: 1 },
+      { instanceId: 'qm-1', type: 'qm-3p', label: 'QM Hlavní vyp.', x: 190, y: DIN_RAIL_ITEM_Y, state: 1 },
+      { instanceId: 'spd-1', type: 'spd-t2', label: 'SPD 3P+N', x: 300, y: DIN_RAIL_ITEM_Y, state: 1 },
+      { instanceId: 'rcbo-1', type: 'rcbo-1p', label: 'RCBO B16', x: 440, y: DIN_RAIL_ITEM_Y, state: 1 },
+      { instanceId: 'boiler-1', type: 'boiler-1f', label: 'Bojler 230 V', x: 360, y: 350, state: 0 },
+    ],
+    solutionWires: [
+      { id: 'w1', fromInstanceId: 'supply', fromTerminalId: 'L1', toInstanceId: 'qm-1', toTerminalId: '1', color: 'L' },
+      { id: 'w2', fromInstanceId: 'supply', fromTerminalId: 'L2', toInstanceId: 'qm-1', toTerminalId: '3', color: 'L' },
+      { id: 'w3', fromInstanceId: 'supply', fromTerminalId: 'L3', toInstanceId: 'qm-1', toTerminalId: '5', color: 'L' },
+      { id: 'w4', fromInstanceId: 'supply', fromTerminalId: 'N', toInstanceId: 'bus-n', toTerminalId: 'N1', color: 'N' },
+      { id: 'w5', fromInstanceId: 'supply', fromTerminalId: 'PE', toInstanceId: 'met-1', toTerminalId: 'E1', color: 'PE' },
+      { id: 'w6', fromInstanceId: 'qm-1', fromTerminalId: '2', toInstanceId: 'spd-1', toTerminalId: 'L1', color: 'L' },
+      { id: 'w7', fromInstanceId: 'qm-1', fromTerminalId: '4', toInstanceId: 'spd-1', toTerminalId: 'L2', color: 'L' },
+      { id: 'w8', fromInstanceId: 'qm-1', fromTerminalId: '6', toInstanceId: 'spd-1', toTerminalId: 'L3', color: 'L' },
+      { id: 'w9', fromInstanceId: 'bus-n', fromTerminalId: 'N2', toInstanceId: 'spd-1', toTerminalId: 'N', color: 'N' },
+      { id: 'w10', fromInstanceId: 'spd-1', fromTerminalId: 'PE', toInstanceId: 'met-1', toTerminalId: 'E4', color: 'PE' },
+      { id: 'w11', fromInstanceId: 'qm-1', fromTerminalId: '2', toInstanceId: 'rcbo-1', toTerminalId: '1', color: 'L' },
+      { id: 'w12', fromInstanceId: 'bus-n', fromTerminalId: 'N3', toInstanceId: 'rcbo-1', toTerminalId: 'N_in', color: 'N' },
+      { id: 'w13', fromInstanceId: 'rcbo-1', fromTerminalId: '2', toInstanceId: 'boiler-1', toTerminalId: 'L', color: 'L' },
+      { id: 'w14', fromInstanceId: 'rcbo-1', fromTerminalId: 'N_out', toInstanceId: 'boiler-1', toTerminalId: 'N', color: 'N' },
+      { id: 'w15', fromInstanceId: 'met-1', fromTerminalId: 'E2', toInstanceId: 'boiler-1', toTerminalId: 'PE', color: 'PE' },
+    ],
+    check: (_items, _wires, sim) => {
+      const msgs: string[] = [];
+      if (
+        !sim.liveNodes.has('spd-1:L1') ||
+        !sim.liveNodes.has('spd-1:L2') ||
+        !sim.liveNodes.has('spd-1:L3') ||
+        !sim.neutralNodes.has('spd-1:N') ||
+        !sim.peNodes.has('spd-1:PE')
+      ) {
+        msgs.push('Svodič přepětí SPD nemá kompletně zapojené L1, L2, L3, N nebo PE.');
+      }
+      if (!sim.liveNodes.has('boiler-1:L') || !sim.neutralNodes.has('boiler-1:N')) {
+        msgs.push('Bojler není pod napětím z jističochrániče RCBO.');
+      }
+      if (!sim.peNodes.has('boiler-1:PE')) msgs.push('Chybí ochranný vodič PE na bojleru.');
+      return { ok: msgs.length === 0 && !sim.shortCircuit, messages: msgs };
+    },
+  },
+];
 
-    const exists = wires.some(
-      (w) =>
-        (w.fromInstanceId === activePin.instanceId &&
-          w.fromPinId === activePin.pinId &&
-          w.toInstanceId === instanceId &&
-          w.toPinId === pinId) ||
-        (w.fromInstanceId === instanceId &&
-          w.fromPinId === pinId &&
-          w.toInstanceId === activePin.instanceId &&
-          w.toPinId === activePin.pinId)
-    );
+// ============================================================================
+// ŽIVÝ ELEKTRO-SOLVER (3F L1/L2/L3, N, PE + AUTOMATICKÉ SPÍNÁNÍ CÍVKY STYKAČE)
+// ============================================================================
 
-    if (!exists) {
-      setWires((prev) => [
-        ...prev,
-        {
-          id: `wire-${Date.now()}`,
-          fromInstanceId: activePin.instanceId,
-          fromPinId: activePin.pinId,
-          toInstanceId: instanceId,
-          toPinId: pinId,
-          color: selectedColor
-        }
-      ]);
-      setRuleMessage(null);
-    }
-    setActivePin(null);
-  };
-
-  const handleToggleDeviceState = (inst: PlacedDevice, which: 'A' | 'B' = 'A') => {
-    if (inst.type === 'sw-push') {
-      setDevices((prev) =>
-        prev.map((d) => {
-          if (d.instanceId === inst.instanceId) return { ...d, stateA: true };
-          return d;
-        })
-      );
-      setTimeout(() => {
-        setDevices((prev) =>
-          prev.map((d) => {
-            if (d.instanceId === inst.instanceId) return { ...d, stateA: false };
-            if (d.type === 'relay-ka') return { ...d, stateA: !d.stateA };
-            return d;
-          })
-        );
-      }, 250);
-      return;
-    }
-
-    setDevices((prev) =>
-      prev.map((d) => {
-        if (d.instanceId !== inst.instanceId) return d;
-        return which === 'A' ? { ...d, stateA: !d.stateA } : { ...d, stateB: !d.stateB };
-      })
-    );
-  };
-
-  // Drag & Drop posouvání prvků s přísným zákazem překrývání modulů!
-  const getSvgCoords = (e: React.MouseEvent) => {
-    if (!svgRef.current) return { x: 0, y: 0 };
-    const rect = svgRef.current.getBoundingClientRect();
-    const scaleX = BOARD_W / rect.width;
-    const scaleY = BOARD_H / rect.height;
-    return {
-      x: (e.clientX - rect.left) * scaleX,
-      y: (e.clientY - rect.top) * scaleY
-    };
-  };
-
-  const handleStartDrag = (inst: PlacedDevice, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!svgRef.current) return;
-    const { x, y } = getSvgCoords(e);
-    setDraggingId(inst.instanceId);
-    setDragOffset({ dx: x - inst.x, dy: y - inst.y });
-  };
-
-  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
-    if (!draggingId) return;
-    const { x, y } = getSvgCoords(e);
-    setDevices((prev) =>
-      prev.map((d) => {
-        if (d.instanceId !== draggingId) return d;
-        const spec = getSpec(d.type);
-        const candX = Math.max(20, Math.min(BOARD_W - spec.width - 20, Math.round((x - dragOffset.dx) / 10) * 10));
-
-        if (spec.zone === 'din') {
-          const fixedY = 120;
-          if (!hasCollision(candX, fixedY, spec.width, spec.height, d.instanceId, prev)) {
-            return { ...d, x: candX, y: fixedY };
-          }
-          return d;
-        }
-
-        if (spec.zone === 'busbar') {
-          const fixedY = 20;
-          if (!hasCollision(candX, fixedY, spec.width, spec.height, d.instanceId, prev)) {
-            return { ...d, x: candX, y: fixedY };
-          }
-          return d;
-        }
-
-        const candY = Math.max(310, Math.min(BOARD_H - spec.height - 20, Math.round((y - dragOffset.dy) / 10) * 10));
-
-        // 1. Zkusíme plný posun (candX, candY)
-        if (!hasCollision(candX, candY, spec.width, spec.height, d.instanceId, prev)) {
-          return { ...d, x: candX, y: candY };
-        }
-        // 2. Zkusíme klouzání pouze vodorovně (candX, d.y)
-        if (!hasCollision(candX, d.y, spec.width, spec.height, d.instanceId, prev)) {
-          return { ...d, x: candX, y: d.y };
-        }
-        // 3. Zkusíme klouzání pouze svisle (d.x, candY)
-        if (!hasCollision(d.x, candY, spec.width, spec.height, d.instanceId, prev)) {
-          return { ...d, x: d.x, y: candY };
-        }
-        // Jinak modul zůstane na poslední platné pozici bez překryvu
-        return d;
-      })
-    );
-  };
-
-  const handleMouseUp = () => {
-    setDraggingId(null);
-  };
-
-  // Výpočet ortogonálních tras všech vodičů (vodorovné a svislé linie mimo moduly)
-  const wirePaths = useMemo(() => computeOrthogonalWirePaths(devices, wires), [devices, wires]);
-
-  // =========================================================================
-  // ŽIVÝ ELEKTROTECHNICKÝ SOLVER (BFS průchod grafem spojů a kontaktů)
-  // =========================================================================
-  const simulation = useMemo(() => {
-    const adj = new Map<string, string[]>();
+function simulateCircuit(items: PlacedItem[], wires: BoardWire[]): SimulationResult {
+  const buildGraph = (energizedContactors: Set<string>) => {
+    const adj = new Map<string, Set<string>>();
     const addEdge = (a: string, b: string) => {
-      if (!adj.has(a)) adj.set(a, []);
-      if (!adj.has(b)) adj.set(b, []);
-      adj.get(a)!.push(b);
-      adj.get(b)!.push(a);
+      if (!adj.has(a)) adj.set(a, new Set());
+      if (!adj.has(b)) adj.set(b, new Set());
+      adj.get(a)!.add(b);
+      adj.get(b)!.add(a);
     };
 
     for (const w of wires) {
-      addEdge(`${w.fromInstanceId}:${w.fromPinId}`, `${w.toInstanceId}:${w.toPinId}`);
+      addEdge(`${w.fromInstanceId}:${w.fromTerminalId}`, `${w.toInstanceId}:${w.toTerminalId}`);
     }
 
-    for (const d of devices) {
-      const id = d.instanceId;
-      switch (d.type) {
-        case 'busbar-pe':
-          ['PE1', 'PE2', 'PE3', 'PE4', 'PE5'].forEach((p, idx, arr) => {
-            if (idx > 0) addEdge(`${id}:${arr[0]}`, `${id}:${p}`);
-          });
-          break;
+    for (const item of items) {
+      const id = item.instanceId;
+      switch (item.type) {
         case 'busbar-n':
-          ['N1', 'N2', 'N3', 'N4', 'N5'].forEach((p, idx, arr) => {
-            if (idx > 0) addEdge(`${id}:${arr[0]}`, `${id}:${p}`);
-          });
+          ['N1', 'N2', 'N3', 'N4', 'N5'].forEach((t) => addEdge(`${id}:N1`, `${id}:${t}`));
           break;
-        case 'wago-3':
-          addEdge(`${id}:W1`, `${id}:W2`);
-          addEdge(`${id}:W1`, `${id}:W3`);
+        case 'busbar-pe':
+          ['PE1', 'PE2', 'PE3', 'PE4', 'PE5'].forEach((t) => addEdge(`${id}:PE1`, `${id}:${t}`));
           break;
-        case 'qm-1p':
+        case 'met-hop':
+          ['E1', 'E2', 'E3', 'E4'].forEach((t) => addEdge(`${id}:E1`, `${id}:${t}`));
+          break;
+        case 'wago-box':
+          addEdge(`${id}:A1`, `${id}:A2`);
+          addEdge(`${id}:A1`, `${id}:A3`);
+          addEdge(`${id}:B1`, `${id}:B2`);
+          addEdge(`${id}:B1`, `${id}:B3`);
+          addEdge(`${id}:C1`, `${id}:C2`);
+          addEdge(`${id}:C1`, `${id}:C3`);
+          break;
         case 'mcb-b10':
         case 'mcb-b16':
-          if (d.stateA) addEdge(`${id}:1`, `${id}:2`);
+          if (item.state === 1) addEdge(`${id}:1`, `${id}:2`);
+          break;
+        case 'qm-3p':
+        case 'mcb-3p':
+          if (item.state === 1) {
+            addEdge(`${id}:1`, `${id}:2`);
+            addEdge(`${id}:3`, `${id}:4`);
+            addEdge(`${id}:5`, `${id}:6`);
+          }
           break;
         case 'rcd-2p':
-          if (d.stateA) {
+        case 'rcbo-1p':
+          if (item.state === 1) {
             addEdge(`${id}:1`, `${id}:2`);
-            addEdge(`${id}:N-in`, `${id}:N-out`);
+            addEdge(`${id}:N_in`, `${id}:N_out`);
+          }
+          break;
+        case 'rcd-4p':
+          if (item.state === 1) {
+            addEdge(`${id}:1`, `${id}:2`);
+            addEdge(`${id}:3`, `${id}:4`);
+            addEdge(`${id}:5`, `${id}:6`);
+            addEdge(`${id}:N_in`, `${id}:N_out`);
+          }
+          break;
+        case 'contactor-km':
+          if (item.state === 1 || energizedContactors.has(id)) {
+            addEdge(`${id}:1`, `${id}:2`);
+            addEdge(`${id}:3`, `${id}:4`);
+            addEdge(`${id}:5`, `${id}:6`);
           }
           break;
         case 'relay-ka':
-          if (d.stateA) addEdge(`${id}:1`, `${id}:2`);
+          if (item.state === 1) addEdge(`${id}:1`, `${id}:2`);
           break;
-        case 'sw-1':
-        case 'sw-push':
-          if (d.stateA) addEdge(`${id}:L`, `${id}:1`);
+        case 'switch-1':
+        case 'pushbutton':
+          if (item.state === 1) addEdge(`${id}:L`, `${id}:1`);
           break;
-        case 'sw-5':
-          if (d.stateA) addEdge(`${id}:L`, `${id}:1`);
-          if (d.stateB) addEdge(`${id}:L`, `${id}:2`);
+        case 'switch-5':
+          if (item.state === 1 || item.state === 3) addEdge(`${id}:L`, `${id}:1`);
+          if (item.state === 2 || item.state === 3) addEdge(`${id}:L`, `${id}:2`);
           break;
-        case 'sw-6':
-          if (!d.stateA) addEdge(`${id}:L`, `${id}:1`);
+        case 'switch-6':
+          if (item.state === 0) addEdge(`${id}:L`, `${id}:1`);
           else addEdge(`${id}:L`, `${id}:2`);
           break;
-        case 'sw-7':
-          if (!d.stateA) {
+        case 'switch-7':
+          if (item.state === 0) {
             addEdge(`${id}:1`, `${id}:3`);
             addEdge(`${id}:2`, `${id}:4`);
           } else {
@@ -978,660 +1484,1239 @@ export const InteractiveBoardEditor: React.FC = () => {
       }
     }
 
-    const bfsReachable = (startNode: string): Set<string> => {
+    const bfs = (startNodes: string[]): Set<string> => {
       const visited = new Set<string>();
-      if (!powerOn) return visited;
-      const queue = [startNode];
-      visited.add(startNode);
+      const queue: string[] = [];
+      for (const s of startNodes) {
+        visited.add(s);
+        queue.push(s);
+      }
       while (queue.length > 0) {
-        const curr = queue.shift()!;
-        for (const next of adj.get(curr) || []) {
-          if (!visited.has(next)) {
-            visited.add(next);
-            queue.push(next);
+        const cur = queue.shift()!;
+        const neighbors = adj.get(cur);
+        if (!neighbors) continue;
+        for (const nxt of neighbors) {
+          if (!visited.has(nxt)) {
+            visited.add(nxt);
+            queue.push(nxt);
           }
         }
       }
       return visited;
     };
 
-    const liveL = bfsReachable('supply:L');
-    const liveN = bfsReachable('supply:N');
-    const livePE = bfsReachable('supply:PE');
+    return { bfs };
+  };
 
-    const shortLN = [...liveL].some((node) => liveN.has(node));
-    const shortLPE = [...liveL].some((node) => livePE.has(node));
-    const shortNPE = [...liveN].some((node) => livePE.has(node));
+  const supplies = items.filter((i) => i.type === 'supply' && i.state === 1);
+  const l1Starts = supplies.map((s) => `${s.instanceId}:L1`);
+  const l2Starts = supplies.map((s) => `${s.instanceId}:L2`);
+  const l3Starts = supplies.map((s) => `${s.instanceId}:L3`);
+  const nStarts = supplies.map((s) => `${s.instanceId}:N`);
+  const peStarts = supplies.map((s) => `${s.instanceId}:PE`);
 
-    return { liveL, liveN, livePE, shortLN, shortLPE, shortNPE };
-  }, [devices, wires, powerOn]);
+  // První průchod – vyhodnocení cívek stykačů A1–A2
+  const energizedContactors = new Set<string>();
+  const pass1 = buildGraph(energizedContactors);
+  const pass1Live = pass1.bfs([...l1Starts, ...l2Starts, ...l3Starts]);
+  const pass1Neutral = pass1.bfs(nStarts);
 
-  const runBoardAudit = () => {
-    const issues: string[] = [];
-
-    if (simulation.shortLN) {
-      issues.push('TVRDÝ ZKRAT L–N: Fázový vodič L je přímo spojen s nulovým vodičem N!');
-    }
-    if (simulation.shortLPE) {
-      issues.push('ZEMNÍ ZKRAT L–PE: Fázový vodič L je přímo spojen s ochranným vodičem PE!');
-    }
-    if (simulation.shortNPE) {
-      issues.push('SPOJENÍ N–PE ZA ROZDĚLENÍM: Vodiče N a PE jsou spojené, proudový chránič RCD okamžitě vybaví!');
-    }
-
-    for (const d of devices.filter((x) => x.type === 'socket-230')) {
-      const hasL = simulation.liveL.has(`${d.instanceId}:L`);
-      const hasN = simulation.liveN.has(`${d.instanceId}:N`);
-      const hasPE = simulation.livePE.has(`${d.instanceId}:PE`);
-      const reversedLN = simulation.liveL.has(`${d.instanceId}:N`) || simulation.liveN.has(`${d.instanceId}:L`);
-      const phaseOnPin = simulation.liveL.has(`${d.instanceId}:PE`);
-
-      if (phaseOnPin) {
-        issues.push(`${d.label}: SMRTELNÉ NEBEZPEČÍ – Fáze L je přivedena na ochranný kolík PE!`);
-      } else if (reversedLN) {
-        issues.push(`${d.label}: Prohozená fáze L a nulák N (dle ČSN 33 2130 musí být fáze L v levé dutince a N v pravé)!`);
-      } else if (!hasPE) {
-        issues.push(`${d.label}: Chybí připojený ochranný vodič PE na horním kolíku zásuvky!`);
-      } else if (!hasL || !hasN) {
-        issues.push(`${d.label}: Do zásuvky není přivedeno pracovní napětí 230 V (zkontroluj L a N).`);
+  for (const item of items) {
+    if (item.type === 'contactor-km') {
+      const a1 = `${item.instanceId}:A1`;
+      const a2 = `${item.instanceId}:A2`;
+      if (
+        (pass1Live.has(a1) && pass1Neutral.has(a2)) ||
+        (pass1Live.has(a2) && pass1Neutral.has(a1))
+      ) {
+        energizedContactors.add(item.instanceId);
       }
     }
+  }
 
-    for (const d of devices.filter((x) => x.type === 'lamp-e27')) {
-      if (simulation.liveL.has(`${d.instanceId}:N`)) {
-        issues.push(`${d.label}: Fáze L je připojena na boční závit objímky místo na středový kontakt!`);
-      }
-      if (!simulation.livePE.has(`${d.instanceId}:PE`)) {
-        issues.push(`${d.label}: Kovová kostra svítidla třídy ochrany I není spojena s ochranným vodičem PE!`);
-      }
+  // Druhý průchod se sepnutými stykači
+  const pass2 = buildGraph(energizedContactors);
+  const l1Nodes = pass2.bfs(l1Starts);
+  const l2Nodes = pass2.bfs(l2Starts);
+  const l3Nodes = pass2.bfs(l3Starts);
+  const neutralNodes = pass2.bfs(nStarts);
+  const peNodes = pass2.bfs(peStarts);
+
+  const liveNodes = new Set<string>([...l1Nodes, ...l2Nodes, ...l3Nodes]);
+  const nodePhases = new Map<string, Set<'L1' | 'L2' | 'L3'>>();
+
+  for (const n of l1Nodes) {
+    if (!nodePhases.has(n)) nodePhases.set(n, new Set());
+    nodePhases.get(n)!.add('L1');
+  }
+  for (const n of l2Nodes) {
+    if (!nodePhases.has(n)) nodePhases.set(n, new Set());
+    nodePhases.get(n)!.add('L2');
+  }
+  for (const n of l3Nodes) {
+    if (!nodePhases.has(n)) nodePhases.set(n, new Set());
+    nodePhases.get(n)!.add('L3');
+  }
+
+  let shortCircuit = false;
+  let rcdTripped = false;
+  const diagnostics: string[] = [];
+
+  for (const node of liveNodes) {
+    if (neutralNodes.has(node)) {
+      shortCircuit = true;
+      diagnostics.push('ZKRAT L + N! Fázový vodič je přímo spojen se středním vodičem N.');
+      break;
     }
+    if (peNodes.has(node)) {
+      shortCircuit = true;
+      rcdTripped = true;
+      diagnostics.push('ZEMNÍ PORUCHA L + PE! Fáze je spojena s ochranným vodičem PE.');
+      break;
+    }
+    const phases = nodePhases.get(node);
+    if (phases && phases.size > 1) {
+      shortCircuit = true;
+      diagnostics.push(
+        `MEZIFÁZOVÝ ZKRAT (${Array.from(phases).join(' + ')})! Dvě různé fáze jsou spojeny dohromady.`
+      );
+      break;
+    }
+  }
 
-    if (issues.length === 0) {
-      setRuleMessage({
-        type: 'success',
-        text: 'Revizní kontrola ČSN: Všechny zapojené prvky na tabuli vyhovují normám ČSN 33 2000-4-41 ed. 3 a ČSN 33 2130 ed. 3 (žádný zkrat, správná polarita L/N/PE)!'
+  for (const node of neutralNodes) {
+    if (peNodes.has(node)) {
+      rcdTripped = true;
+      diagnostics.push(
+        'PROPOJENÍ N a PE! V síti TN-S nesmí být N a PE spojeny (okamžitě vybaví proudový chránič RCD).'
+      );
+      break;
+    }
+  }
+
+  return {
+    liveNodes,
+    neutralNodes,
+    peNodes,
+    nodePhases,
+    shortCircuit,
+    rcdTripped,
+    energizedContactors,
+    diagnostics,
+  };
+}
+
+// ============================================================================
+// HLAVNÍ KOMPONENTA: INTERAKTIVNÍ MONTÁŽNÍ TABULE
+// ============================================================================
+
+export const InteractiveBoardEditor: React.FC = () => {
+  const [selectedLevel, setSelectedLevel] = useState<DifficultyLevel>(1);
+  const [activeTaskId, setActiveTaskId] = useState<string>('u1-1');
+
+  const initialTask = BOARD_TASKS[0];
+  const [items, setItems] = useState<PlacedItem[]>(initialTask.items);
+  const [wires, setWires] = useState<BoardWire[]>(initialTask.solutionWires);
+  const [selectedWireColor, setSelectedWireColor] = useState<WireColor>('L');
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [collisionWarning, setCollisionWarning] = useState<string | null>(null);
+  const [taskFeedback, setTaskFeedback] = useState<{
+    checked: boolean;
+    ok: boolean;
+    messages: string[];
+  } | null>(null);
+
+  const [pendingTerminal, setPendingTerminal] = useState<{
+    instanceId: string;
+    terminalId: string;
+  } | null>(null);
+  const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null);
+
+  const [dragging, setDragging] = useState<{
+    instanceId: string;
+    offsetX: number;
+    offsetY: number;
+  } | null>(null);
+
+  const svgRef = useRef<SVGSVGElement | null>(null);
+
+  const activeTask = useMemo(
+    () => BOARD_TASKS.find((t) => t.id === activeTaskId) || BOARD_TASKS[0],
+    [activeTaskId]
+  );
+
+  const levelTasks = useMemo(
+    () => BOARD_TASKS.filter((t) => t.level === selectedLevel),
+    [selectedLevel]
+  );
+
+  const sim = useMemo(() => simulateCircuit(items, wires), [items, wires]);
+
+  const wirePaths = useMemo(
+    () => computeOrthogonalWirePaths(items, wires),
+    [items, wires]
+  );
+
+  const getTerminalCoords = (instanceId: string, terminalId: string) => {
+    const item = items.find((i) => i.instanceId === instanceId);
+    if (!item) return null;
+    const def = PALETTE_MAP[item.type];
+    if (!def) return null;
+    const term = def.terminals.find((t) => t.id === terminalId);
+    if (!term) return null;
+    return { x: item.x + term.relX, y: item.y + term.relY, term };
+  };
+
+  const getSvgCoords = (e: React.MouseEvent) => {
+    if (!svgRef.current) return { x: 0, y: 0 };
+    const rect = svgRef.current.getBoundingClientRect();
+    const scaleX = BOARD_WIDTH / rect.width;
+    const scaleY = BOARD_HEIGHT / rect.height;
+    return {
+      x: Math.round((e.clientX - rect.left) * scaleX),
+      y: Math.round((e.clientY - rect.top) * scaleY),
+    };
+  };
+
+  // Načtení úlohy (buď se zapojeným vzorem, nebo bez vodičů k samostatnému zapojení)
+  const loadTask = (task: BoardTask, withSolutionWires: boolean) => {
+    setActiveTaskId(task.id);
+    setSelectedLevel(task.level);
+    setItems(task.items.map((it) => ({ ...it })));
+    setWires(withSolutionWires ? task.solutionWires.map((w) => ({ ...w })) : []);
+    setPendingTerminal(null);
+    setSelectedItemId(null);
+    setTaskFeedback(null);
+  };
+
+  const handleCheckTask = () => {
+    const res = activeTask.check(items, wires, sim);
+    if (sim.shortCircuit || sim.rcdTripped) {
+      setTaskFeedback({
+        checked: true,
+        ok: false,
+        messages: [...sim.diagnostics, ...res.messages],
       });
     } else {
-      setRuleMessage({
-        type: 'error',
-        text: `Revizní kontrola odhalila závady (${issues.length}): ${issues.join(' • ')}`
+      setTaskFeedback({
+        checked: true,
+        ok: res.ok,
+        messages: res.ok
+          ? ['Výborně! Zapojení úlohy splňuje všechny požadavky a obvod funguje bez závad.']
+          : res.messages,
       });
     }
   };
 
+  // Přidání prvku z palety
+  const addItemToBoard = (type: string) => {
+    const def = PALETTE_MAP[type];
+    if (!def || def.zone === 'fixed') return;
+
+    const freePos = findFreePosition(type, items);
+    if (!freePos) {
+      setCollisionWarning('V této zóně již není volné místo bez překryvu.');
+      setTimeout(() => setCollisionWarning(null), 3000);
+      return;
+    }
+
+    const sameTypeCount = items.filter((i) => i.type === type).length + 1;
+    const newItem: PlacedItem = {
+      instanceId: `${type}-${Date.now().toString().slice(-4)}`,
+      type,
+      label: `${def.shortName} #${sameTypeCount}`,
+      x: freePos.x,
+      y: freePos.y,
+      state:
+        type.startsWith('mcb') ||
+        type.startsWith('rcd') ||
+        type === 'rcbo-1p' ||
+        type === 'qm-3p'
+          ? 1
+          : 0,
+    };
+    setItems((prev) => [...prev, newItem]);
+    setSelectedItemId(newItem.instanceId);
+  };
+
+  const removeSelectedItem = () => {
+    if (!selectedItemId || selectedItemId === 'supply') return;
+    setItems((prev) => prev.filter((i) => i.instanceId !== selectedItemId));
+    setWires((prev) =>
+      prev.filter(
+        (w) => w.fromInstanceId !== selectedItemId && w.toInstanceId !== selectedItemId
+      )
+    );
+    setSelectedItemId(null);
+  };
+
+  const toggleItemState = (instanceId: string) => {
+    setItems((prev) =>
+      prev.map((it) => {
+        if (it.instanceId !== instanceId) return it;
+        if (it.type === 'switch-5') {
+          return { ...it, state: (it.state + 1) % 4 };
+        }
+        return { ...it, state: it.state === 0 ? 1 : 0 };
+      })
+    );
+  };
+
+  const startDragItem = (e: React.MouseEvent, item: PlacedItem) => {
+    e.stopPropagation();
+    setSelectedItemId(item.instanceId);
+    const def = PALETTE_MAP[item.type];
+    if (!def || def.zone === 'fixed') return;
+    const coords = getSvgCoords(e);
+    setDragging({
+      instanceId: item.instanceId,
+      offsetX: coords.x - item.x,
+      offsetY: coords.y - item.y,
+    });
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    const coords = getSvgCoords(e);
+    if (pendingTerminal) {
+      setMousePos(coords);
+    }
+    if (!dragging) return;
+
+    setItems((prev) =>
+      prev.map((it) => {
+        if (it.instanceId !== dragging.instanceId) return it;
+        const def = PALETTE_MAP[it.type];
+        if (!def) return it;
+
+        const rawX = coords.x - dragging.offsetX;
+        const rawY = coords.y - dragging.offsetY;
+
+        let targetX = it.x;
+        let targetY = it.y;
+
+        if (def.zone === 'din') {
+          targetX = Math.max(
+            175,
+            Math.min(BOARD_WIDTH - def.width - 20, Math.round(rawX / 10) * 10)
+          );
+          targetY = DIN_RAIL_ITEM_Y;
+        } else if (def.zone === 'busbar') {
+          targetX = Math.max(
+            175,
+            Math.min(BOARD_WIDTH - def.width - 20, Math.round(rawX / 10) * 10)
+          );
+          targetY = BUSBAR_ROW_Y;
+        } else {
+          targetX = Math.max(
+            20,
+            Math.min(BOARD_WIDTH - def.width - 20, Math.round(rawX / 10) * 10)
+          );
+          targetY = Math.max(
+            WALL_ZONE_MIN_Y,
+            Math.min(WALL_ZONE_MAX_Y, Math.round(rawY / 10) * 10)
+          );
+        }
+
+        if (!hasCollision(it.instanceId, targetX, targetY, def.width, def.height, prev)) {
+          return { ...it, x: targetX, y: targetY };
+        }
+        if (!hasCollision(it.instanceId, targetX, it.y, def.width, def.height, prev)) {
+          return { ...it, x: targetX, y: it.y };
+        }
+        if (!hasCollision(it.instanceId, it.x, targetY, def.width, def.height, prev)) {
+          return { ...it, x: it.x, y: targetY };
+        }
+        return it;
+      })
+    );
+  };
+
+  const handleMouseUp = () => {
+    setDragging(null);
+  };
+
+  const handleTerminalClick = (
+    e: React.MouseEvent,
+    instanceId: string,
+    terminalId: string,
+    hintColor?: WireColor
+  ) => {
+    e.stopPropagation();
+
+    if (!pendingTerminal) {
+      if (hintColor) setSelectedWireColor(hintColor);
+      setPendingTerminal({ instanceId, terminalId });
+      const c = getTerminalCoords(instanceId, terminalId);
+      if (c) setMousePos({ x: c.x, y: c.y });
+      return;
+    }
+
+    if (
+      pendingTerminal.instanceId === instanceId &&
+      pendingTerminal.terminalId === terminalId
+    ) {
+      setPendingTerminal(null);
+      setMousePos(null);
+      return;
+    }
+
+    const exists = wires.some(
+      (w) =>
+        (w.fromInstanceId === pendingTerminal.instanceId &&
+          w.fromTerminalId === pendingTerminal.terminalId &&
+          w.toInstanceId === instanceId &&
+          w.toTerminalId === terminalId) ||
+        (w.fromInstanceId === instanceId &&
+          w.fromTerminalId === terminalId &&
+          w.toInstanceId === pendingTerminal.instanceId &&
+          w.toTerminalId === pendingTerminal.terminalId)
+    );
+
+    if (!exists) {
+      const newWire: BoardWire = {
+        id: `wire-${Date.now().toString().slice(-5)}`,
+        fromInstanceId: pendingTerminal.instanceId,
+        fromTerminalId: pendingTerminal.terminalId,
+        toInstanceId: instanceId,
+        toTerminalId: terminalId,
+        color: selectedWireColor,
+      };
+      setWires((prev) => [...prev, newWire]);
+    }
+
+    setPendingTerminal(null);
+    setMousePos(null);
+    setTaskFeedback(null);
+  };
+
+  const removeWire = (wireId: string) => {
+    setWires((prev) => prev.filter((w) => w.id !== wireId));
+    setTaskFeedback(null);
+  };
+
   return (
-    <div className="space-y-5">
-      {/* HORNÍ PANEL NÁSTROJŮ */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xl space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
+    <div className="space-y-4">
+      {/* ====================================================================
+          PANEL 3 ÚROVNÍ OBTÍŽNOSTI × 4 ÚLOHY (CELKEM 12 ÚLOH)
+         ==================================================================== */}
+      <div className="bg-slate-900/85 border border-slate-800 rounded-2xl p-4 space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <Layers className="w-5 h-5 text-amber-400" />
-            <div>
-              <h2 className="text-sm sm:text-base font-black text-white">
-                Interaktivní montážní tabule (Ortogonální vedení kabelů mimo moduly + Zákaz překrývání)
-              </h2>
-              <p className="text-[11px] text-slate-400">
-                Moduly mají pevnou kolizní zónu (nepřekrývají se) a vodiče se automaticky vedou pravoúhle v instalačních trasách kolem přístrojů.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              onClick={() => setPowerOn(!powerOn)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold border transition-all ${
-                powerOn
-                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-sm'
-                  : 'bg-slate-800 text-slate-400 border-slate-700'
-              }`}
-            >
-              <Power className="w-3.5 h-3.5" />
-              <span>Síť 230 V: {powerOn ? 'ZAPNUTO' : 'VYPNUTO'}</span>
-            </button>
-
-            <button
-              onClick={runBoardAudit}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold bg-amber-500 hover:bg-amber-400 text-slate-950 transition-all shadow-sm"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Revizní kontrola ČSN</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setDevices(INITIAL_DEVICES);
-                setWires(INITIAL_WIRES);
-                setActivePin(null);
-                setRuleMessage({ type: 'info', text: 'Obnovena výchozí vzorová sestava (Schodišťák 6+6 a Zásuvka 230 V).' });
-              }}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>Vzorová sestava</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setDevices([INITIAL_DEVICES[0], INITIAL_DEVICES[1], INITIAL_DEVICES[2]]);
-                setWires([]);
-                setActivePin(null);
-                setRuleMessage({ type: 'info', text: 'Tabule vyčištěna (ponechán jen přívod 230 V a můstky PE/N). Postav si vlastní zapojení!' });
-              }}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold bg-red-500/15 hover:bg-red-500/25 text-red-300 border border-red-500/30"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span>Vyčistit tabuli</span>
-            </button>
-          </div>
-        </div>
-
-        {/* PALETA PRVKŮ K PŘIDÁNÍ NA TABULI */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-          <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2">
-            <span className="text-[10px] font-mono font-extrabold uppercase text-amber-400 block">
-              + Osadit na DIN lištu (pouze DIN moduly):
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400 mr-1">
+              Obtížnost:
             </span>
-            <div className="flex flex-wrap gap-1.5">
-              {PALETTE_ITEMS.filter((p) => p.zone === 'din').map((item) => (
-                <button
-                  key={item.type}
-                  onClick={() => handleAddDevice(item)}
-                  className="flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-900 hover:bg-amber-500/20 text-slate-200 hover:text-amber-300 border border-slate-800 hover:border-amber-500/40 text-[11px] font-bold transition-all"
-                >
-                  <Plus className="w-3 h-3 text-amber-400" />
-                  <span>{item.shortLabel}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2">
-            <span className="text-[10px] font-mono font-extrabold uppercase text-sky-400 block">
-              + Můstky do rozvaděče &amp; WAGO svorky:
-            </span>
-            <div className="flex flex-wrap gap-1.5">
-              {PALETTE_ITEMS.filter((p) => p.zone === 'busbar' || p.type === 'wago-3').map((item) => (
-                <button
-                  key={item.type}
-                  onClick={() => handleAddDevice(item)}
-                  className="flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-900 hover:bg-sky-500/20 text-slate-200 hover:text-sky-300 border border-slate-800 hover:border-sky-500/40 text-[11px] font-bold transition-all"
-                >
-                  <Plus className="w-3 h-3 text-sky-400" />
-                  <span>{item.shortLabel}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2">
-            <span className="text-[10px] font-mono font-extrabold uppercase text-emerald-400 block">
-              + Přístroje na montážní desku (stěnu):
-            </span>
-            <div className="flex flex-wrap gap-1.5">
-              {PALETTE_ITEMS.filter((p) => p.zone === 'wall' && p.type !== 'wago-3').map((item) => (
-                <button
-                  key={item.type}
-                  onClick={() => handleAddDevice(item)}
-                  className="flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-900 hover:bg-emerald-500/20 text-slate-200 hover:text-emerald-300 border border-slate-800 hover:border-emerald-500/40 text-[11px] font-bold transition-all"
-                >
-                  <Plus className="w-3 h-3 text-emerald-400" />
-                  <span>{item.shortLabel}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* VÝBĚR VODIČE PRO TAHÁNÍ MEZI SVORKAMI */}
-        <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-xs font-bold text-slate-300 mr-1">Zvol vodič pro tahání:</span>
-            {WIRE_PALETTE.map((w) => (
+            {(
+              [
+                { level: 1 as DifficultyLevel, label: 'Úroveň 1: Základní (1–4)' },
+                { level: 2 as DifficultyLevel, label: 'Úroveň 2: Pokročilá (5–8)' },
+                { level: 3 as DifficultyLevel, label: 'Úroveň 3: Mistrovská / 3F (9–12)' },
+              ]
+            ).map((lvl) => (
               <button
-                key={w.id}
-                onClick={() => setSelectedColor(w.id)}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold border transition-all ${
-                  selectedColor === w.id
-                    ? 'bg-slate-800 text-white border-amber-400 ring-2 ring-amber-400/40'
-                    : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-200'
+                key={lvl.level}
+                onClick={() => {
+                  setSelectedLevel(lvl.level);
+                  const first = BOARD_TASKS.find((t) => t.level === lvl.level);
+                  if (first) loadTask(first, true);
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
+                  selectedLevel === lvl.level
+                    ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-sm'
+                    : 'bg-slate-800/80 text-slate-300 border-slate-700 hover:bg-slate-800'
                 }`}
               >
-                <span className="w-3 h-3 rounded-full shrink-0 border border-white/40" style={{ backgroundColor: w.hex }} />
-                <span>{w.label}</span>
+                {lvl.label}
               </button>
             ))}
           </div>
 
-          <div className="text-[11px] font-mono text-amber-400 shrink-0">
-            {activePin ? '⚡ Klikni na druhou svorku pro pravoúhlé natažení vodiče!' : '💡 Klikni na libovolnou svorku pro začátek vodiče'}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => loadTask(activeTask, false)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 transition-all"
+              title="Odpojí vodiče úlohy, abyste ji mohli zapojit sami"
+            >
+              <Unplug className="w-3.5 h-3.5" />
+              Zapojit sám (odpojit vodiče)
+            </button>
+            <button
+              onClick={() => loadTask(activeTask, true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 hover:bg-slate-700 text-sky-300 border border-sky-500/30 transition-all"
+            >
+              <Eye className="w-3.5 h-3.5" />
+              Vzorové řešení
+            </button>
+            <button
+              onClick={handleCheckTask}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-sm transition-all"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              Ověřit zapojení
+            </button>
           </div>
         </div>
 
-        {(ruleMessage || simulation.shortLN || simulation.shortLPE || simulation.shortNPE) && (
-          <div
-            className={`p-3 rounded-xl border text-xs flex items-start justify-between gap-3 ${
-              simulation.shortLN || simulation.shortLPE || simulation.shortNPE || ruleMessage?.type === 'error'
-                ? 'bg-red-500/15 border-red-500/40 text-red-200'
-                : ruleMessage?.type === 'success'
-                ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-200'
-                : 'bg-amber-500/15 border-amber-500/40 text-amber-200'
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              {simulation.shortLN || simulation.shortLPE || simulation.shortNPE || ruleMessage?.type === 'error' ? (
-                <ShieldAlert className="w-4 h-4 text-red-400 shrink-0" />
-              ) : ruleMessage?.type === 'success' ? (
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-              ) : (
-                <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
-              )}
-              <span className="font-semibold">
-                {simulation.shortLN
-                  ? 'POZOR: Zkrat mezi fází L a nulovým vodičem N! Okamžitě vybavuje jistič!'
-                  : simulation.shortLPE
-                  ? 'POZOR: Zkrat mezi fází L a ochranným vodičem PE!'
-                  : simulation.shortNPE
-                  ? 'POZOR: Spojení pracovního vodiče N a ochranného vodiče PE za bodem rozdělení – padá proudový chránič!'
-                  : ruleMessage?.text}
-              </span>
-            </div>
-            {ruleMessage && (
-              <button onClick={() => setRuleMessage(null)} className="text-[10px] underline opacity-75 hover:opacity-100 shrink-0">
-                Skrýt
+        {/* Čtyři karty úloh v dané úrovni */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+          {levelTasks.map((task) => {
+            const isSelected = task.id === activeTaskId;
+            return (
+              <button
+                key={task.id}
+                onClick={() => loadTask(task, true)}
+                className={`text-left p-3 rounded-xl border transition-all ${
+                  isSelected
+                    ? 'bg-amber-500/15 border-amber-500/50 text-white'
+                    : 'bg-slate-950/60 border-slate-800/80 text-slate-300 hover:border-slate-700'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-slate-800 text-amber-400">
+                    Úloha {task.number}
+                  </span>
+                  {isSelected && (
+                    <span className="text-[10px] font-bold text-emerald-400">Aktivní</span>
+                  )}
+                </div>
+                <div className="text-xs font-bold text-white leading-snug">{task.title}</div>
+                <div className="text-[11px] text-slate-400 mt-0.5 line-clamp-1">
+                  {task.subtitle}
+                </div>
               </button>
-            )}
+            );
+          })}
+        </div>
+
+        {/* Zadání aktivní úlohy + vyhodnocení */}
+        <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3 flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="space-y-0.5">
+            <div className="text-xs font-bold text-amber-400">
+              Úloha {activeTask.number}: {activeTask.title}
+            </div>
+            <p className="text-xs text-slate-300 leading-relaxed">{activeTask.assignment}</p>
           </div>
-        )}
+
+          {taskFeedback && (
+            <div
+              className={`shrink-0 px-3.5 py-2 rounded-xl border text-xs font-medium max-w-md ${
+                taskFeedback.ok
+                  ? 'bg-emerald-950/70 border-emerald-500/40 text-emerald-300'
+                  : 'bg-rose-950/70 border-rose-500/40 text-rose-200'
+              }`}
+            >
+              {taskFeedback.messages.map((m, i) => (
+                <div key={i} className="flex items-start gap-1.5">
+                  {taskFeedback.ok ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                  ) : (
+                    <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                  )}
+                  <span>{m}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* ===================================================================== */}
-      {/* INTERAKTIVNÍ SVG MONTÁŽNÍ TABULE (820 × 590 px)                       */}
-      {/* ===================================================================== */}
-      <div className="bg-slate-950 border-2 border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
-        <svg
-          ref={svgRef}
-          viewBox="0 0 820 590"
-          className="w-full h-auto select-none cursor-default"
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-          onClick={() => setActivePin(null)}
-        >
-          <defs>
-            <pattern id="boardGrid" width="10" height="10" patternUnits="userSpaceOnUse">
-              <path d="M 10 0 L 0 0 0 10" fill="none" stroke="#1e293b" strokeWidth="0.6" />
-            </pattern>
-          </defs>
-
-          <rect x="0" y="0" width="820" height="590" fill="#090d16" />
-          <rect x="0" y="0" width="820" height="590" fill="url(#boardGrid)" />
-
-          {/* HORNÍ ZÓNA: ROZVADĚČ S LIŠTOU PRO MŮSTKY PE/N A 35mm DIN LIŠTOU */}
-          <rect x="10" y="8" width="800" height="265" rx="12" fill="#0f172a" fillOpacity="0.82" stroke="#334155" strokeWidth="2" />
-          <text x="24" y="18" fill="#64748b" fontSize="9.5" fontWeight="bold" fontFamily="monospace">
-            ROZVADĚČ • DRŽÁK MŮSTKŮ PE / N (1 šroub PE = max. 1 vodič!)
-          </text>
-
-          {/* Kovová 35mm DIN lišta (y = 163..197) */}
-          <rect x="24" y="163" width="772" height="34" rx="3" fill="#334155" stroke="#64748b" strokeWidth="1.5" />
-          <rect x="24" y="171" width="772" height="18" fill="#1e293b" />
-          <text x="790" y="157" textAnchor="end" fill="#475569" fontSize="9.5" fontWeight="bold" fontFamily="monospace">
-            35mm DIN LIŠTA (nepřekrývající se moduly)
-          </text>
-
-          {/* DOLNÍ ZÓNA: MONTÁŽNÍ DESKA STĚNY */}
-          <rect x="10" y="295" width="800" height="285" rx="12" fill="#0f172a" fillOpacity="0.45" stroke="#1e293b" strokeWidth="2" strokeDasharray="6 4" />
-          <text x="24" y="311" fill="#64748b" fontSize="9.5" fontWeight="bold" fontFamily="monospace">
-            MONTÁŽNÍ DESKA STĚNY (moduly se nepřekrývají • vodiče se vedou pravoúhle v kanálech mimo moduly)
-          </text>
-
-          {/* 1. VYKRESLENÍ PRÁVOÚHLÝCH (ORTOGONÁLNÍCH) VODIČŮ V INSTALAČNÍCH TRASÁCH */}
-          {wires.map((w) => {
-            const pathD = wirePaths[w.id];
-            if (!pathD) return null;
-            const wireSpec = WIRE_PALETTE.find((wp) => wp.id === w.color) || WIRE_PALETTE[0];
-
+      {/* ====================================================================
+          HORNÍ LIŠTA: VÝBĚR BARVY VODIČE + AKCE S TABULÍ
+         ==================================================================== */}
+      <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-3.5 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-400 mr-1">
+            Vodič:
+          </span>
+          {(Object.keys(WIRE_COLORS) as WireColor[]).map((col) => {
+            const c = WIRE_COLORS[col];
+            const active = selectedWireColor === col;
             return (
-              <g
-                key={w.id}
-                className="cursor-pointer group"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setWires((prev) => prev.filter((item) => item.id !== w.id));
-                }}
+              <button
+                key={col}
+                onClick={() => setSelectedWireColor(col)}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                  active
+                    ? 'bg-slate-800 text-white border-amber-400 shadow-sm scale-[1.02]'
+                    : 'bg-slate-950/70 text-slate-400 border-slate-800 hover:text-slate-200'
+                }`}
+                title={c.desc}
               >
-                <path d={pathD} fill="none" stroke="transparent" strokeWidth="11" strokeLinejoin="round" />
-                <path
-                  d={pathD}
-                  fill="none"
-                  stroke={wireSpec.hex}
-                  strokeWidth={w.color === 'comb' ? '4.5' : '2.8'}
-                  strokeDasharray={wireSpec.dash}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="group-hover:stroke-red-500 transition-colors"
-                />
-                {w.color === 'green-yellow' && (
-                  <path
-                    d={pathD}
-                    fill="none"
-                    stroke="#facc15"
-                    strokeWidth="2"
-                    strokeDasharray="4 8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="pointer-events-none"
-                  />
-                )}
-              </g>
+                <span className={`w-3 h-3 rounded-full ${c.badgeBg}`} />
+                <span>{c.name}</span>
+              </button>
             );
           })}
+        </div>
 
-          {/* 2. VYKRESLENÍ PRVKŮ NA TABULI */}
-          {devices.map((inst) => {
-            const spec = getSpec(inst.type);
-            const isLampLit =
-              inst.type === 'lamp-e27' &&
-              simulation.liveL.has(`${inst.instanceId}:L`) &&
-              simulation.liveN.has(`${inst.instanceId}:N`) &&
-              !simulation.shortLN;
+        <div className="flex flex-wrap items-center gap-2">
+          {selectedItemId && selectedItemId !== 'supply' && (
+            <button
+              onClick={removeSelectedItem}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-500/15 text-rose-300 border border-rose-500/30 hover:bg-rose-500/25 transition-all"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Smazat vybraný modul
+            </button>
+          )}
+          <button
+            onClick={() => {
+              setWires([]);
+              setPendingTerminal(null);
+              setTaskFeedback(null);
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            Odpojit všechny vodiče
+          </button>
+        </div>
+      </div>
 
-            const isDualLit1 =
-              inst.type === 'lamp-dual' &&
-              simulation.liveL.has(`${inst.instanceId}:L1`) &&
-              simulation.liveN.has(`${inst.instanceId}:N`) &&
-              !simulation.shortLN;
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        {/* ==================================================================
+            LEVÝ PANEL: PALETA PRVKŮ K PŘIDÁNÍ NA TABULI
+           ================================================================== */}
+        <div className="lg:col-span-3 bg-slate-900/80 border border-slate-800 rounded-2xl p-4 space-y-4 max-h-[650px] overflow-y-auto">
+          <div>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-amber-400 mb-2">
+              1. Sběrnice a můstky
+            </h3>
+            <div className="grid grid-cols-1 gap-1.5">
+              {PALETTE_ITEMS.filter((p) => p.zone === 'busbar').map((item) => (
+                <button
+                  key={item.type}
+                  onClick={() => addItemToBoard(item.type)}
+                  className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-950/80 hover:bg-slate-800 border border-slate-800/80 text-left transition-all group"
+                >
+                  <div>
+                    <div className="text-xs font-bold text-slate-200 group-hover:text-amber-300">
+                      {item.name}
+                    </div>
+                    <div className="text-[10px] text-slate-500">{item.description}</div>
+                  </div>
+                  <Plus className="w-4 h-4 text-slate-400 group-hover:text-amber-400 shrink-0 ml-2" />
+                </button>
+              ))}
+            </div>
+          </div>
 
-            const isDualLit2 =
-              inst.type === 'lamp-dual' &&
-              simulation.liveL.has(`${inst.instanceId}:L2`) &&
-              simulation.liveN.has(`${inst.instanceId}:N`) &&
-              !simulation.shortLN;
+          <div>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-sky-400 mb-2">
+              2. Moduly na DIN lištu (1F / 3F)
+            </h3>
+            <div className="grid grid-cols-1 gap-1.5">
+              {PALETTE_ITEMS.filter((p) => p.zone === 'din').map((item) => (
+                <button
+                  key={item.type}
+                  onClick={() => addItemToBoard(item.type)}
+                  className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-950/80 hover:bg-slate-800 border border-slate-800/80 text-left transition-all group"
+                >
+                  <div>
+                    <div className="text-xs font-bold text-slate-200 group-hover:text-sky-300">
+                      {item.name}
+                    </div>
+                    <div className="text-[10px] text-slate-500">{item.description}</div>
+                  </div>
+                  <Plus className="w-4 h-4 text-slate-400 group-hover:text-sky-400 shrink-0 ml-2" />
+                </button>
+              ))}
+            </div>
+          </div>
 
-            const isSocketPowered =
-              inst.type === 'socket-230' &&
-              simulation.liveL.has(`${inst.instanceId}:L`) &&
-              simulation.liveN.has(`${inst.instanceId}:N`) &&
-              simulation.livePE.has(`${inst.instanceId}:PE`) &&
-              !simulation.shortLN;
+          <div>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-400 mb-2">
+              3. Spínače a spotřebiče (230/400 V)
+            </h3>
+            <div className="grid grid-cols-1 gap-1.5">
+              {PALETTE_ITEMS.filter((p) => p.zone === 'wall').map((item) => (
+                <button
+                  key={item.type}
+                  onClick={() => addItemToBoard(item.type)}
+                  className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-950/80 hover:bg-slate-800 border border-slate-800/80 text-left transition-all group"
+                >
+                  <div>
+                    <div className="text-xs font-bold text-slate-200 group-hover:text-emerald-300">
+                      {item.name}
+                    </div>
+                    <div className="text-[10px] text-slate-500">{item.description}</div>
+                  </div>
+                  <Plus className="w-4 h-4 text-slate-400 group-hover:text-emerald-400 shrink-0 ml-2" />
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
 
-            return (
-              <g key={inst.instanceId} transform={`translate(${inst.x}, ${inst.y})`}>
-                {/* Tělo modulu */}
+        {/* ==================================================================
+            PRAVÝ PANEL: INTERAKTIVNÍ SVG PLÁTNO MONTÁŽNÍ TABULE
+           ================================================================== */}
+        <div className="lg:col-span-9 space-y-3">
+          {/* Diagnostická lišta */}
+          <div
+            className={`rounded-xl px-4 py-2.5 border flex flex-wrap items-center justify-between gap-2 ${
+              sim.shortCircuit || sim.rcdTripped
+                ? 'bg-rose-950/60 border-rose-500/40 text-rose-200'
+                : 'bg-slate-900/90 border-slate-800 text-slate-300'
+            }`}
+          >
+            <div className="flex items-center gap-2 text-xs">
+              {sim.shortCircuit || sim.rcdTripped ? (
+                <>
+                  <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                  <span className="font-bold">{sim.diagnostics[0]}</span>
+                </>
+              ) : pendingTerminal ? (
+                <>
+                  <Sparkles className="w-4 h-4 text-amber-400 shrink-0 animate-pulse" />
+                  <span>
+                    Tažení vodiče z{' '}
+                    <strong className="text-amber-300">
+                      {pendingTerminal.instanceId}:{pendingTerminal.terminalId}
+                    </strong>{' '}
+                    — klikněte na cílovou svorku.
+                  </span>
+                </>
+              ) : collisionWarning ? (
+                <>
+                  <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span className="text-amber-300 font-semibold">{collisionWarning}</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>
+                    Obvod bez zkratu • Prvků: <strong>{items.length}</strong> • Vodičů:{' '}
+                    <strong>{wires.length}</strong>
+                  </span>
+                </>
+              )}
+            </div>
+            <div className="text-[11px] text-slate-400">
+              Kliknutím na <strong className="text-slate-200">ON/OFF</strong> přepínáte přístroj •
+              Kliknutím na vodič jej odstraníte
+            </div>
+          </div>
+
+          {/* SVG Montážní tabule */}
+          <div className="bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
+            <svg
+              ref={svgRef}
+              viewBox={`0 0 ${BOARD_WIDTH} ${BOARD_HEIGHT}`}
+              className="w-full h-auto select-none"
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onClick={() => {
+                setPendingTerminal(null);
+                setMousePos(null);
+              }}
+            >
+              <defs>
+                <pattern id="board-grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                  <path
+                    d="M 20 0 L 0 0 0 20"
+                    fill="none"
+                    stroke="#1e293b"
+                    strokeWidth="0.7"
+                  />
+                </pattern>
+              </defs>
+
+              <rect width={BOARD_WIDTH} height={BOARD_HEIGHT} fill="#090d16" />
+              <rect width={BOARD_WIDTH} height={BOARD_HEIGHT} fill="url(#board-grid)" />
+
+              {/* ============================================================
+                  ZÓNA 1: ROZVADĚČ + DIN LIŠTA 35 mm
+                 ============================================================ */}
+              <rect
+                x="12"
+                y="12"
+                width={BOARD_WIDTH - 24}
+                height="220"
+                rx="12"
+                fill="#0f172a"
+                fillOpacity="0.65"
+                stroke="#334155"
+                strokeDasharray="6 4"
+              />
+              <text
+                x="24"
+                y="26"
+                fill="#64748b"
+                fontSize="10"
+                fontWeight="bold"
+                letterSpacing="1"
+              >
+                ROZVADĚČ (MŮSTKY N / PE / MET + DIN LIŠTA 35 MM)
+              </text>
+
+              {/* Kovová DIN lišta TS 35 */}
+              <g>
                 <rect
-                  x="0"
-                  y="0"
-                  width={spec.width}
-                  height={spec.height}
-                  rx="7"
-                  fill={
-                    inst.type === 'busbar-pe'
-                      ? '#14532d'
-                      : inst.type === 'busbar-n'
-                      ? '#1e3a8a'
-                      : inst.type === 'supply-in'
-                      ? '#31102f'
-                      : spec.zone === 'din'
-                      ? '#1e293b'
-                      : '#0f172a'
-                  }
-                  stroke={
-                    isLampLit || isDualLit1 || isDualLit2
-                      ? '#facc15'
-                      : isSocketPowered
-                      ? '#22c55e'
-                      : inst.type === 'busbar-pe'
-                      ? '#22c55e'
-                      : inst.type === 'busbar-n'
-                      ? '#3b82f6'
-                      : '#475569'
-                  }
-                  strokeWidth={isLampLit || isSocketPowered ? '2.5' : '1.8'}
+                  x="165"
+                  y="136"
+                  width={BOARD_WIDTH - 190}
+                  height="36"
+                  rx="3"
+                  fill="#334155"
+                  stroke="#64748b"
+                  strokeWidth="1.5"
                 />
+                <rect
+                  x="165"
+                  y="144"
+                  width={BOARD_WIDTH - 190}
+                  height="20"
+                  fill="#1e293b"
+                />
+                {Array.from({ length: 14 }).map((_, idx) => (
+                  <rect
+                    key={idx}
+                    x={185 + idx * 44}
+                    y="149"
+                    width="22"
+                    height="10"
+                    rx="5"
+                    fill="#0f172a"
+                    stroke="#475569"
+                    strokeWidth="1"
+                  />
+                ))}
+                <text
+                  x={BOARD_WIDTH - 34}
+                  y="130"
+                  textAnchor="end"
+                  fill="#64748b"
+                  fontSize="9"
+                  fontWeight="bold"
+                >
+                  DIN LIŠTA 35 mm
+                </text>
+              </g>
 
-                {/* Úchopová hlavička pro posun myší */}
-                <g className="cursor-move" onMouseDown={(e) => handleStartDrag(inst, e)}>
-                  <rect x="2" y="2" width={spec.width - 4} height="15" rx="4" fill="#090d16" fillOpacity="0.7" />
-                  <text x="6" y="12.5" fill="#e2e8f0" fontSize="8.5" fontWeight="bold" fontFamily="monospace">
-                    {inst.label}
-                  </text>
-                  {inst.instanceId !== 'supply' && (
-                    <g
-                      className="cursor-pointer"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRemoveDevice(inst.instanceId);
-                      }}
-                    >
-                      <circle cx={spec.width - 9} cy="9.5" r="5.5" fill="#7f1d1d" />
-                      <text x={spec.width - 9} y="12.5" textAnchor="middle" fill="#fca5a5" fontSize="8.5" fontWeight="bold">
-                        ×
-                      </text>
-                    </g>
-                  )}
-                </g>
+              {/* ============================================================
+                  ZÓNA 2: MONTÁŽNÍ PANEL (KRABICE, SPÍNAČE, SPOTŘEBIČE)
+                 ============================================================ */}
+              <rect
+                x="12"
+                y="244"
+                width={BOARD_WIDTH - 24}
+                height={BOARD_HEIGHT - 256}
+                rx="12"
+                fill="#0f172a"
+                fillOpacity="0.35"
+                stroke="#1e293b"
+              />
+              <text
+                x="24"
+                y="264"
+                fill="#64748b"
+                fontSize="10"
+                fontWeight="bold"
+                letterSpacing="1"
+              >
+                MONTÁŽNÍ PANEL (ODBOČNÉ KRABICE, SPÍNAČE, ZÁSUVKY, SPOTŘEBIČE 230/400 V)
+              </text>
 
-                {/* Ovládací páčka DIN modulů */}
-                {(inst.type === 'qm-1p' ||
-                  inst.type === 'mcb-b10' ||
-                  inst.type === 'mcb-b16' ||
-                  inst.type === 'rcd-2p' ||
-                  inst.type === 'relay-ka') && (
+              {/* ============================================================
+                  VRSTVA VODIČŮ (POD MODULY, PRAVOÚHLÉ TRASY MIMO MODULY)
+                 ============================================================ */}
+              {wires.map((w) => {
+                const d = wirePaths[w.id];
+                if (!d) return null;
+
+                const n1 = `${w.fromInstanceId}:${w.fromTerminalId}`;
+                const n2 = `${w.toInstanceId}:${w.toTerminalId}`;
+                const isLive = sim.liveNodes.has(n1) || sim.liveNodes.has(n2);
+                const strokeColor = WIRE_COLORS[w.color].stroke;
+
+                return (
                   <g
-                    className="cursor-pointer"
+                    key={w.id}
+                    className="cursor-pointer group"
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleToggleDeviceState(inst, 'A');
+                      removeWire(w.id);
                     }}
                   >
-                    <rect
-                      x="10"
-                      y="46"
-                      width={spec.width - 20}
-                      height="28"
-                      rx="4"
-                      fill={inst.stateA ? '#16a34a' : '#dc2626'}
-                      stroke="#ffffff"
-                      strokeWidth="1"
+                    <path
+                      d={d}
+                      fill="none"
+                      stroke="transparent"
+                      strokeWidth="12"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
                     />
-                    <text x={spec.width / 2} y="64" textAnchor="middle" fill="#ffffff" fontSize="9.5" fontWeight="bold" fontFamily="monospace">
-                      {inst.stateA ? 'I (ZAP)' : '0 (VYP)'}
-                    </text>
+                    {isLive && (
+                      <path
+                        d={d}
+                        fill="none"
+                        stroke="#f59e0b"
+                        strokeWidth="6"
+                        strokeOpacity="0.28"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    )}
+                    <path
+                      d={d}
+                      fill="none"
+                      stroke={strokeColor}
+                      strokeWidth="3.2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="group-hover:stroke-rose-400 transition-colors"
+                    />
                   </g>
-                )}
+                );
+              })}
 
-                {/* Ovládací klapka spínačů 1, 6, 7, 1/0 */}
-                {(inst.type === 'sw-1' || inst.type === 'sw-6' || inst.type === 'sw-7' || inst.type === 'sw-push') && (
-                  <g
-                    className="cursor-pointer"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleToggleDeviceState(inst, 'A');
-                    }}
-                  >
-                    <rect
-                      x="18"
-                      y="38"
-                      width={spec.width - 36}
-                      height="34"
-                      rx="6"
-                      fill={inst.stateA ? '#d97706' : '#1e293b'}
-                      stroke="#94a3b8"
-                      strokeWidth="1.5"
-                    />
-                    <text x={spec.width / 2} y="59" textAnchor="middle" fill="#ffffff" fontSize="9.5" fontWeight="bold" fontFamily="monospace">
-                      {inst.type === 'sw-push'
-                        ? inst.stateA
-                          ? 'IMPULZ!'
-                          : 'STISKNI'
-                        : inst.type === 'sw-1'
-                        ? inst.stateA
-                          ? 'ZAP'
-                          : 'VYP'
-                        : inst.stateA
-                        ? 'POLOHA B'
-                        : 'POLOHA A'}
-                    </text>
-                  </g>
-                )}
-
-                {/* Dvouklapkový spínač č. 5 */}
-                {inst.type === 'sw-5' && (
-                  <g>
-                    <rect
-                      x="14"
-                      y="38"
-                      width="36"
-                      height="34"
-                      rx="5"
-                      className="cursor-pointer"
-                      fill={inst.stateA ? '#d97706' : '#1e293b'}
-                      stroke="#94a3b8"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleToggleDeviceState(inst, 'A');
-                      }}
-                    />
-                    <text x="32" y="59" textAnchor="middle" fill="#fff" fontSize="8.5" fontWeight="bold" className="pointer-events-none">
-                      Kl.A
-                    </text>
-                    <rect
-                      x="60"
-                      y="38"
-                      width="36"
-                      height="34"
-                      rx="5"
-                      className="cursor-pointer"
-                      fill={inst.stateB ? '#d97706' : '#1e293b'}
-                      stroke="#94a3b8"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleToggleDeviceState(inst, 'B');
-                      }}
-                    />
-                    <text x="78" y="59" textAnchor="middle" fill="#fff" fontSize="8.5" fontWeight="bold" className="pointer-events-none">
-                      Kl.B
-                    </text>
-                  </g>
-                )}
-
-                {/* Svítidlo E27 */}
-                {inst.type === 'lamp-e27' && (
-                  <g>
-                    <circle
-                      cx={spec.width / 2}
-                      cy="66"
-                      r="22"
-                      fill={isLampLit ? '#fde047' : '#1e293b'}
-                      stroke={isLampLit ? '#facc15' : '#475569'}
+              {/* Dočasný правоúhlý vodič při tažení */}
+              {pendingTerminal &&
+                mousePos &&
+                (() => {
+                  const start = getTerminalCoords(
+                    pendingTerminal.instanceId,
+                    pendingTerminal.terminalId
+                  );
+                  if (!start) return null;
+                  const midY = Math.round((start.y + mousePos.y) / 2);
+                  const previewD = `M ${start.x} ${start.y} L ${start.x} ${midY} L ${mousePos.x} ${midY} L ${mousePos.x} ${mousePos.y}`;
+                  return (
+                    <path
+                      d={previewD}
+                      fill="none"
+                      stroke={WIRE_COLORS[selectedWireColor].stroke}
                       strokeWidth="2.5"
+                      strokeDasharray="6 4"
                     />
+                  );
+                })()}
+
+              {/* ============================================================
+                  VYKRESLENÍ VŠECH PRVKŮ NA TABULI
+                 ============================================================ */}
+              {items.map((item) => {
+                const def = PALETTE_MAP[item.type];
+                if (!def) return null;
+                const isSelected = selectedItemId === item.instanceId;
+
+                const isLamp1Lit =
+                  item.type === 'lamp-1' &&
+                  sim.liveNodes.has(`${item.instanceId}:L`) &&
+                  sim.neutralNodes.has(`${item.instanceId}:N`) &&
+                  !sim.shortCircuit;
+
+                const isLamp2Branch1Lit =
+                  item.type === 'lamp-2' &&
+                  sim.liveNodes.has(`${item.instanceId}:L1`) &&
+                  sim.neutralNodes.has(`${item.instanceId}:N`) &&
+                  !sim.shortCircuit;
+
+                const isLamp2Branch2Lit =
+                  item.type === 'lamp-2' &&
+                  sim.liveNodes.has(`${item.instanceId}:L2`) &&
+                  sim.neutralNodes.has(`${item.instanceId}:N`) &&
+                  !sim.shortCircuit;
+
+                const isSocketPowered =
+                  item.type === 'socket-230' &&
+                  sim.liveNodes.has(`${item.instanceId}:L`) &&
+                  sim.neutralNodes.has(`${item.instanceId}:N`) &&
+                  sim.peNodes.has(`${item.instanceId}:PE`) &&
+                  !sim.shortCircuit;
+
+                const isSocket400Powered =
+                  item.type === 'socket-400' &&
+                  sim.nodePhases.get(`${item.instanceId}:L1`)?.has('L1') &&
+                  sim.nodePhases.get(`${item.instanceId}:L2`)?.has('L2') &&
+                  sim.nodePhases.get(`${item.instanceId}:L3`)?.has('L3') &&
+                  sim.neutralNodes.has(`${item.instanceId}:N`) &&
+                  sim.peNodes.has(`${item.instanceId}:PE`) &&
+                  !sim.shortCircuit;
+
+                const isBoilerPowered =
+                  item.type === 'boiler-1f' &&
+                  sim.liveNodes.has(`${item.instanceId}:L`) &&
+                  sim.neutralNodes.has(`${item.instanceId}:N`) &&
+                  sim.peNodes.has(`${item.instanceId}:PE`) &&
+                  !sim.shortCircuit;
+
+                const isStovePowered =
+                  item.type === 'stove-3f' &&
+                  sim.nodePhases.get(`${item.instanceId}:L1`)?.has('L1') &&
+                  sim.nodePhases.get(`${item.instanceId}:L2`)?.has('L2') &&
+                  sim.nodePhases.get(`${item.instanceId}:L3`)?.has('L3') &&
+                  sim.neutralNodes.has(`${item.instanceId}:N`) &&
+                  sim.peNodes.has(`${item.instanceId}:PE`) &&
+                  !sim.shortCircuit;
+
+                const isContactorEnergized =
+                  item.type === 'contactor-km' &&
+                  (item.state === 1 || sim.energizedContactors.has(item.instanceId));
+
+                return (
+                  <g
+                    key={item.instanceId}
+                    transform={`translate(${item.x}, ${item.y})`}
+                    onMouseDown={(e) => startDragItem(e, item)}
+                    className={def.zone === 'fixed' ? 'cursor-default' : 'cursor-grab'}
+                  >
+                    {/* Tělo modulu */}
+                    <rect
+                      width={def.width}
+                      height={def.height}
+                      rx="8"
+                      fill={
+                        item.type === 'busbar-n'
+                          ? '#1e3a8a'
+                          : item.type === 'busbar-pe' || item.type === 'met-hop'
+                          ? '#064e3b'
+                          : item.type === 'supply'
+                          ? '#1e293b'
+                          : '#0f172a'
+                      }
+                      stroke={
+                        isSelected
+                          ? '#fbbf24'
+                          : isLamp1Lit ||
+                            isLamp2Branch1Lit ||
+                            isLamp2Branch2Lit ||
+                            isSocketPowered ||
+                            isSocket400Powered ||
+                            isBoilerPowered ||
+                            isStovePowered ||
+                            isContactorEnergized
+                          ? '#10b981'
+                          : '#475569'
+                      }
+                      strokeWidth={isSelected ? 2.5 : 1.5}
+                    />
+
+                    {/* Název prvku */}
                     <text
-                      x={spec.width / 2}
-                      y="70"
+                      x={def.width / 2}
+                      y={def.zone === 'busbar' ? 11 : 27}
                       textAnchor="middle"
-                      fill={isLampLit ? '#0f172a' : '#94a3b8'}
-                      fontSize="10"
+                      fill="#e2e8f0"
+                      fontSize="9.5"
                       fontWeight="bold"
                     >
-                      {isLampLit ? 'SVÍTÍ!' : 'E27'}
+                      {item.label}
                     </text>
-                  </g>
-                )}
 
-                {/* Dvojitý lustr */}
-                {inst.type === 'lamp-dual' && (
-                  <g>
-                    <circle cx="46" cy="66" r="18" fill={isDualLit1 ? '#fde047' : '#1e293b'} stroke="#64748b" strokeWidth="2" />
-                    <text x="46" y="70" textAnchor="middle" fill={isDualLit1 ? '#0f172a' : '#94a3b8'} fontSize="8.5" fontWeight="bold">
-                      {isDualLit1 ? 'SVÍTÍ' : 'V1'}
-                    </text>
-                    <circle cx="104" cy="66" r="18" fill={isDualLit2 ? '#fde047' : '#1e293b'} stroke="#64748b" strokeWidth="2" />
-                    <text x="104" y="70" textAnchor="middle" fill={isDualLit2 ? '#0f172a' : '#94a3b8'} fontSize="8.5" fontWeight="bold">
-                      {isDualLit2 ? 'SVÍTÍ' : 'V2'}
-                    </text>
-                  </g>
-                )}
-
-                {/* Zásuvka 230 V */}
-                {inst.type === 'socket-230' && (
-                  <g>
-                    <circle cx="65" cy="64" r="24" fill="#1e293b" stroke={isSocketPowered ? '#22c55e' : '#475569'} strokeWidth="2" />
-                    <text x="65" y="101" textAnchor="middle" fill={isSocketPowered ? '#4ade80' : '#94a3b8'} fontSize="8.5" fontWeight="bold" fontFamily="monospace">
-                      {isSocketPowered ? '230 V OK!' : 'L vlevo • N vpravo'}
-                    </text>
-                  </g>
-                )}
-
-                {inst.type === 'wago-3' && <rect x="12" y="19" width="76" height="10" rx="2" fill="#ea580c" />}
-
-                {/* Vykreslení klikatelných svorek (pinů) */}
-                {spec.pins.map((pin) => {
-                  const isSelected = activePin?.instanceId === inst.instanceId && activePin?.pinId === pin.id;
-                  const nodeKey = `${inst.instanceId}:${pin.id}`;
-                  const hasL = simulation.liveL.has(nodeKey);
-                  const hasN = simulation.liveN.has(nodeKey);
-                  const hasPE = simulation.livePE.has(nodeKey);
-
-                  return (
-                    <g
-                      key={pin.id}
-                      className="cursor-pointer"
-                      onClick={(e) => handlePinClick(inst.instanceId, pin.id, e)}
-                    >
+                    {/* Speciální indikace pro žárovku 1-větvovou */}
+                    {item.type === 'lamp-1' && (
                       <circle
-                        cx={pin.dx}
-                        cy={pin.dy}
-                        r={isSelected ? 8.5 : 6.5}
-                        fill={
-                          isSelected
-                            ? '#facc15'
-                            : hasL
-                            ? '#d97706'
-                            : hasN
-                            ? '#2563eb'
-                            : hasPE
-                            ? '#16a34a'
-                            : '#334155'
-                        }
-                        stroke="#ffffff"
-                        strokeWidth={isSelected ? 2.5 : 1.5}
+                        cx={def.width / 2}
+                        cy={46}
+                        r="14"
+                        fill={isLamp1Lit ? '#fde047' : '#1e293b'}
+                        stroke={isLamp1Lit ? '#f59e0b' : '#475569'}
+                        strokeWidth="2"
                       />
-                      <text
-                        x={pin.dx}
-                        y={pin.dy < 25 ? pin.dy + 15 : pin.dy - 9}
-                        textAnchor="middle"
-                        fill="#e2e8f0"
-                        fontSize="8"
-                        fontWeight="bold"
-                        fontFamily="monospace"
-                        className="pointer-events-none"
-                      >
-                        {pin.label}
-                      </text>
-                    </g>
-                  );
-                })}
-              </g>
-            );
-          })}
-        </svg>
+                    )}
 
-        {/* SPODNÍ LEGENDA OVLÁDÁNÍ TABULE */}
-        <div className="bg-slate-900 border-t border-slate-800 px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-400">
-          <div className="flex items-center gap-4">
-            <span className="flex items-center gap-1">
-              <Move className="w-3.5 h-3.5 text-amber-400" />
-              <strong>Posun prvku (s detekcí kolize):</strong> táhni myší za horní proužek prvku
-            </span>
-            <span className="flex items-center gap-1">
-              <Zap className="w-3.5 h-3.5 text-emerald-400" />
-              <strong>Pravoúhlé vedení vodiče:</strong> klikni na 1. svorku a pak na 2. svorku
-            </span>
+                    {/* Speciální indikace pro lustr 2-větvový */}
+                    {item.type === 'lamp-2' && (
+                      <g>
+                        <circle
+                          cx={def.width / 2 - 16}
+                          cy={46}
+                          r="11"
+                          fill={isLamp2Branch1Lit ? '#fde047' : '#1e293b'}
+                          stroke={isLamp2Branch1Lit ? '#f59e0b' : '#475569'}
+                          strokeWidth="2"
+                        />
+                        <circle
+                          cx={def.width / 2 + 16}
+                          cy={46}
+                          r="11"
+                          fill={isLamp2Branch2Lit ? '#fde047' : '#1e293b'}
+                          stroke={isLamp2Branch2Lit ? '#f59e0b' : '#475569'}
+                          strokeWidth="2"
+                        />
+                      </g>
+                    )}
+
+                    {/* Indikace zásuvky 230 V */}
+                    {item.type === 'socket-230' && (
+                      <text
+                        x={def.width / 2}
+                        y={48}
+                        textAnchor="middle"
+                        fill={isSocketPowered ? '#34d399' : '#64748b'}
+                        fontSize="9"
+                        fontWeight="bold"
+                      >
+                        {isSocketPowered ? '230 V OK' : 'BEZ NAPĚTÍ'}
+                      </text>
+                    )}
+
+                    {/* Indikace 3f zásuvky 400 V */}
+                    {item.type === 'socket-400' && (
+                      <text
+                        x={def.width / 2}
+                        y={50}
+                        textAnchor="middle"
+                        fill={isSocket400Powered ? '#34d399' : '#64748b'}
+                        fontSize="9"
+                        fontWeight="bold"
+                      >
+                        {isSocket400Powered ? '3× 400 V OK' : 'CHYBÍ 3F+N+PE'}
+                      </text>
+                    )}
+
+                    {/* Indikace bojleru 230 V */}
+                    {item.type === 'boiler-1f' && (
+                      <text
+                        x={def.width / 2}
+                        y={50}
+                        textAnchor="middle"
+                        fill={isBoilerPowered ? '#f97316' : '#64748b'}
+                        fontSize="9"
+                        fontWeight="bold"
+                      >
+                        {isBoilerPowered ? 'OHŘÍVÁ (2,2 kW)' : 'VYPNUTO'}
+                      </text>
+                    )}
+
+                    {/* Indikace 3f elektrických kamen 400 V */}
+                    {item.type === 'stove-3f' && (
+                      <text
+                        x={def.width / 2}
+                        y={50}
+                        textAnchor="middle"
+                        fill={isStovePowered ? '#f97316' : '#64748b'}
+                        fontSize="9"
+                        fontWeight="bold"
+                      >
+                        {isStovePowered ? 'TOPÍ 3× 400 V' : 'VYPNUTO'}
+                      </text>
+                    )}
+
+                    {/* Indikace stykače KM */}
+                    {item.type === 'contactor-km' && (
+                      <text
+                        x={def.width / 2}
+                        y={44}
+                        textAnchor="middle"
+                        fill={isContactorEnergized ? '#34d399' : '#94a3b8'}
+                        fontSize="8.5"
+                        fontWeight="bold"
+                      >
+                        {isContactorEnergized ? 'CÍVKA SEPNUTA' : 'CÍVKA VYPNUTA'}
+                      </text>
+                    )}
+
+                    {/* Přepínací tlačítko ON/OFF pro spínače, jističe, chrániče, relé, stykač */}
+                    {(item.type.startsWith('mcb') ||
+                      item.type.startsWith('rcd') ||
+                      item.type === 'rcbo-1p' ||
+                      item.type === 'qm-3p' ||
+                      item.type === 'contactor-km' ||
+                      item.type.startsWith('switch') ||
+                      item.type === 'pushbutton' ||
+                      item.type === 'relay-ka' ||
+                      item.type === 'supply') && (
+                      <g
+                        className="cursor-pointer"
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleItemState(item.instanceId);
+                        }}
+                      >
+                        <rect
+                          x={def.width / 2 - 20}
+                          y={def.height / 2 - 6}
+                          width="40"
+                          height="18"
+                          rx="4"
+                          fill={
+                            item.state > 0 || isContactorEnergized ? '#10b981' : '#334155'
+                          }
+                          stroke="#0f172a"
+                        />
+                        <text
+                          x={def.width / 2}
+                          y={def.height / 2 + 6}
+                          textAnchor="middle"
+                          fill="#020617"
+                          fontSize="8.5"
+                          fontWeight="bold"
+                        >
+                          {item.type === 'switch-6' || item.type === 'switch-7'
+                            ? item.state === 0
+                              ? 'POL 1'
+                              : 'POL 2'
+                            : item.type === 'switch-5'
+                            ? item.state === 0
+                              ? '0 / 0'
+                              : item.state === 1
+                              ? '1 / 0'
+                              : item.state === 2
+                              ? '0 / 2'
+                              : '1 + 2'
+                            : item.state === 1 || isContactorEnergized
+                            ? 'ZAP'
+                            : 'VYP'}
+                        </text>
+                      </g>
+                    )}
+
+                    {/* Vykreslení svorek (terminálů) */}
+                    {def.terminals.map((t) => {
+                      const nodeKey = `${item.instanceId}:${t.id}`;
+                      const isTermLive = sim.liveNodes.has(nodeKey);
+                      const isTermN = sim.neutralNodes.has(nodeKey);
+                      const isTermPE = sim.peNodes.has(nodeKey);
+                      const isPending =
+                        pendingTerminal?.instanceId === item.instanceId &&
+                        pendingTerminal?.terminalId === t.id;
+
+                      return (
+                        <g
+                          key={t.id}
+                          transform={`translate(${t.relX}, ${t.relY})`}
+                          className="cursor-pointer"
+                          onMouseDown={(e) => e.stopPropagation()}
+                          onClick={(e) =>
+                            handleTerminalClick(e, item.instanceId, t.id, t.hintColor)
+                          }
+                        >
+                          <circle
+                            r={isPending ? 8 : 6}
+                            fill={
+                              isPending
+                                ? '#fbbf24'
+                                : isTermLive
+                                ? '#f59e0b'
+                                : isTermN
+                                ? '#3b82f6'
+                                : isTermPE
+                                ? '#10b981'
+                                : '#1e293b'
+                            }
+                            stroke="#f8fafc"
+                            strokeWidth="1.5"
+                          />
+                          <text
+                            y={t.relY < def.height / 2 ? 15 : -9}
+                            textAnchor="middle"
+                            fill="#cbd5e1"
+                            fontSize="8"
+                            fontWeight="bold"
+                          >
+                            {t.label}
+                          </text>
+                        </g>
+                      );
+                    })}
+                  </g>
+                );
+              })}
+            </svg>
           </div>
-          <span>
-            <strong>Smazání vodiče:</strong> klikni přímo na vodič • <strong>Sepnutí vypínače/jističe:</strong> klikni na klapku/páčku
-          </span>
         </div>
       </div>
     </div>

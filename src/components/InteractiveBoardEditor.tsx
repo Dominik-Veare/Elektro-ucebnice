@@ -43,6 +43,7 @@ export interface PinDef {
   label: string;
   dx: number; // Relativní X vůči levému hornímu rohu prvku
   dy: number; // Relativní Y vůči levému hornímu rohu prvku
+  exitDir: 'up' | 'down' | 'left' | 'right'; // Směr kolmého vývodu ze svorky mimo tělo modulu
   roleHint?: 'L' | 'N' | 'PE' | 'K';
 }
 
@@ -63,11 +64,11 @@ export const PALETTE_ITEMS: PaletteItem[] = [
     name: 'Hlavní vypínač QM (63 A)',
     shortLabel: 'QM 63A',
     zone: 'din',
-    width: 68,
-    height: 130,
+    width: 70,
+    height: 120,
     pins: [
-      { id: '1', label: '1 (in)', dx: 34, dy: 14, roleHint: 'L' },
-      { id: '2', label: '2 (out)', dx: 34, dy: 116, roleHint: 'L' }
+      { id: '1', label: '1', dx: 35, dy: 12, exitDir: 'up', roleHint: 'L' },
+      { id: '2', label: '2', dx: 35, dy: 108, exitDir: 'down', roleHint: 'L' }
     ]
   },
   {
@@ -75,11 +76,11 @@ export const PALETTE_ITEMS: PaletteItem[] = [
     name: 'Jistič B10 (světla)',
     shortLabel: 'FA B10',
     zone: 'din',
-    width: 68,
-    height: 130,
+    width: 70,
+    height: 120,
     pins: [
-      { id: '1', label: '1 (in)', dx: 34, dy: 14, roleHint: 'L' },
-      { id: '2', label: '2 (out)', dx: 34, dy: 116, roleHint: 'L' }
+      { id: '1', label: '1', dx: 35, dy: 12, exitDir: 'up', roleHint: 'L' },
+      { id: '2', label: '2', dx: 35, dy: 108, exitDir: 'down', roleHint: 'L' }
     ]
   },
   {
@@ -87,11 +88,11 @@ export const PALETTE_ITEMS: PaletteItem[] = [
     name: 'Jistič B16 (zásuvky)',
     shortLabel: 'FA B16',
     zone: 'din',
-    width: 68,
-    height: 130,
+    width: 70,
+    height: 120,
     pins: [
-      { id: '1', label: '1 (in)', dx: 34, dy: 14, roleHint: 'L' },
-      { id: '2', label: '2 (out)', dx: 34, dy: 116, roleHint: 'L' }
+      { id: '1', label: '1', dx: 35, dy: 12, exitDir: 'up', roleHint: 'L' },
+      { id: '2', label: '2', dx: 35, dy: 108, exitDir: 'down', roleHint: 'L' }
     ]
   },
   {
@@ -99,13 +100,13 @@ export const PALETTE_ITEMS: PaletteItem[] = [
     name: 'Proudový chránič RCD 30 mA',
     shortLabel: 'RCD 30mA',
     zone: 'din',
-    width: 104,
-    height: 130,
+    width: 100,
+    height: 120,
     pins: [
-      { id: '1', label: '1 (L in)', dx: 28, dy: 14, roleHint: 'L' },
-      { id: 'N-in', label: 'N (in)', dx: 76, dy: 14, roleHint: 'N' },
-      { id: '2', label: '2 (L out)', dx: 28, dy: 116, roleHint: 'L' },
-      { id: 'N-out', label: 'N (out)', dx: 76, dy: 116, roleHint: 'N' }
+      { id: '1', label: '1(L)', dx: 30, dy: 12, exitDir: 'up', roleHint: 'L' },
+      { id: 'N-in', label: 'N(in)', dx: 70, dy: 12, exitDir: 'up', roleHint: 'N' },
+      { id: '2', label: '2(L)', dx: 30, dy: 108, exitDir: 'down', roleHint: 'L' },
+      { id: 'N-out', label: 'N(out)', dx: 70, dy: 108, exitDir: 'down', roleHint: 'N' }
     ]
   },
   {
@@ -113,13 +114,13 @@ export const PALETTE_ITEMS: PaletteItem[] = [
     name: 'Impulzní relé KA (paměťové)',
     shortLabel: 'Relé KA',
     zone: 'din',
-    width: 96,
-    height: 130,
+    width: 100,
+    height: 120,
     pins: [
-      { id: 'A1', label: 'A1 (imp)', dx: 26, dy: 14, roleHint: 'K' },
-      { id: '1', label: '1 (L in)', dx: 70, dy: 14, roleHint: 'L' },
-      { id: 'A2', label: 'A2 (N)', dx: 26, dy: 116, roleHint: 'N' },
-      { id: '2', label: '2 (Světlo)', dx: 70, dy: 116, roleHint: 'K' }
+      { id: 'A1', label: 'A1', dx: 30, dy: 12, exitDir: 'up', roleHint: 'K' },
+      { id: '1', label: '1(L)', dx: 70, dy: 12, exitDir: 'up', roleHint: 'L' },
+      { id: 'A2', label: 'A2(N)', dx: 30, dy: 108, exitDir: 'down', roleHint: 'N' },
+      { id: '2', label: '2(Sv)', dx: 70, dy: 108, exitDir: 'down', roleHint: 'K' }
     ]
   },
   {
@@ -127,12 +128,12 @@ export const PALETTE_ITEMS: PaletteItem[] = [
     name: 'Svodič přepětí SPD T2',
     shortLabel: 'SPD T2',
     zone: 'din',
-    width: 84,
-    height: 130,
+    width: 90,
+    height: 120,
     pins: [
-      { id: 'L', label: 'L (in)', dx: 26, dy: 14, roleHint: 'L' },
-      { id: 'N', label: 'N (in)', dx: 58, dy: 14, roleHint: 'N' },
-      { id: 'PE', label: 'PE (⏚)', dx: 42, dy: 116, roleHint: 'PE' }
+      { id: 'L', label: 'L', dx: 25, dy: 12, exitDir: 'up', roleHint: 'L' },
+      { id: 'N', label: 'N', dx: 65, dy: 12, exitDir: 'up', roleHint: 'N' },
+      { id: 'PE', label: 'PE⏚', dx: 45, dy: 108, exitDir: 'down', roleHint: 'PE' }
     ]
   },
 
@@ -142,14 +143,14 @@ export const PALETTE_ITEMS: PaletteItem[] = [
     name: 'Ochranný můstek PE (5 šroubů)',
     shortLabel: 'Můstek PE (⏚)',
     zone: 'busbar',
-    width: 175,
-    height: 54,
+    width: 170,
+    height: 50,
     pins: [
-      { id: 'PE1', label: 'PE1', dx: 25, dy: 27, roleHint: 'PE' },
-      { id: 'PE2', label: 'PE2', dx: 56, dy: 27, roleHint: 'PE' },
-      { id: 'PE3', label: 'PE3', dx: 87, dy: 27, roleHint: 'PE' },
-      { id: 'PE4', label: 'PE4', dx: 118, dy: 27, roleHint: 'PE' },
-      { id: 'PE5', label: 'PE5', dx: 149, dy: 27, roleHint: 'PE' }
+      { id: 'PE1', label: 'PE1', dx: 25, dy: 38, exitDir: 'down', roleHint: 'PE' },
+      { id: 'PE2', label: 'PE2', dx: 55, dy: 38, exitDir: 'down', roleHint: 'PE' },
+      { id: 'PE3', label: 'PE3', dx: 85, dy: 38, exitDir: 'down', roleHint: 'PE' },
+      { id: 'PE4', label: 'PE4', dx: 115, dy: 38, exitDir: 'down', roleHint: 'PE' },
+      { id: 'PE5', label: 'PE5', dx: 145, dy: 38, exitDir: 'down', roleHint: 'PE' }
     ]
   },
   {
@@ -157,14 +158,14 @@ export const PALETTE_ITEMS: PaletteItem[] = [
     name: 'Nulový můstek N (izolovaný, 5 šroubů)',
     shortLabel: 'Můstek N',
     zone: 'busbar',
-    width: 175,
-    height: 54,
+    width: 170,
+    height: 50,
     pins: [
-      { id: 'N1', label: 'N1', dx: 25, dy: 27, roleHint: 'N' },
-      { id: 'N2', label: 'N2', dx: 56, dy: 27, roleHint: 'N' },
-      { id: 'N3', label: 'N3', dx: 87, dy: 27, roleHint: 'N' },
-      { id: 'N4', label: 'N4', dx: 118, dy: 27, roleHint: 'N' },
-      { id: 'N5', label: 'N5', dx: 149, dy: 27, roleHint: 'N' }
+      { id: 'N1', label: 'N1', dx: 25, dy: 38, exitDir: 'down', roleHint: 'N' },
+      { id: 'N2', label: 'N2', dx: 55, dy: 38, exitDir: 'down', roleHint: 'N' },
+      { id: 'N3', label: 'N3', dx: 85, dy: 38, exitDir: 'down', roleHint: 'N' },
+      { id: 'N4', label: 'N4', dx: 115, dy: 38, exitDir: 'down', roleHint: 'N' },
+      { id: 'N5', label: 'N5', dx: 145, dy: 38, exitDir: 'down', roleHint: 'N' }
     ]
   },
 
@@ -174,12 +175,12 @@ export const PALETTE_ITEMS: PaletteItem[] = [
     name: 'WAGO 221 svorka (3pólová propojovací)',
     shortLabel: 'WAGO 3P',
     zone: 'wall',
-    width: 106,
-    height: 56,
+    width: 100,
+    height: 50,
     pins: [
-      { id: 'W1', label: '1', dx: 22, dy: 42 },
-      { id: 'W2', label: '2', dx: 53, dy: 42 },
-      { id: 'W3', label: '3', dx: 84, dy: 42 }
+      { id: 'W1', label: '1', dx: 20, dy: 38, exitDir: 'down' },
+      { id: 'W2', label: '2', dx: 50, dy: 38, exitDir: 'down' },
+      { id: 'W3', label: '3', dx: 80, dy: 38, exitDir: 'down' }
     ]
   },
   {
@@ -190,8 +191,8 @@ export const PALETTE_ITEMS: PaletteItem[] = [
     width: 110,
     height: 110,
     pins: [
-      { id: 'L', label: 'L (vstup)', dx: 32, dy: 18, roleHint: 'L' },
-      { id: '1', label: '1 (výstup)', dx: 78, dy: 92, roleHint: 'K' }
+      { id: 'L', label: 'L(in)', dx: 55, dy: 14, exitDir: 'up', roleHint: 'L' },
+      { id: '1', label: '1(out)', dx: 55, dy: 96, exitDir: 'down', roleHint: 'K' }
     ]
   },
   {
@@ -199,12 +200,12 @@ export const PALETTE_ITEMS: PaletteItem[] = [
     name: 'Přepínač řazení č. 5 (lustrový 2 klapky)',
     shortLabel: 'Spínač č. 5',
     zone: 'wall',
-    width: 116,
+    width: 110,
     height: 110,
     pins: [
-      { id: 'L', label: 'L (vstup)', dx: 58, dy: 18, roleHint: 'L' },
-      { id: '1', label: '1 (klapka A)', dx: 28, dy: 92, roleHint: 'K' },
-      { id: '2', label: '2 (klapka B)', dx: 88, dy: 92, roleHint: 'K' }
+      { id: 'L', label: 'L(in)', dx: 55, dy: 14, exitDir: 'up', roleHint: 'L' },
+      { id: '1', label: '1(A)', dx: 30, dy: 96, exitDir: 'down', roleHint: 'K' },
+      { id: '2', label: '2(B)', dx: 80, dy: 96, exitDir: 'down', roleHint: 'K' }
     ]
   },
   {
@@ -212,12 +213,12 @@ export const PALETTE_ITEMS: PaletteItem[] = [
     name: 'Přepínač řazení č. 6 (schodišťový)',
     shortLabel: 'Přepínač č. 6',
     zone: 'wall',
-    width: 116,
+    width: 110,
     height: 110,
     pins: [
-      { id: 'L', label: 'L (kmenová)', dx: 58, dy: 18, roleHint: 'L' },
-      { id: '1', label: 'K1', dx: 28, dy: 92, roleHint: 'K' },
-      { id: '2', label: 'K2', dx: 88, dy: 92, roleHint: 'K' }
+      { id: 'L', label: 'L(km)', dx: 55, dy: 14, exitDir: 'up', roleHint: 'L' },
+      { id: '1', label: 'K1', dx: 30, dy: 96, exitDir: 'down', roleHint: 'K' },
+      { id: '2', label: 'K2', dx: 80, dy: 96, exitDir: 'down', roleHint: 'K' }
     ]
   },
   {
@@ -225,13 +226,13 @@ export const PALETTE_ITEMS: PaletteItem[] = [
     name: 'Přepínač řazení č. 7 (křížový)',
     shortLabel: 'Křížák č. 7',
     zone: 'wall',
-    width: 120,
+    width: 110,
     height: 110,
     pins: [
-      { id: '1', label: '1 (in↑)', dx: 30, dy: 18, roleHint: 'K' },
-      { id: '2', label: '2 (in↑)', dx: 90, dy: 18, roleHint: 'K' },
-      { id: '3', label: '3 (out↓)', dx: 30, dy: 92, roleHint: 'K' },
-      { id: '4', label: '4 (out↓)', dx: 90, dy: 92, roleHint: 'K' }
+      { id: '1', label: '1(in↑)', dx: 30, dy: 14, exitDir: 'up', roleHint: 'K' },
+      { id: '2', label: '2(in↑)', dx: 80, dy: 14, exitDir: 'up', roleHint: 'K' },
+      { id: '3', label: '3(out↓)', dx: 30, dy: 96, exitDir: 'down', roleHint: 'K' },
+      { id: '4', label: '4(out↓)', dx: 80, dy: 96, exitDir: 'down', roleHint: 'K' }
     ]
   },
   {
@@ -242,8 +243,8 @@ export const PALETTE_ITEMS: PaletteItem[] = [
     width: 110,
     height: 110,
     pins: [
-      { id: 'L', label: 'L (fáze)', dx: 32, dy: 18, roleHint: 'L' },
-      { id: '1', label: '1 (impulz)', dx: 78, dy: 92, roleHint: 'K' }
+      { id: 'L', label: 'L(in)', dx: 55, dy: 14, exitDir: 'up', roleHint: 'L' },
+      { id: '1', label: '1(imp)', dx: 55, dy: 96, exitDir: 'down', roleHint: 'K' }
     ]
   },
   {
@@ -252,11 +253,11 @@ export const PALETTE_ITEMS: PaletteItem[] = [
     shortLabel: 'Zásuvka 230V',
     zone: 'wall',
     width: 130,
-    height: 115,
+    height: 110,
     pins: [
-      { id: 'L', label: 'L (VLEVO)', dx: 28, dy: 72, roleHint: 'L' },
-      { id: 'PE', label: 'PE (KOLÍK ⏚)', dx: 65, dy: 24, roleHint: 'PE' },
-      { id: 'N', label: 'N (VPRAVO)', dx: 102, dy: 72, roleHint: 'N' }
+      { id: 'L', label: 'L(vlevo)', dx: 30, dy: 14, exitDir: 'up', roleHint: 'L' },
+      { id: 'PE', label: 'PE(kolík)', dx: 65, dy: 14, exitDir: 'up', roleHint: 'PE' },
+      { id: 'N', label: 'N(vpravo)', dx: 100, dy: 14, exitDir: 'up', roleHint: 'N' }
     ]
   },
   {
@@ -264,12 +265,12 @@ export const PALETTE_ITEMS: PaletteItem[] = [
     name: 'Svítidlo E27 (třída I – střed L, závit N, kostra PE)',
     shortLabel: 'Svítidlo E27',
     zone: 'wall',
-    width: 136,
-    height: 115,
+    width: 130,
+    height: 110,
     pins: [
-      { id: 'L', label: 'L (STŘED)', dx: 30, dy: 94, roleHint: 'K' },
-      { id: 'N', label: 'N (ZÁVIT)', dx: 68, dy: 94, roleHint: 'N' },
-      { id: 'PE', label: 'PE (KOSTRA ⏚)', dx: 106, dy: 94, roleHint: 'PE' }
+      { id: 'L', label: 'L(střed)', dx: 30, dy: 14, exitDir: 'up', roleHint: 'K' },
+      { id: 'N', label: 'N(závit)', dx: 65, dy: 14, exitDir: 'up', roleHint: 'N' },
+      { id: 'PE', label: 'PE(kostra)', dx: 100, dy: 14, exitDir: 'up', roleHint: 'PE' }
     ]
   },
   {
@@ -277,13 +278,13 @@ export const PALETTE_ITEMS: PaletteItem[] = [
     name: 'Dvojitý lustr (L1, L2, N, PE)',
     shortLabel: 'Lustr (2 větvě)',
     zone: 'wall',
-    width: 156,
-    height: 115,
+    width: 150,
+    height: 110,
     pins: [
-      { id: 'L1', label: 'L1', dx: 24, dy: 94, roleHint: 'K' },
-      { id: 'L2', label: 'L2', dx: 60, dy: 94, roleHint: 'K' },
-      { id: 'N', label: 'N', dx: 96, dy: 94, roleHint: 'N' },
-      { id: 'PE', label: 'PE⏚', dx: 132, dy: 94, roleHint: 'PE' }
+      { id: 'L1', label: 'L1', dx: 25, dy: 14, exitDir: 'up', roleHint: 'K' },
+      { id: 'L2', label: 'L2', dx: 60, dy: 14, exitDir: 'up', roleHint: 'K' },
+      { id: 'N', label: 'N', dx: 95, dy: 14, exitDir: 'up', roleHint: 'N' },
+      { id: 'PE', label: 'PE⏚', dx: 125, dy: 14, exitDir: 'up', roleHint: 'PE' }
     ]
   },
   {
@@ -292,9 +293,9 @@ export const PALETTE_ITEMS: PaletteItem[] = [
     shortLabel: 'Potrubí (Bernard)',
     zone: 'wall',
     width: 130,
-    height: 75,
+    height: 70,
     pins: [
-      { id: 'PE', label: 'PE (pospojování ⏚)', dx: 65, dy: 22, roleHint: 'PE' }
+      { id: 'PE', label: 'PE(⏚)', dx: 65, dy: 14, exitDir: 'up', roleHint: 'PE' }
     ]
   }
 ];
@@ -305,7 +306,6 @@ export interface PlacedDevice {
   label: string;
   x: number;
   y: number;
-  // Vnitřní stav spínače / jističe (zapnuto/vypnuto, klapka A/B)
   stateA: boolean;
   stateB: boolean;
 }
@@ -328,58 +328,289 @@ const WIRE_PALETTE: { id: BoardWireColor; label: string; hex: string; dash?: str
   { id: 'comb', label: 'Fázový hřeben (DIN propojka)', hex: '#b45309' }
 ];
 
-// Výchozí přívod sítě v levém horním rohu rozvaděče (pevný zdroj)
 const SUPPLY_DEVICE: PaletteItem = {
   type: 'supply-in',
   name: 'Přívod ze sítě 230 V (L, N, PE)',
   shortLabel: 'SÍŤ 230V',
   zone: 'busbar',
-  width: 135,
-  height: 54,
+  width: 130,
+  height: 50,
   pins: [
-    { id: 'L', label: 'L (230V)', dx: 28, dy: 27, roleHint: 'L' },
-    { id: 'N', label: 'N', dx: 68, dy: 27, roleHint: 'N' },
-    { id: 'PE', label: 'PE (⏚)', dx: 108, dy: 27, roleHint: 'PE' }
+    { id: 'L', label: 'L(230V)', dx: 25, dy: 38, exitDir: 'down', roleHint: 'L' },
+    { id: 'N', label: 'N', dx: 65, dy: 38, exitDir: 'down', roleHint: 'N' },
+    { id: 'PE', label: 'PE(⏚)', dx: 105, dy: 38, exitDir: 'down', roleHint: 'PE' }
   ]
 };
 
-// Předpřipravená vzorová sestava 1: Zásuvka + Schodišťák (6 + 6)
+// Výchozí nepřekrývající se sestava s dostatečnými instalačními kanály pro ortogonální vodiče
 const INITIAL_DEVICES: PlacedDevice[] = [
-  { instanceId: 'supply', type: 'supply-in', label: 'Přívod 230V', x: 30, y: 28, stateA: true, stateB: false },
-  { instanceId: 'pe-bar', type: 'busbar-pe', label: 'Můstek PE', x: 220, y: 28, stateA: true, stateB: false },
-  { instanceId: 'n-bar', type: 'busbar-n', label: 'Můstek N (za RCD)', x: 430, y: 28, stateA: true, stateB: false },
-  // DIN lišta (y = 115)
-  { instanceId: 'rcd1', type: 'rcd-2p', label: 'FI1 (RCD 30mA)', x: 60, y: 115, stateA: true, stateB: false },
-  { instanceId: 'b10', type: 'mcb-b10', label: 'FA1 (B10 Světla)', x: 195, y: 115, stateA: true, stateB: false },
-  { instanceId: 'b16', type: 'mcb-b16', label: 'FA2 (B16 Zásuvky)', x: 290, y: 115, stateA: true, stateB: false },
-  // Montážní plocha stěny (y >= 300)
-  { instanceId: 'sw6a', type: 'sw-6', label: 'Přepínač 6A (dole)', x: 60, y: 340, stateA: false, stateB: false },
-  { instanceId: 'sw6b', type: 'sw-6', label: 'Přepínač 6B (nahoře)', x: 240, y: 340, stateA: false, stateB: false },
-  { instanceId: 'lamp1', type: 'lamp-e27', label: 'Svítidlo E27', x: 430, y: 340, stateA: false, stateB: false },
-  { instanceId: 'sock1', type: 'socket-230', label: 'Zásuvka 230 V', x: 630, y: 340, stateA: false, stateB: false }
+  // Horní lišta můstků (y = 20)
+  { instanceId: 'supply', type: 'supply-in', label: 'Přívod 230V', x: 30, y: 20, stateA: true, stateB: false },
+  { instanceId: 'pe-bar', type: 'busbar-pe', label: 'Můstek PE', x: 240, y: 20, stateA: true, stateB: false },
+  { instanceId: 'n-bar', type: 'busbar-n', label: 'Můstek N (za RCD)', x: 470, y: 20, stateA: true, stateB: false },
+  // DIN lišta (y = 120)
+  { instanceId: 'rcd1', type: 'rcd-2p', label: 'FI1 (RCD 30mA)', x: 60, y: 120, stateA: true, stateB: false },
+  { instanceId: 'b10', type: 'mcb-b10', label: 'FA1 (B10 Světla)', x: 200, y: 120, stateA: true, stateB: false },
+  { instanceId: 'b16', type: 'mcb-b16', label: 'FA2 (B16 Zásuvky)', x: 310, y: 120, stateA: true, stateB: false },
+  // Montážní deska stěny (y = 350)
+  { instanceId: 'sw6a', type: 'sw-6', label: 'Přepínač 6A (dole)', x: 50, y: 350, stateA: false, stateB: false },
+  { instanceId: 'sw6b', type: 'sw-6', label: 'Přepínač 6B (nahoře)', x: 220, y: 350, stateA: false, stateB: false },
+  { instanceId: 'lamp1', type: 'lamp-e27', label: 'Svítidlo E27', x: 400, y: 350, stateA: false, stateB: false },
+  { instanceId: 'sock1', type: 'socket-230', label: 'Zásuvka 230 V', x: 600, y: 350, stateA: false, stateB: false }
 ];
 
 const INITIAL_WIRES: BoardWire[] = [
-  // Přívod do RCD a PE můstku
   { id: 'w1', fromInstanceId: 'supply', fromPinId: 'PE', toInstanceId: 'pe-bar', toPinId: 'PE1', color: 'green-yellow' },
   { id: 'w2', fromInstanceId: 'supply', fromPinId: 'L', toInstanceId: 'rcd1', toPinId: '1', color: 'brown' },
   { id: 'w3', fromInstanceId: 'supply', fromPinId: 'N', toInstanceId: 'rcd1', toPinId: 'N-in', color: 'blue' },
-  // Z RCD do N můstku a jističů B10, B16
   { id: 'w4', fromInstanceId: 'rcd1', fromPinId: 'N-out', toInstanceId: 'n-bar', toPinId: 'N1', color: 'blue' },
   { id: 'w5', fromInstanceId: 'rcd1', fromPinId: '2', toInstanceId: 'b10', toPinId: '1', color: 'comb' },
   { id: 'w6', fromInstanceId: 'b10', fromPinId: '1', toInstanceId: 'b16', toPinId: '1', color: 'comb' },
-  // Světelný obvod (schodišťák 6A -> 6B -> Svítidlo)
   { id: 'w7', fromInstanceId: 'b10', fromPinId: '2', toInstanceId: 'sw6a', toPinId: 'L', color: 'brown' },
   { id: 'w8', fromInstanceId: 'sw6a', fromPinId: '1', toInstanceId: 'sw6b', toPinId: '1', color: 'black' },
   { id: 'w9', fromInstanceId: 'sw6a', fromPinId: '2', toInstanceId: 'sw6b', toPinId: '2', color: 'grey' },
   { id: 'w10', fromInstanceId: 'sw6b', fromPinId: 'L', toInstanceId: 'lamp1', toPinId: 'L', color: 'brown' },
   { id: 'w11', fromInstanceId: 'n-bar', fromPinId: 'N2', toInstanceId: 'lamp1', toPinId: 'N', color: 'blue' },
   { id: 'w12', fromInstanceId: 'pe-bar', fromPinId: 'PE2', toInstanceId: 'lamp1', toPinId: 'PE', color: 'green-yellow' },
-  // Zásuvkový obvod (B16 -> Zásuvka 230 V)
   { id: 'w13', fromInstanceId: 'b16', fromPinId: '2', toInstanceId: 'sock1', toPinId: 'L', color: 'brown' },
   { id: 'w14', fromInstanceId: 'n-bar', fromPinId: 'N3', toInstanceId: 'sock1', toPinId: 'N', color: 'blue' },
   { id: 'w15', fromInstanceId: 'pe-bar', fromPinId: 'PE3', toInstanceId: 'sock1', toPinId: 'PE', color: 'green-yellow' }
 ];
+
+// ============================================================================
+// ORTOGONÁLNÍ ROUTER VODIČŮ (A* na mřížce 10×10 px s vyhýbáním se modulům!)
+// ============================================================================
+const GRID_STEP = 10;
+const BOARD_W = 820;
+const BOARD_H = 590;
+const COLS = Math.floor(BOARD_W / GRID_STEP); // 82
+const ROWS = Math.floor(BOARD_H / GRID_STEP); // 59
+
+function getSpecStatic(type: BoardDeviceType): PaletteItem {
+  if (type === 'supply-in') return SUPPLY_DEVICE;
+  return PALETTE_ITEMS.find((p) => p.type === type) || PALETTE_ITEMS[0];
+}
+
+/**
+ * Kontrola překryvu (kolize) dvou obdélníků s povinným odstupem (gap) pro instalační kanál vodičů.
+ */
+function boxesOverlap(
+  x1: number,
+  y1: number,
+  w1: number,
+  h1: number,
+  x2: number,
+  y2: number,
+  w2: number,
+  h2: number,
+  gap: number = 20
+): boolean {
+  return !(
+    x1 + w1 + gap <= x2 ||
+    x2 + w2 + gap <= x1 ||
+    y1 + h1 + gap <= y2 ||
+    y2 + h2 + gap <= y1
+  );
+}
+
+/**
+ * Vypočítá ortogonální (vodorovnou a svislou) trasu vodiče mezi dvěma svorkami,
+ * která NIKDY neprochází skrz žádný umístěný modul a vyhýbá se obsazeným trasám.
+ */
+function computeOrthogonalWirePaths(
+  devices: PlacedDevice[],
+  wires: BoardWire[]
+): Record<string, string> {
+  // 1. Vytvoříme mapu překážek (všechny moduly na tabuli jsou neprůchodné)
+  const blocked = new Uint8Array(COLS * ROWS);
+  for (const dev of devices) {
+    const spec = getSpecStatic(dev.type);
+    const cMin = Math.max(0, Math.floor(dev.x / GRID_STEP));
+    const cMax = Math.min(COLS - 1, Math.ceil((dev.x + spec.width) / GRID_STEP));
+    const rMin = Math.max(0, Math.floor(dev.y / GRID_STEP));
+    const rMax = Math.min(ROWS - 1, Math.ceil((dev.y + spec.height) / GRID_STEP));
+    for (let r = rMin; r <= rMax; r++) {
+      for (let c = cMin; c <= cMax; c++) {
+        blocked[r * COLS + c] = 1;
+      }
+    }
+  }
+
+  // Mapa obsazenosti kanálů předchozími vodiči, aby šly souběžné vodiče úhledně vedle sebe
+  const usedCells = new Uint16Array(COLS * ROWS);
+  const resultPaths: Record<string, string> = {};
+
+  const getPinInfo = (instId: string, pinId: string) => {
+    const dev = devices.find((d) => d.instanceId === instId);
+    if (!dev) return null;
+    const spec = getSpecStatic(dev.type);
+    const pin = spec.pins.find((p) => p.id === pinId);
+    if (!pin) return null;
+
+    const px = dev.x + pin.dx;
+    const py = dev.y + pin.dy;
+
+    // Kolmý vývod ze svorky ven z těla modulu na první volný bod mřížky
+    let ex = px;
+    let ey = py;
+    if (pin.exitDir === 'up') {
+      ey = dev.y - 10;
+    } else if (pin.exitDir === 'down') {
+      ey = dev.y + spec.height + 10;
+    } else if (pin.exitDir === 'left') {
+      ex = dev.x - 10;
+    } else {
+      ex = dev.x + spec.width + 10;
+    }
+
+    const gc = Math.max(1, Math.min(COLS - 2, Math.round(ex / GRID_STEP)));
+    const gr = Math.max(1, Math.min(ROWS - 2, Math.round(ey / GRID_STEP)));
+
+    return { px, py, ex: gc * GRID_STEP, ey: gr * GRID_STEP, gc, gr };
+  };
+
+  // Směry: 0 = nahoru, 1 = doprava, 2 = dolů, 3 = doleva
+  const dCol = [0, 1, 0, -1];
+  const dRow = [-1, 0, 1, 0];
+
+  for (const w of wires) {
+    const start = getPinInfo(w.fromInstanceId, w.fromPinId);
+    const end = getPinInfo(w.toInstanceId, w.toPinId);
+    if (!start || !end) continue;
+
+    // Dočasně odblokujeme samotný výstupní a vstupní bod mřížky
+    const startCell = start.gr * COLS + start.gc;
+    const endCell = end.gr * COLS + end.gc;
+
+    // Stav v A*: (row, col, dir) -> index = (row * COLS + col) * 4 + dir
+    const totalStates = COLS * ROWS * 4;
+    const gScore = new Int32Array(totalStates).fill(1e9);
+    const parent = new Int32Array(totalStates).fill(-1);
+    const closed = new Uint8Array(totalStates);
+
+    // Jednoduchá prioritní fronta
+    const openStates: number[] = [];
+    const openF: number[] = [];
+
+    const pushOpen = (stateIdx: number, fVal: number) => {
+      openStates.push(stateIdx);
+      openF.push(fVal);
+    };
+
+    const popBest = (): number => {
+      let bestIdx = 0;
+      for (let i = 1; i < openF.length; i++) {
+        if (openF[i] < openF[bestIdx]) bestIdx = i;
+      }
+      const st = openStates[bestIdx];
+      openStates[bestIdx] = openStates[openStates.length - 1];
+      openF[bestIdx] = openF[openF.length - 1];
+      openStates.pop();
+      openF.pop();
+      return st;
+    };
+
+    const hDist = (c: number, r: number) => (Math.abs(c - end.gc) + Math.abs(r - end.gr)) * 10;
+
+    for (let dir = 0; dir < 4; dir++) {
+      const st = startCell * 4 + dir;
+      gScore[st] = 0;
+      pushOpen(st, hDist(start.gc, start.gr));
+    }
+
+    let reachedState = -1;
+
+    while (openStates.length > 0) {
+      const curr = popBest();
+      if (closed[curr]) continue;
+      closed[curr] = 1;
+
+      const cell = curr >> 2;
+      const dir = curr & 3;
+      if (cell === endCell) {
+        reachedState = curr;
+        break;
+      }
+
+      const r = Math.floor(cell / COLS);
+      const c = cell % COLS;
+
+      for (let ndir = 0; ndir < 4; ndir++) {
+        // Zákaz okamžitého obratu o 180°
+        if ((ndir ^ 2) === dir) continue;
+        const nr = r + dRow[ndir];
+        const nc = c + dCol[ndir];
+        if (nr < 1 || nr >= ROWS - 1 || nc < 1 || nc >= COLS - 1) continue;
+
+        const nCell = nr * COLS + nc;
+        if (blocked[nCell] && nCell !== endCell && nCell !== startCell) continue;
+
+        const turnPenalty = ndir === dir ? 0 : 28; // Penalizace za ohyb 90°, aby trasa měla minimum rohů
+        const crowdingPenalty = usedCells[nCell] * 18; // Aby šly kabely vedle sebe
+        const stepCost = 10 + turnPenalty + crowdingPenalty;
+
+        const nState = nCell * 4 + ndir;
+        const tentativeG = gScore[curr] + stepCost;
+        if (tentativeG < gScore[nState]) {
+          gScore[nState] = tentativeG;
+          parent[nState] = curr;
+          pushOpen(nState, tentativeG + hDist(nc, nr));
+        }
+      }
+    }
+
+    const pts: { x: number; y: number }[] = [];
+    pts.push({ x: start.px, y: start.py });
+    pts.push({ x: start.ex, y: start.ey });
+
+    if (reachedState !== -1) {
+      const gridPath: { x: number; y: number }[] = [];
+      let cur = reachedState;
+      while (cur !== -1) {
+        const cell = cur >> 2;
+        usedCells[cell] += 1;
+        const r = Math.floor(cell / COLS);
+        const c = cell % COLS;
+        gridPath.push({ x: c * GRID_STEP, y: r * GRID_STEP });
+        cur = parent[cur];
+      }
+      gridPath.reverse();
+      for (const gp of gridPath) {
+        pts.push(gp);
+      }
+    } else {
+      // Záložní ortogonální propojení přes volný středový kanál (y = 280), pokud by byla přímá cesta uzavřena
+      pts.push({ x: start.ex, y: 280 });
+      pts.push({ x: end.ex, y: 280 });
+    }
+
+    pts.push({ x: end.ex, y: end.ey });
+    pts.push({ x: end.px, y: end.py });
+
+    // Zjednodušení kolineárních bodů na čisté vodorovné a svislé úseky
+    const simplified: { x: number; y: number }[] = [];
+    for (const p of pts) {
+      if (simplified.length > 0) {
+        const last = simplified[simplified.length - 1];
+        if (last.x === p.x && last.y === p.y) continue;
+      }
+      if (simplified.length >= 2) {
+        const pPrev = simplified[simplified.length - 2];
+        const pMid = simplified[simplified.length - 1];
+        if ((pPrev.x === pMid.x && pMid.x === p.x) || (pPrev.y === pMid.y && pMid.y === p.y)) {
+          simplified[simplified.length - 1] = p;
+          continue;
+        }
+      }
+      simplified.push(p);
+    }
+
+    const dStr = simplified.map((pt, idx) => `${idx === 0 ? 'M' : 'L'} ${pt.x} ${pt.y}`).join(' ');
+    resultPaths[w.id] = dStr;
+  }
+
+  return resultPaths;
+}
 
 export const InteractiveBoardEditor: React.FC = () => {
   const [devices, setDevices] = useState<PlacedDevice[]>(INITIAL_DEVICES);
@@ -389,72 +620,103 @@ export const InteractiveBoardEditor: React.FC = () => {
   const [powerOn, setPowerOn] = useState<boolean>(true);
   const [ruleMessage, setRuleMessage] = useState<{ type: 'error' | 'info' | 'success'; text: string } | null>(null);
 
-  // Dragging prvku po tabuli
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState<{ dx: number; dy: number }>({ dx: 0, dy: 0 });
 
-  const getSpec = (type: BoardDeviceType): PaletteItem => {
-    if (type === 'supply-in') return SUPPLY_DEVICE;
-    return PALETTE_ITEMS.find((p) => p.type === type) || PALETTE_ITEMS[0];
+  const getSpec = (type: BoardDeviceType): PaletteItem => getSpecStatic(type);
+
+  /**
+   * Zkontroluje, zda pozice (candX, candY) pro prvek `ignoreId` o rozměrech (w, h)
+   * nekoliduje s žádným jiným umístěným prvkem na tabuli (včetně instalační mezery 20 px).
+   */
+  const hasCollision = (
+    candX: number,
+    candY: number,
+    w: number,
+    h: number,
+    ignoreId: string,
+    list: PlacedDevice[] = devices
+  ): boolean => {
+    for (const other of list) {
+      if (other.instanceId === ignoreId) continue;
+      const oSpec = getSpec(other.type);
+      if (boxesOverlap(candX, candY, w, h, other.x, other.y, oSpec.width, oSpec.height, 20)) {
+        return true;
+      }
+    }
+    return false;
   };
 
-  // Přidání nového prvku na tabuli s kontrolou pravidel zóny (DIN lišta vs. můstky vs. stěna)
+  // Přidání nového prvku na tabuli na první volné nepřekrývající se místo v dané zóně
   const handleAddDevice = (item: PaletteItem) => {
     const id = `${item.type}-${Date.now().toString().slice(-4)}`;
+
     if (item.zone === 'din') {
-      // Najdeme volné místo na DIN liště (y = 115)
-      const dinDevices = devices.filter((d) => getSpec(d.type).zone === 'din');
-      const maxX = dinDevices.reduce((max, d) => Math.max(max, d.x + getSpec(d.type).width + 14), 60);
-      if (maxX + item.width > 790) {
-        setRuleMessage({
-          type: 'error',
-          text: 'Pravidlo DIN lišty: DIN lišta v rozvaděči je plná! Odstraň některý modul z DIN lišty.'
-        });
-        return;
+      const y = 120;
+      for (let x = 40; x <= BOARD_W - item.width - 20; x += 10) {
+        if (!hasCollision(x, y, item.width, item.height, id)) {
+          setDevices((prev) => [
+            ...prev,
+            { instanceId: id, type: item.type, label: item.shortLabel, x, y, stateA: true, stateB: false }
+          ]);
+          setRuleMessage({
+            type: 'info',
+            text: `Modul „${item.name}“ byl nacvaknut na volné místo na 35mm DIN liště.`
+          });
+          return;
+        }
       }
-      setDevices((prev) => [
-        ...prev,
-        { instanceId: id, type: item.type, label: item.shortLabel, x: maxX, y: 115, stateA: true, stateB: false }
-      ]);
       setRuleMessage({
-        type: 'info',
-        text: `Modul „${item.name}“ byl nacvaknut na 35mm DIN lištu v rozvaděči.`
+        type: 'error',
+        text: 'DIN lišta v rozvaděči je plná (moduly se nesmí překrývat)! Posuň nebo odstraň některý modul.'
       });
-    } else if (item.zone === 'busbar') {
-      const busDevices = devices.filter((d) => getSpec(d.type).zone === 'busbar');
-      const maxX = busDevices.reduce((max, d) => Math.max(max, d.x + getSpec(d.type).width + 20), 30);
-      if (maxX + item.width > 790) {
-        setRuleMessage({
-          type: 'error',
-          text: 'Držák sběrnic PE/N v horní části rozvaděče je již plný!'
-        });
-        return;
-      }
-      setDevices((prev) => [
-        ...prev,
-        { instanceId: id, type: item.type, label: item.shortLabel, x: maxX, y: 28, stateA: true, stateB: false }
-      ]);
-      setRuleMessage({
-        type: 'info',
-        text: `Můstek „${item.name}“ byl osazen do držáku sběrnic v rozvaděči.`
-      });
-    } else {
-      // Stěna (y >= 300)
-      const wallCount = devices.filter((d) => getSpec(d.type).zone === 'wall').length;
-      const col = wallCount % 4;
-      const row = Math.floor(wallCount / 4);
-      const x = 60 + col * 190;
-      const y = 320 + row * 135;
-      setDevices((prev) => [
-        ...prev,
-        { instanceId: id, type: item.type, label: item.shortLabel, x, y: Math.min(y, 460), stateA: false, stateB: false }
-      ]);
-      setRuleMessage({
-        type: 'info',
-        text: `Prvek „${item.name}“ byl umístěn na montážní desku. Můžeš ho myší libovolně posouvat!`
-      });
+      return;
     }
+
+    if (item.zone === 'busbar') {
+      const y = 20;
+      for (let x = 30; x <= BOARD_W - item.width - 20; x += 10) {
+        if (!hasCollision(x, y, item.width, item.height, id)) {
+          setDevices((prev) => [
+            ...prev,
+            { instanceId: id, type: item.type, label: item.shortLabel, x, y, stateA: true, stateB: false }
+          ]);
+          setRuleMessage({
+            type: 'info',
+            text: `Můstek „${item.name}“ byl osazen na volné místo v držáku sběrnic.`
+          });
+          return;
+        }
+      }
+      setRuleMessage({
+        type: 'error',
+        text: 'Držák sběrnic PE/N v horní části rozvaděče je již plný!'
+      });
+      return;
+    }
+
+    // Zóna stěny (y >= 310) – hledáme první volné místo v mřížce bez překryvu
+    for (let y = 320; y <= BOARD_H - item.height - 20; y += 20) {
+      for (let x = 40; x <= BOARD_W - item.width - 20; x += 20) {
+        if (!hasCollision(x, y, item.width, item.height, id)) {
+          setDevices((prev) => [
+            ...prev,
+            { instanceId: id, type: item.type, label: item.shortLabel, x, y, stateA: false, stateB: false }
+          ]);
+          setRuleMessage({
+            type: 'info',
+            text: `Prvek „${item.name}“ byl umístěn na volné místo montážní desky.`
+          });
+          return;
+        }
+      }
+    }
+
+    setRuleMessage({
+      type: 'error',
+      text: 'Montážní deska stěny je plná! Uvolni místo odstraněním nebo posunutím některého prvku.'
+    });
   };
 
   const handleRemoveDevice = (instanceId: string) => {
@@ -467,7 +729,7 @@ export const InteractiveBoardEditor: React.FC = () => {
     if (activePin?.instanceId === instanceId) setActivePin(null);
   };
 
-  // Kliknutí na svorku (pin) – propojení vodičem s kontrolou pravidel!
+  // Kliknutí na svorku (pin) – propojení vodičem s kontrolou pravidel
   const handlePinClick = (instanceId: string, pinId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (!activePin) {
@@ -486,7 +748,6 @@ export const InteractiveBoardEditor: React.FC = () => {
     const fromZone = getSpec(fromDev.type).zone;
     const toZone = getSpec(toDev.type).zone;
 
-    // PRAVIDLO 1: Fázový hřeben (comb) smí propojovat POUZE horní nebo dolní svorky přístrojů na DIN liště!
     if (selectedColor === 'comb' && (fromZone !== 'din' || toZone !== 'din')) {
       setRuleMessage({
         type: 'error',
@@ -496,15 +757,14 @@ export const InteractiveBoardEditor: React.FC = () => {
       return;
     }
 
-    // PRAVIDLO 2: Na ochranném můstku PE smí být pod jedním šroubem (PE1..PE5) pouze 1 vodič!
     const checkPeScrewLimit = (dev: PlacedDevice, pId: string) => {
       if (dev.type === 'busbar-pe') {
         const count = wires.filter(
-          (w) => (w.fromInstanceId === dev.instanceId && w.fromPinId === pId) || (w.toInstanceId === dev.instanceId && w.toPinId === pId)
+          (w) =>
+            (w.fromInstanceId === dev.instanceId && w.fromPinId === pId) ||
+            (w.toInstanceId === dev.instanceId && w.toPinId === pId)
         ).length;
-        if (count >= 1) {
-          return true;
-        }
+        if (count >= 1) return true;
       }
       return false;
     };
@@ -518,7 +778,6 @@ export const InteractiveBoardEditor: React.FC = () => {
       return;
     }
 
-    // PRAVIDLO 3: Zeleno-žlutý vodič PE nesmí být přeznačován na živý vodič (upozornění pokud nejde na PE svorku)
     const exists = wires.some(
       (w) =>
         (w.fromInstanceId === activePin.instanceId &&
@@ -548,10 +807,8 @@ export const InteractiveBoardEditor: React.FC = () => {
     setActivePin(null);
   };
 
-  // Přepínání stavu přístroje (páčka jističe, klapka vypínače, tlačítko 1/0)
   const handleToggleDeviceState = (inst: PlacedDevice, which: 'A' | 'B' = 'A') => {
     if (inst.type === 'sw-push') {
-      // Krátký impulz tlačítka 1/0 -> pokud je tlačítko pod napětím L a spojené s A1 impulzního relé, překlopí relé!
       setDevices((prev) =>
         prev.map((d) => {
           if (d.instanceId === inst.instanceId) return { ...d, stateA: true };
@@ -578,12 +835,12 @@ export const InteractiveBoardEditor: React.FC = () => {
     );
   };
 
-  // Drag & Drop posouvání prvků s vynucením zón (DIN lišta vs. Můstky vs. Stěna)
-  const getSvgCoords = (e: React.MouseEvent<SVGSVGElement>) => {
+  // Drag & Drop posouvání prvků s přísným zákazem překrývání modulů!
+  const getSvgCoords = (e: React.MouseEvent) => {
     if (!svgRef.current) return { x: 0, y: 0 };
     const rect = svgRef.current.getBoundingClientRect();
-    const scaleX = 820 / rect.width;
-    const scaleY = 590 / rect.height;
+    const scaleX = BOARD_W / rect.width;
+    const scaleY = BOARD_H / rect.height;
     return {
       x: (e.clientX - rect.left) * scaleX,
       y: (e.clientY - rect.top) * scaleY
@@ -593,13 +850,9 @@ export const InteractiveBoardEditor: React.FC = () => {
   const handleStartDrag = (inst: PlacedDevice, e: React.MouseEvent) => {
     e.stopPropagation();
     if (!svgRef.current) return;
-    const rect = svgRef.current.getBoundingClientRect();
-    const scaleX = 820 / rect.width;
-    const scaleY = 590 / rect.height;
-    const mouseX = (e.clientX - rect.left) * scaleX;
-    const mouseY = (e.clientY - rect.top) * scaleY;
+    const { x, y } = getSvgCoords(e);
     setDraggingId(inst.instanceId);
-    setDragOffset({ dx: mouseX - inst.x, dy: mouseY - inst.y });
+    setDragOffset({ dx: x - inst.x, dy: y - inst.y });
   };
 
   const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
@@ -609,20 +862,40 @@ export const InteractiveBoardEditor: React.FC = () => {
       prev.map((d) => {
         if (d.instanceId !== draggingId) return d;
         const spec = getSpec(d.type);
-        const newX = Math.max(16, Math.min(800 - spec.width, Math.round((x - dragOffset.dx) / 10) * 10));
+        const candX = Math.max(20, Math.min(BOARD_W - spec.width - 20, Math.round((x - dragOffset.dx) / 10) * 10));
 
-        // Vynucení pravidel umístění podle typu prvku:
         if (spec.zone === 'din') {
-          // Moduly na DIN lištu se pohybují pouze vodorovně po DIN liště (y = 115)!
-          return { ...d, x: newX, y: 115 };
+          const fixedY = 120;
+          if (!hasCollision(candX, fixedY, spec.width, spec.height, d.instanceId, prev)) {
+            return { ...d, x: candX, y: fixedY };
+          }
+          return d;
         }
+
         if (spec.zone === 'busbar') {
-          // Sběrnice PE/N zůstávají v horní liště rozvaděče (y = 28)
-          return { ...d, x: newX, y: 28 };
+          const fixedY = 20;
+          if (!hasCollision(candX, fixedY, spec.width, spec.height, d.instanceId, prev)) {
+            return { ...d, x: candX, y: fixedY };
+          }
+          return d;
         }
-        // Prvky na stěnu smí být pouze v montážní zóně pod rozvaděčem (y >= 295)
-        const newY = Math.max(295, Math.min(580 - spec.height, Math.round((y - dragOffset.dy) / 10) * 10));
-        return { ...d, x: newX, y: newY };
+
+        const candY = Math.max(310, Math.min(BOARD_H - spec.height - 20, Math.round((y - dragOffset.dy) / 10) * 10));
+
+        // 1. Zkusíme plný posun (candX, candY)
+        if (!hasCollision(candX, candY, spec.width, spec.height, d.instanceId, prev)) {
+          return { ...d, x: candX, y: candY };
+        }
+        // 2. Zkusíme klouzání pouze vodorovně (candX, d.y)
+        if (!hasCollision(candX, d.y, spec.width, spec.height, d.instanceId, prev)) {
+          return { ...d, x: candX, y: d.y };
+        }
+        // 3. Zkusíme klouzání pouze svisle (d.x, candY)
+        if (!hasCollision(d.x, candY, spec.width, spec.height, d.instanceId, prev)) {
+          return { ...d, x: d.x, y: candY };
+        }
+        // Jinak modul zůstane na poslední platné pozici bez překryvu
+        return d;
       })
     );
   };
@@ -630,6 +903,9 @@ export const InteractiveBoardEditor: React.FC = () => {
   const handleMouseUp = () => {
     setDraggingId(null);
   };
+
+  // Výpočet ortogonálních tras všech vodičů (vodorovné a svislé linie mimo moduly)
+  const wirePaths = useMemo(() => computeOrthogonalWirePaths(devices, wires), [devices, wires]);
 
   // =========================================================================
   // ŽIVÝ ELEKTROTECHNICKÝ SOLVER (BFS průchod grafem spojů a kontaktů)
@@ -643,12 +919,10 @@ export const InteractiveBoardEditor: React.FC = () => {
       adj.get(b)!.push(a);
     };
 
-    // 1. Vnější vodiče natažené uživatelem
     for (const w of wires) {
       addEdge(`${w.fromInstanceId}:${w.fromPinId}`, `${w.toInstanceId}:${w.toPinId}`);
     }
 
-    // 2. Vnitřní vodivé cesty uvnitř přístrojů (můstky, WAGO, sepnuté jističe a přepínače)
     for (const d of devices) {
       const id = d.instanceId;
       switch (d.type) {
@@ -689,12 +963,10 @@ export const InteractiveBoardEditor: React.FC = () => {
           if (d.stateB) addEdge(`${id}:L`, `${id}:2`);
           break;
         case 'sw-6':
-          // Střídavý přepínač: v poloze false spojuje L -> 1, v poloze true spojuje L -> 2
           if (!d.stateA) addEdge(`${id}:L`, `${id}:1`);
           else addEdge(`${id}:L`, `${id}:2`);
           break;
         case 'sw-7':
-          // Křížový přepínač: v poloze false spojuje rovně (1-3, 2-4), v poloze true křížem (1-4, 2-3)
           if (!d.stateA) {
             addEdge(`${id}:1`, `${id}:3`);
             addEdge(`${id}:2`, `${id}:4`);
@@ -727,7 +999,6 @@ export const InteractiveBoardEditor: React.FC = () => {
     const liveN = bfsReachable('supply:N');
     const livePE = bfsReachable('supply:PE');
 
-    // Kontrola zkratu L-N nebo L-PE nebo spojení N-PE
     const shortLN = [...liveL].some((node) => liveN.has(node));
     const shortLPE = [...liveL].some((node) => livePE.has(node));
     const shortNPE = [...liveN].some((node) => livePE.has(node));
@@ -735,7 +1006,6 @@ export const InteractiveBoardEditor: React.FC = () => {
     return { liveL, liveN, livePE, shortLN, shortLPE, shortNPE };
   }, [devices, wires, powerOn]);
 
-  // Automatická revizní diagnostika zapojení na tabuli
   const runBoardAudit = () => {
     const issues: string[] = [];
 
@@ -749,7 +1019,6 @@ export const InteractiveBoardEditor: React.FC = () => {
       issues.push('SPOJENÍ N–PE ZA ROZDĚLENÍM: Vodiče N a PE jsou spojené, proudový chránič RCD okamžitě vybaví!');
     }
 
-    // Kontrola všech zásuvek 230 V na tabuli
     for (const d of devices.filter((x) => x.type === 'socket-230')) {
       const hasL = simulation.liveL.has(`${d.instanceId}:L`);
       const hasN = simulation.liveN.has(`${d.instanceId}:N`);
@@ -768,10 +1037,9 @@ export const InteractiveBoardEditor: React.FC = () => {
       }
     }
 
-    // Kontrola všech svítidel E27 na tabuli
     for (const d of devices.filter((x) => x.type === 'lamp-e27')) {
       if (simulation.liveL.has(`${d.instanceId}:N`)) {
-        issues.push(`${d.label}: Fáze L je připojena na boční závit objímky místo na středový kontakt (nebezpečí úrazu při výměně žárovky)!`);
+        issues.push(`${d.label}: Fáze L je připojena na boční závit objímky místo na středový kontakt!`);
       }
       if (!simulation.livePE.has(`${d.instanceId}:PE`)) {
         issues.push(`${d.label}: Kovová kostra svítidla třídy ochrany I není spojena s ochranným vodičem PE!`);
@@ -791,29 +1059,19 @@ export const InteractiveBoardEditor: React.FC = () => {
     }
   };
 
-  // Pomocná funkce pro získání absolutních souřadnic svorky na SVG plátně
-  const getPinAbsCoords = (instanceId: string, pinId: string): { x: number; y: number } | null => {
-    const dev = devices.find((d) => d.instanceId === instanceId);
-    if (!dev) return null;
-    const spec = getSpec(dev.type);
-    const pin = spec.pins.find((p) => p.id === pinId);
-    if (!pin) return null;
-    return { x: dev.x + pin.dx, y: dev.y + pin.dy };
-  };
-
   return (
     <div className="space-y-5">
-      {/* HORNÍ PANEL NÁSTROJŮ: Paleta přístrojů + Volba barvy vodiče */}
+      {/* HORNÍ PANEL NÁSTROJŮ */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xl space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
           <div className="flex items-center gap-2">
             <Layers className="w-5 h-5 text-amber-400" />
             <div>
               <h2 className="text-sm sm:text-base font-black text-white">
-                Interaktivní montážní tabule (Rozvaděč s DIN lištou + Stěna)
+                Interaktivní montážní tabule (Ortogonální vedení kabelů mimo moduly + Zákaz překrývání)
               </h2>
               <p className="text-[11px] text-slate-400">
-                Přidávej prvky na tabuli, posouvej je myší, propojuj svorky kliknutím a zkoušej živou funkci obvodu!
+                Moduly mají pevnou kolizní zónu (nepřekrývají se) a vodiče se automaticky vedou pravoúhle v instalačních trasách kolem přístrojů.
               </p>
             </div>
           </div>
@@ -867,9 +1125,8 @@ export const InteractiveBoardEditor: React.FC = () => {
           </div>
         </div>
 
-        {/* PALETA PRVKŮ K PŘIDÁNÍ NA TABULI (rozdělená podle montážních pravidel) */}
+        {/* PALETA PRVKŮ K PŘIDÁNÍ NA TABULI */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-          {/* 1. Moduly výhradně na DIN lištu */}
           <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2">
             <span className="text-[10px] font-mono font-extrabold uppercase text-amber-400 block">
               + Osadit na DIN lištu (pouze DIN moduly):
@@ -888,7 +1145,6 @@ export const InteractiveBoardEditor: React.FC = () => {
             </div>
           </div>
 
-          {/* 2. Můstky PE a N do rozvaděče + WAGO */}
           <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2">
             <span className="text-[10px] font-mono font-extrabold uppercase text-sky-400 block">
               + Můstky do rozvaděče &amp; WAGO svorky:
@@ -907,7 +1163,6 @@ export const InteractiveBoardEditor: React.FC = () => {
             </div>
           </div>
 
-          {/* 3. Domovní přístroje a spotřebiče na montážní desku */}
           <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2">
             <span className="text-[10px] font-mono font-extrabold uppercase text-emerald-400 block">
               + Přístroje na montážní desku (stěnu):
@@ -948,11 +1203,10 @@ export const InteractiveBoardEditor: React.FC = () => {
           </div>
 
           <div className="text-[11px] font-mono text-amber-400 shrink-0">
-            {activePin ? '⚡ Klikni na druhou svorku pro natažení vodiče!' : '💡 Klikni na libovolnou svorku pro začátek vodiče'}
+            {activePin ? '⚡ Klikni na druhou svorku pro pravoúhlé natažení vodiče!' : '💡 Klikni na libovolnou svorku pro začátek vodiče'}
           </div>
         </div>
 
-        {/* Hlášení o pravidlech nebo revizní kontrole */}
         {(ruleMessage || simulation.shortLN || simulation.shortLPE || simulation.shortNPE) && (
           <div
             className={`p-3 rounded-xl border text-xs flex items-start justify-between gap-3 ${
@@ -1004,38 +1258,78 @@ export const InteractiveBoardEditor: React.FC = () => {
           onClick={() => setActivePin(null)}
         >
           <defs>
-            <pattern id="boardGrid" width="20" height="20" patternUnits="userSpaceOnUse">
-              <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#1e293b" strokeWidth="0.7" />
+            <pattern id="boardGrid" width="10" height="10" patternUnits="userSpaceOnUse">
+              <path d="M 10 0 L 0 0 0 10" fill="none" stroke="#1e293b" strokeWidth="0.6" />
             </pattern>
           </defs>
 
-          {/* Pozadí celé montážní tabule s jemnou mřížkou */}
           <rect x="0" y="0" width="820" height="590" fill="#090d16" />
           <rect x="0" y="0" width="820" height="590" fill="url(#boardGrid)" />
 
           {/* HORNÍ ZÓNA: ROZVADĚČ S LIŠTOU PRO MŮSTKY PE/N A 35mm DIN LIŠTOU */}
-          <rect x="12" y="10" width="796" height="260" rx="14" fill="#0f172a" fillOpacity="0.85" stroke="#334155" strokeWidth="2" />
-          <text x="26" y="24" fill="#64748b" fontSize="10" fontWeight="bold" fontFamily="monospace">
+          <rect x="10" y="8" width="800" height="265" rx="12" fill="#0f172a" fillOpacity="0.82" stroke="#334155" strokeWidth="2" />
+          <text x="24" y="18" fill="#64748b" fontSize="9.5" fontWeight="bold" fontFamily="monospace">
             ROZVADĚČ • DRŽÁK MŮSTKŮ PE / N (1 šroub PE = max. 1 vodič!)
           </text>
 
-          {/* Kovová 35mm DIN lišta (y = 162..198) */}
-          <rect x="24" y="162" width="772" height="34" rx="3" fill="#334155" stroke="#64748b" strokeWidth="1.5" />
-          <rect x="24" y="170" width="772" height="18" fill="#1e293b" />
-          <text x="785" y="156" textAnchor="end" fill="#475569" fontSize="10" fontWeight="bold" fontFamily="monospace">
-            35mm DIN LIŠTA (pouze pro modulové přístroje)
+          {/* Kovová 35mm DIN lišta (y = 163..197) */}
+          <rect x="24" y="163" width="772" height="34" rx="3" fill="#334155" stroke="#64748b" strokeWidth="1.5" />
+          <rect x="24" y="171" width="772" height="18" fill="#1e293b" />
+          <text x="790" y="157" textAnchor="end" fill="#475569" fontSize="9.5" fontWeight="bold" fontFamily="monospace">
+            35mm DIN LIŠTA (nepřekrývající se moduly)
           </text>
 
-          {/* DOLNÍ ZÓNA: MONTÁŽNÍ DESKA STĚNY (krabice, spínače, zásuvky, svítidla) */}
-          <rect x="12" y="282" width="796" height="296" rx="14" fill="#0f172a" fillOpacity="0.45" stroke="#1e293b" strokeWidth="2" strokeDasharray="6 4" />
-          <text x="26" y="300" fill="#64748b" fontSize="10" fontWeight="bold" fontFamily="monospace">
-            MONTÁŽNÍ DESKA STĚNY (uchop prvek myší za horní lištu a libovolně jej posuň • kliknutím na vypínač jej přepneš)
+          {/* DOLNÍ ZÓNA: MONTÁŽNÍ DESKA STĚNY */}
+          <rect x="10" y="295" width="800" height="285" rx="12" fill="#0f172a" fillOpacity="0.45" stroke="#1e293b" strokeWidth="2" strokeDasharray="6 4" />
+          <text x="24" y="311" fill="#64748b" fontSize="9.5" fontWeight="bold" fontFamily="monospace">
+            MONTÁŽNÍ DESKA STĚNY (moduly se nepřekrývají • vodiče se vedou pravoúhle v kanálech mimo moduly)
           </text>
 
-          {/* VYKRESLENÍ PRVKŮ NA TABULI */}
+          {/* 1. VYKRESLENÍ PRÁVOÚHLÝCH (ORTOGONÁLNÍCH) VODIČŮ V INSTALAČNÍCH TRASÁCH */}
+          {wires.map((w) => {
+            const pathD = wirePaths[w.id];
+            if (!pathD) return null;
+            const wireSpec = WIRE_PALETTE.find((wp) => wp.id === w.color) || WIRE_PALETTE[0];
+
+            return (
+              <g
+                key={w.id}
+                className="cursor-pointer group"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setWires((prev) => prev.filter((item) => item.id !== w.id));
+                }}
+              >
+                <path d={pathD} fill="none" stroke="transparent" strokeWidth="11" strokeLinejoin="round" />
+                <path
+                  d={pathD}
+                  fill="none"
+                  stroke={wireSpec.hex}
+                  strokeWidth={w.color === 'comb' ? '4.5' : '2.8'}
+                  strokeDasharray={wireSpec.dash}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="group-hover:stroke-red-500 transition-colors"
+                />
+                {w.color === 'green-yellow' && (
+                  <path
+                    d={pathD}
+                    fill="none"
+                    stroke="#facc15"
+                    strokeWidth="2"
+                    strokeDasharray="4 8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="pointer-events-none"
+                  />
+                )}
+              </g>
+            );
+          })}
+
+          {/* 2. VYKRESLENÍ PRVKŮ NA TABULI */}
           {devices.map((inst) => {
             const spec = getSpec(inst.type);
-            // Zjistíme, zda svítidlo nebo zásuvka má správné napájení
             const isLampLit =
               inst.type === 'lamp-e27' &&
               simulation.liveL.has(`${inst.instanceId}:L`) &&
@@ -1063,13 +1357,13 @@ export const InteractiveBoardEditor: React.FC = () => {
 
             return (
               <g key={inst.instanceId} transform={`translate(${inst.x}, ${inst.y})`}>
-                {/* Základní tělo modulu/přístroje */}
+                {/* Tělo modulu */}
                 <rect
                   x="0"
                   y="0"
                   width={spec.width}
                   height={spec.height}
-                  rx="8"
+                  rx="7"
                   fill={
                     inst.type === 'busbar-pe'
                       ? '#14532d'
@@ -1095,13 +1389,10 @@ export const InteractiveBoardEditor: React.FC = () => {
                   strokeWidth={isLampLit || isSocketPowered ? '2.5' : '1.8'}
                 />
 
-                {/* Úchopová hlavička pro posun myší (drag handle) + tlačítko smazání */}
-                <g
-                  className="cursor-move"
-                  onMouseDown={(e) => handleStartDrag(inst, e)}
-                >
-                  <rect x="2" y="2" width={spec.width - 4} height="16" rx="5" fill="#090d16" fillOpacity="0.65" />
-                  <text x="8" y="13" fill="#e2e8f0" fontSize="9" fontWeight="bold" fontFamily="monospace">
+                {/* Úchopová hlavička pro posun myší */}
+                <g className="cursor-move" onMouseDown={(e) => handleStartDrag(inst, e)}>
+                  <rect x="2" y="2" width={spec.width - 4} height="15" rx="4" fill="#090d16" fillOpacity="0.7" />
+                  <text x="6" y="12.5" fill="#e2e8f0" fontSize="8.5" fontWeight="bold" fontFamily="monospace">
                     {inst.label}
                   </text>
                   {inst.instanceId !== 'supply' && (
@@ -1112,16 +1403,20 @@ export const InteractiveBoardEditor: React.FC = () => {
                         handleRemoveDevice(inst.instanceId);
                       }}
                     >
-                      <circle cx={spec.width - 10} cy="10" r="6" fill="#7f1d1d" />
-                      <text x={spec.width - 10} y="13" textAnchor="middle" fill="#fca5a5" fontSize="9" fontWeight="bold">
+                      <circle cx={spec.width - 9} cy="9.5" r="5.5" fill="#7f1d1d" />
+                      <text x={spec.width - 9} y="12.5" textAnchor="middle" fill="#fca5a5" fontSize="8.5" fontWeight="bold">
                         ×
                       </text>
                     </g>
                   )}
                 </g>
 
-                {/* INTERAKTIVNÍ OVLÁDACÍ PRVEK UVNITŘ MODULU (páčka jističe / klapka spínače / žárovka) */}
-                {(inst.type === 'qm-1p' || inst.type === 'mcb-b10' || inst.type === 'mcb-b16' || inst.type === 'rcd-2p' || inst.type === 'relay-ka') && (
+                {/* Ovládací páčka DIN modulů */}
+                {(inst.type === 'qm-1p' ||
+                  inst.type === 'mcb-b10' ||
+                  inst.type === 'mcb-b16' ||
+                  inst.type === 'rcd-2p' ||
+                  inst.type === 'relay-ka') && (
                   <g
                     className="cursor-pointer"
                     onClick={(e) => {
@@ -1131,20 +1426,21 @@ export const InteractiveBoardEditor: React.FC = () => {
                   >
                     <rect
                       x="10"
-                      y="50"
+                      y="46"
                       width={spec.width - 20}
-                      height="32"
-                      rx="5"
+                      height="28"
+                      rx="4"
                       fill={inst.stateA ? '#16a34a' : '#dc2626'}
                       stroke="#ffffff"
                       strokeWidth="1"
                     />
-                    <text x={spec.width / 2} y="70" textAnchor="middle" fill="#ffffff" fontSize="10" fontWeight="bold" fontFamily="monospace">
+                    <text x={spec.width / 2} y="64" textAnchor="middle" fill="#ffffff" fontSize="9.5" fontWeight="bold" fontFamily="monospace">
                       {inst.stateA ? 'I (ZAP)' : '0 (VYP)'}
                     </text>
                   </g>
                 )}
 
+                {/* Ovládací klapka spínačů 1, 6, 7, 1/0 */}
                 {(inst.type === 'sw-1' || inst.type === 'sw-6' || inst.type === 'sw-7' || inst.type === 'sw-push') && (
                   <g
                     className="cursor-pointer"
@@ -1154,16 +1450,16 @@ export const InteractiveBoardEditor: React.FC = () => {
                     }}
                   >
                     <rect
-                      x="22"
-                      y="36"
-                      width={spec.width - 44}
-                      height="38"
-                      rx="8"
+                      x="18"
+                      y="38"
+                      width={spec.width - 36}
+                      height="34"
+                      rx="6"
                       fill={inst.stateA ? '#d97706' : '#1e293b'}
                       stroke="#94a3b8"
                       strokeWidth="1.5"
                     />
-                    <text x={spec.width / 2} y="59" textAnchor="middle" fill="#ffffff" fontSize="10" fontWeight="bold" fontFamily="monospace">
+                    <text x={spec.width / 2} y="59" textAnchor="middle" fill="#ffffff" fontSize="9.5" fontWeight="bold" fontFamily="monospace">
                       {inst.type === 'sw-push'
                         ? inst.stateA
                           ? 'IMPULZ!'
@@ -1179,14 +1475,15 @@ export const InteractiveBoardEditor: React.FC = () => {
                   </g>
                 )}
 
+                {/* Dvouklapkový spínač č. 5 */}
                 {inst.type === 'sw-5' && (
                   <g>
                     <rect
-                      x="16"
-                      y="36"
-                      width="38"
-                      height="38"
-                      rx="6"
+                      x="14"
+                      y="38"
+                      width="36"
+                      height="34"
+                      rx="5"
                       className="cursor-pointer"
                       fill={inst.stateA ? '#d97706' : '#1e293b'}
                       stroke="#94a3b8"
@@ -1195,15 +1492,15 @@ export const InteractiveBoardEditor: React.FC = () => {
                         handleToggleDeviceState(inst, 'A');
                       }}
                     />
-                    <text x="35" y="59" textAnchor="middle" fill="#fff" fontSize="9" fontWeight="bold" className="pointer-events-none">
+                    <text x="32" y="59" textAnchor="middle" fill="#fff" fontSize="8.5" fontWeight="bold" className="pointer-events-none">
                       Kl.A
                     </text>
                     <rect
-                      x="62"
-                      y="36"
-                      width="38"
-                      height="38"
-                      rx="6"
+                      x="60"
+                      y="38"
+                      width="36"
+                      height="34"
+                      rx="5"
                       className="cursor-pointer"
                       fill={inst.stateB ? '#d97706' : '#1e293b'}
                       stroke="#94a3b8"
@@ -1212,17 +1509,18 @@ export const InteractiveBoardEditor: React.FC = () => {
                         handleToggleDeviceState(inst, 'B');
                       }}
                     />
-                    <text x="81" y="59" textAnchor="middle" fill="#fff" fontSize="9" fontWeight="bold" className="pointer-events-none">
+                    <text x="78" y="59" textAnchor="middle" fill="#fff" fontSize="8.5" fontWeight="bold" className="pointer-events-none">
                       Kl.B
                     </text>
                   </g>
                 )}
 
+                {/* Svítidlo E27 */}
                 {inst.type === 'lamp-e27' && (
                   <g>
                     <circle
                       cx={spec.width / 2}
-                      cy="50"
+                      cy="66"
                       r="22"
                       fill={isLampLit ? '#fde047' : '#1e293b'}
                       stroke={isLampLit ? '#facc15' : '#475569'}
@@ -1230,7 +1528,7 @@ export const InteractiveBoardEditor: React.FC = () => {
                     />
                     <text
                       x={spec.width / 2}
-                      y="54"
+                      y="70"
                       textAnchor="middle"
                       fill={isLampLit ? '#0f172a' : '#94a3b8'}
                       fontSize="10"
@@ -1241,33 +1539,33 @@ export const InteractiveBoardEditor: React.FC = () => {
                   </g>
                 )}
 
+                {/* Dvojitý lustr */}
                 {inst.type === 'lamp-dual' && (
                   <g>
-                    <circle cx="48" cy="50" r="18" fill={isDualLit1 ? '#fde047' : '#1e293b'} stroke="#64748b" strokeWidth="2" />
-                    <text x="48" y="54" textAnchor="middle" fill={isDualLit1 ? '#0f172a' : '#94a3b8'} fontSize="9" fontWeight="bold">
+                    <circle cx="46" cy="66" r="18" fill={isDualLit1 ? '#fde047' : '#1e293b'} stroke="#64748b" strokeWidth="2" />
+                    <text x="46" y="70" textAnchor="middle" fill={isDualLit1 ? '#0f172a' : '#94a3b8'} fontSize="8.5" fontWeight="bold">
                       {isDualLit1 ? 'SVÍTÍ' : 'V1'}
                     </text>
-                    <circle cx="108" cy="50" r="18" fill={isDualLit2 ? '#fde047' : '#1e293b'} stroke="#64748b" strokeWidth="2" />
-                    <text x="108" y="54" textAnchor="middle" fill={isDualLit2 ? '#0f172a' : '#94a3b8'} fontSize="9" fontWeight="bold">
+                    <circle cx="104" cy="66" r="18" fill={isDualLit2 ? '#fde047' : '#1e293b'} stroke="#64748b" strokeWidth="2" />
+                    <text x="104" y="70" textAnchor="middle" fill={isDualLit2 ? '#0f172a' : '#94a3b8'} fontSize="8.5" fontWeight="bold">
                       {isDualLit2 ? 'SVÍTÍ' : 'V2'}
                     </text>
                   </g>
                 )}
 
+                {/* Zásuvka 230 V */}
                 {inst.type === 'socket-230' && (
                   <g>
-                    <circle cx="65" cy="58" r="28" fill="#1e293b" stroke={isSocketPowered ? '#22c55e' : '#475569'} strokeWidth="2" />
-                    <text x="65" y="106" textAnchor="middle" fill={isSocketPowered ? '#4ade80' : '#94a3b8'} fontSize="9" fontWeight="bold" fontFamily="monospace">
+                    <circle cx="65" cy="64" r="24" fill="#1e293b" stroke={isSocketPowered ? '#22c55e' : '#475569'} strokeWidth="2" />
+                    <text x="65" y="101" textAnchor="middle" fill={isSocketPowered ? '#4ade80' : '#94a3b8'} fontSize="8.5" fontWeight="bold" fontFamily="monospace">
                       {isSocketPowered ? '230 V OK!' : 'L vlevo • N vpravo'}
                     </text>
                   </g>
                 )}
 
-                {inst.type === 'wago-3' && (
-                  <rect x="14" y="20" width="78" height="12" rx="2" fill="#ea580c" />
-                )}
+                {inst.type === 'wago-3' && <rect x="12" y="19" width="76" height="10" rx="2" fill="#ea580c" />}
 
-                {/* VYKRESLENÍ VŠECH KLIKATELNÝCH SVOREK (PINŮ) PRVKU */}
+                {/* Vykreslení klikatelných svorek (pinů) */}
                 {spec.pins.map((pin) => {
                   const isSelected = activePin?.instanceId === inst.instanceId && activePin?.pinId === pin.id;
                   const nodeKey = `${inst.instanceId}:${pin.id}`;
@@ -1284,7 +1582,7 @@ export const InteractiveBoardEditor: React.FC = () => {
                       <circle
                         cx={pin.dx}
                         cy={pin.dy}
-                        r={isSelected ? 9 : 7}
+                        r={isSelected ? 8.5 : 6.5}
                         fill={
                           isSelected
                             ? '#facc15'
@@ -1301,10 +1599,10 @@ export const InteractiveBoardEditor: React.FC = () => {
                       />
                       <text
                         x={pin.dx}
-                        y={pin.dy < 30 ? pin.dy + 17 : pin.dy - 10}
+                        y={pin.dy < 25 ? pin.dy + 15 : pin.dy - 9}
                         textAnchor="middle"
                         fill="#e2e8f0"
-                        fontSize="8.5"
+                        fontSize="8"
                         fontWeight="bold"
                         fontFamily="monospace"
                         className="pointer-events-none"
@@ -1317,50 +1615,6 @@ export const InteractiveBoardEditor: React.FC = () => {
               </g>
             );
           })}
-
-          {/* VYKRESLENÍ VŠECH PROPOJOVACÍCH VODIČŮ NA TABULI */}
-          {wires.map((w) => {
-            const p1 = getPinAbsCoords(w.fromInstanceId, w.fromPinId);
-            const p2 = getPinAbsCoords(w.toInstanceId, w.toPinId);
-            if (!p1 || !p2) return null;
-            const wireSpec = WIRE_PALETTE.find((wp) => wp.id === w.color) || WIRE_PALETTE[0];
-            const midY = (p1.y + p2.y) / 2;
-            const pathD = `M ${p1.x} ${p1.y} C ${p1.x} ${midY}, ${p2.x} ${midY}, ${p2.x} ${p2.y}`;
-
-            return (
-              <g
-                key={w.id}
-                className="cursor-pointer group"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setWires((prev) => prev.filter((item) => item.id !== w.id));
-                }}
-              >
-                {/* Širší neviditelná vrstva pro snadné kliknutí na vodič při mazání */}
-                <path d={pathD} fill="none" stroke="transparent" strokeWidth="12" />
-                <path
-                  d={pathD}
-                  fill="none"
-                  stroke={wireSpec.hex}
-                  strokeWidth={w.color === 'comb' ? '5' : '3.2'}
-                  strokeDasharray={wireSpec.dash}
-                  strokeLinecap="round"
-                  className="group-hover:stroke-red-500 transition-colors"
-                />
-                {w.color === 'green-yellow' && (
-                  <path
-                    d={pathD}
-                    fill="none"
-                    stroke="#facc15"
-                    strokeWidth="2.2"
-                    strokeDasharray="4 8"
-                    strokeLinecap="round"
-                    className="pointer-events-none"
-                  />
-                )}
-              </g>
-            );
-          })}
         </svg>
 
         {/* SPODNÍ LEGENDA OVLÁDÁNÍ TABULE */}
@@ -1368,15 +1622,15 @@ export const InteractiveBoardEditor: React.FC = () => {
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1">
               <Move className="w-3.5 h-3.5 text-amber-400" />
-              <strong>Posun prvku:</strong> táhni myší za horní proužek prvku
+              <strong>Posun prvku (s detekcí kolize):</strong> táhni myší za horní proužek prvku
             </span>
             <span className="flex items-center gap-1">
               <Zap className="w-3.5 h-3.5 text-emerald-400" />
-              <strong>Natažení vodiče:</strong> klikni na 1. svorku a pak na 2. svorku
+              <strong>Pravoúhlé vedení vodiče:</strong> klikni na 1. svorku a pak na 2. svorku
             </span>
           </div>
           <span>
-            <strong>Smazání vodiče:</strong> klikni přímo na natažený vodič • <strong>Sepnutí vypínače/jističe:</strong> klikni na jeho klapku/páčku
+            <strong>Smazání vodiče:</strong> klikni přímo na vodič • <strong>Sepnutí vypínače/jističe:</strong> klikni na klapku/páčku
           </span>
         </div>
       </div>

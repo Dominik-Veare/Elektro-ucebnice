@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { BookOpen } from 'lucide-react';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
@@ -302,7 +303,7 @@ export const App: React.FC = () => {
               {currentQualDef.title} {currentQualDef.id}
             </h1>
             <p className="text-sm text-slate-400 max-w-md mx-auto">
-              Tato učebnice je momentálně prázdná a připravená k doplnění studijních kapitol, testových otázek a praktických úloh.
+              Tato učebnice je momentálně prázdná a připravená k doplněn�� studijních kapitol, testových otázek a praktických úloh.
             </p>
             <div className="pt-2">
               <button
@@ -385,6 +386,9 @@ export const App: React.FC = () => {
           />
         )}
       </Suspense>
+
+      {/* Vercel Web Analytics */}
+      <Analytics />
 
     </div>
   );

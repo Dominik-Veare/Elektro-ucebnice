@@ -557,12 +557,12 @@ const PALETTE_MAP: Record<string, PaletteItemDef> = Object.fromEntries(
 // ============================================================================
 
 const BOARD_WIDTH = 820;
-const BOARD_HEIGHT = 590;
+const BOARD_HEIGHT = 600;
 
-const BUSBAR_ROW_Y = 30;
-const DIN_RAIL_ITEM_Y = 98;
-const WALL_ZONE_MIN_Y = 250;
-const WALL_ZONE_MAX_Y = 485;
+const BUSBAR_ROW_Y = 22;
+const DIN_RAIL_ITEM_Y = 114;
+const WALL_ZONE_MIN_Y = 280;
+const WALL_ZONE_MAX_Y = 495;
 const MODULE_GAP = 8;
 
 function boxesOverlap(
@@ -611,7 +611,7 @@ function findFreePosition(
   if (!def) return null;
 
   if (def.zone === 'busbar') {
-    for (let x = 180; x <= BOARD_WIDTH - def.width - 20; x += 10) {
+    for (let x = 184; x <= BOARD_WIDTH - def.width - 20; x += 8) {
       if (!hasCollision('__new__', x, BUSBAR_ROW_Y, def.width, def.height, items)) {
         return { x, y: BUSBAR_ROW_Y };
       }
@@ -620,7 +620,7 @@ function findFreePosition(
   }
 
   if (def.zone === 'din') {
-    for (let x = 180; x <= BOARD_WIDTH - def.width - 20; x += 10) {
+    for (let x = 184; x <= BOARD_WIDTH - def.width - 20; x += 8) {
       if (!hasCollision('__new__', x, DIN_RAIL_ITEM_Y, def.width, def.height, items)) {
         return { x, y: DIN_RAIL_ITEM_Y };
       }
@@ -628,8 +628,8 @@ function findFreePosition(
     return null;
   }
 
-  for (let y = 260; y <= WALL_ZONE_MAX_Y; y += 20) {
-    for (let x = 30; x <= BOARD_WIDTH - def.width - 20; x += 20) {
+  for (let y = WALL_ZONE_MIN_Y; y <= WALL_ZONE_MAX_Y; y += 16) {
+    for (let x = 32; x <= BOARD_WIDTH - def.width - 20; x += 16) {
       if (!hasCollision('__new__', x, y, def.width, def.height, items)) {
         return { x, y };
       }
@@ -639,21 +639,24 @@ function findFreePosition(
 }
 
 // ============================================================================
-// ORTOGONÁLNÍ (PRAVOÚHLÉ) ROUTOVÁNÍ VODIČŮ S OBCHÁZENÍM MODULŮ (A*)
+// ORTOGONÁLNÍ ROUTOVÁNÍ VODIČŮ BEZ PŘEKRYVU SOUBĚŽNÝCH TRAS (A* + PARALLEL LANES)
 // ============================================================================
 
-const GRID_STEP = 10;
+const GRID_STEP = 8;
 const GRID_COLS = Math.ceil(BOARD_WIDTH / GRID_STEP);
 const GRID_ROWS = Math.ceil(BOARD_HEIGHT / GRID_STEP);
 
 interface TerminalExit {
   gx: number;
   gy: number;
-  stubX: number;
-  stubY: number;
+  side: 'top' | 'bottom' | 'left' | 'right';
 }
 
-function getTerminalExit(item: PlacedItem, termId: string): TerminalExit | null {
+function getTerminalExit(
+  item: PlacedItem,
+  termId: string,
+  extraOffsetSteps = 0
+): TerminalExit | null {
   const def = PALETTE_MAP[item.type];
   if (!def) return null;
   const term = def.terminals.find((t) => t.id === termId);
@@ -670,26 +673,143 @@ function getTerminalExit(item: PlacedItem, termId: string): TerminalExit | null 
 
   let exitX = absX;
   let exitY = absY;
+  let side: 'top' | 'bottom' | 'left' | 'right' = 'bottom';
+
+  const margin = 8 + extraOffsetSteps * GRID_STEP;
 
   if (minDist === distTop) {
-    exitY = item.y - 10;
+    exitY = item.y - margin;
+    side = 'top';
   } else if (minDist === distBottom) {
-    exitY = item.y + def.height + 10;
+    exitY = item.y + def.height + margin;
+    side = 'bottom';
   } else if (minDist === distLeft) {
-    exitX = item.x - 10;
+    exitX = item.x - margin;
+    side = 'left';
   } else {
-    exitX = item.x + def.width + 10;
+    exitX = item.x + def.width + margin;
+    side = 'right';
   }
 
   const gx = Math.max(1, Math.min(GRID_COLS - 2, Math.round(exitX / GRID_STEP)));
   const gy = Math.max(1, Math.min(GRID_ROWS - 2, Math.round(exitY / GRID_STEP)));
 
-  return {
-    gx,
-    gy,
-    stubX: gx * GRID_STEP,
-    stubY: gy * GRID_STEP,
-  };
+  return { gx, gy, side };
+}
+
+function simplifyPolyline(pts: Array<{ x: number; y: number }>): Array<{ x: number; y: number }> {
+  const simplified: Array<{ x: number; y: number }> = [];
+  for (const p of pts) {
+    const prev = simplified[simplified.length - 1];
+    if (prev && Math.abs(prev.x - p.x) < 0.5 && Math.abs(prev.y - p.y) < 0.5) continue;
+    if (simplified.length >= 2) {
+      const p1 = simplified[simplified.length - 2];
+      const p2 = simplified[simplified.length - 1];
+      if (
+        (Math.abs(p1.x - p2.x) < 0.5 && Math.abs(p2.x - p.x) < 0.5) ||
+        (Math.abs(p1.y - p2.y) < 0.5 && Math.abs(p2.y - p.y) < 0.5)
+      ) {
+        simplified[simplified.length - 1] = p;
+        continue;
+      }
+    }
+    simplified.push({ x: p.x, y: p.y });
+  }
+  return simplified;
+}
+
+function separateParallelSegments(
+  polylines: Map<string, Array<{ x: number; y: number }>>
+): Map<string, Array<{ x: number; y: number }>> {
+  const MIN_SEP = 6;
+
+  for (let pass = 0; pass < 3; pass++) {
+    // 1. Horizontální vnitřní segmenty
+    const horizSegs: Array<{
+      wireId: string;
+      pts: Array<{ x: number; y: number }>;
+      idx: number;
+      y: number;
+      minX: number;
+      maxX: number;
+    }> = [];
+
+    for (const [wireId, pts] of polylines.entries()) {
+      for (let i = 1; i < pts.length - 2; i++) {
+        const a = pts[i];
+        const b = pts[i + 1];
+        if (Math.abs(a.y - b.y) < 0.5 && Math.abs(a.x - b.x) > 4) {
+          horizSegs.push({
+            wireId,
+            pts,
+            idx: i,
+            y: a.y,
+            minX: Math.min(a.x, b.x),
+            maxX: Math.max(a.x, b.x),
+          });
+        }
+      }
+    }
+
+    for (let i = 0; i < horizSegs.length; i++) {
+      for (let j = i + 1; j < horizSegs.length; j++) {
+        const s1 = horizSegs[i];
+        const s2 = horizSegs[j];
+        if (s1.wireId === s2.wireId) continue;
+        const overlapX = Math.min(s1.maxX, s2.maxX) - Math.max(s1.minX, s2.minX);
+        if (overlapX > 4 && Math.abs(s1.y - s2.y) < MIN_SEP) {
+          const shift = s2.y >= s1.y ? MIN_SEP - (s2.y - s1.y) : -(MIN_SEP - (s1.y - s2.y));
+          s2.y += shift;
+          s2.pts[s2.idx].y = s2.y;
+          s2.pts[s2.idx + 1].y = s2.y;
+        }
+      }
+    }
+
+    // 2. Vertikální vnitřní segmenty
+    const vertSegs: Array<{
+      wireId: string;
+      pts: Array<{ x: number; y: number }>;
+      idx: number;
+      x: number;
+      minY: number;
+      maxY: number;
+    }> = [];
+
+    for (const [wireId, pts] of polylines.entries()) {
+      for (let i = 1; i < pts.length - 2; i++) {
+        const a = pts[i];
+        const b = pts[i + 1];
+        if (Math.abs(a.x - b.x) < 0.5 && Math.abs(a.y - b.y) > 4) {
+          vertSegs.push({
+            wireId,
+            pts,
+            idx: i,
+            x: a.x,
+            minY: Math.min(a.y, b.y),
+            maxY: Math.max(a.y, b.y),
+          });
+        }
+      }
+    }
+
+    for (let i = 0; i < vertSegs.length; i++) {
+      for (let j = i + 1; j < vertSegs.length; j++) {
+        const s1 = vertSegs[i];
+        const s2 = vertSegs[j];
+        if (s1.wireId === s2.wireId) continue;
+        const overlapY = Math.min(s1.maxY, s2.maxY) - Math.max(s1.minY, s2.minY);
+        if (overlapY > 4 && Math.abs(s1.x - s2.x) < MIN_SEP) {
+          const shift = s2.x >= s1.x ? MIN_SEP - (s2.x - s1.x) : -(MIN_SEP - (s1.x - s2.x));
+          s2.x += shift;
+          s2.pts[s2.idx].x = s2.x;
+          s2.pts[s2.idx + 1].x = s2.x;
+        }
+      }
+    }
+  }
+
+  return polylines;
 }
 
 function computeOrthogonalWirePaths(
@@ -716,15 +836,20 @@ function computeOrthogonalWirePaths(
     }
   }
 
-  const usedCells = new Uint16Array(GRID_COLS * GRID_ROWS);
-  const paths: Record<string, string> = {};
+  // Samostatné sledování horizontálních, vertikálních a rohových buněk pro zákaz souběhu
+  const usedHoriz = new Uint8Array(GRID_COLS * GRID_ROWS);
+  const usedVert = new Uint8Array(GRID_COLS * GRID_ROWS);
+  const usedTurn = new Uint8Array(GRID_COLS * GRID_ROWS);
+  const terminalUsageCount = new Map<string, number>();
 
   const dirs = [
-    { dc: 1, dr: 0 },
-    { dc: -1, dr: 0 },
-    { dc: 0, dr: 1 },
-    { dc: 0, dr: -1 },
+    { dc: 1, dr: 0 },  // 0: doprava (horiz)
+    { dc: -1, dr: 0 }, // 1: doleva (horiz)
+    { dc: 0, dr: 1 },  // 2: dolů (vert)
+    { dc: 0, dr: -1 }, // 3: nahoru (vert)
   ];
+
+  const rawPolylines = new Map<string, Array<{ x: number; y: number }>>();
 
   wires.forEach((w) => {
     const fromItem = itemMap.get(w.fromInstanceId);
@@ -737,13 +862,20 @@ function computeOrthogonalWirePaths(
     const toTerm = toDef?.terminals.find((t) => t.id === w.toTerminalId);
     if (!fromTerm || !toTerm) return;
 
+    const fromKey = `${w.fromInstanceId}:${w.fromTerminalId}`;
+    const toKey = `${w.toInstanceId}:${w.toTerminalId}`;
+    const fromCount = terminalUsageCount.get(fromKey) || 0;
+    const toCount = terminalUsageCount.get(toKey) || 0;
+    terminalUsageCount.set(fromKey, fromCount + 1);
+    terminalUsageCount.set(toKey, toCount + 1);
+
     const startAbsX = fromItem.x + fromTerm.relX;
     const startAbsY = fromItem.y + fromTerm.relY;
     const endAbsX = toItem.x + toTerm.relX;
     const endAbsY = toItem.y + toTerm.relY;
 
-    const startExit = getTerminalExit(fromItem, w.fromTerminalId);
-    const endExit = getTerminalExit(toItem, w.toTerminalId);
+    const startExit = getTerminalExit(fromItem, w.fromTerminalId, fromCount);
+    const endExit = getTerminalExit(toItem, w.toTerminalId, toCount);
     if (!startExit || !endExit) return;
 
     const startIdx = startExit.gy * GRID_COLS + startExit.gx;
@@ -805,10 +937,36 @@ function computeOrthogonalWirePaths(
         const nCell = nr * GRID_COLS + nc;
         if (blocked[nCell] && nCell !== endIdx) continue;
 
-        const turnPenalty = dirIdx !== 4 && dirIdx !== d ? 16 : 0;
-        const overlapPenalty = usedCells[nCell] * 14;
-        const tentativeG = gScore[currentState] + 10 + turnPenalty + overlapPenalty;
+        const isHoriz = d === 0 || d === 1;
+        const isTurn = dirIdx !== 4 && dirIdx !== d;
 
+        let penalty = 10;
+        if (isTurn) {
+          penalty += 18;
+          if (usedHoriz[cellIdx] || usedVert[cellIdx] || usedTurn[cellIdx]) {
+            penalty += 2500;
+          }
+        }
+
+        if (isHoriz) {
+          if (usedHoriz[nCell] || usedTurn[nCell]) {
+            penalty += 2500;
+          } else if (usedVert[nCell]) {
+            penalty += 24;
+          }
+          if (nr > 0 && usedHoriz[(nr - 1) * GRID_COLS + nc]) penalty += 3;
+          if (nr < GRID_ROWS - 1 && usedHoriz[(nr + 1) * GRID_COLS + nc]) penalty += 3;
+        } else {
+          if (usedVert[nCell] || usedTurn[nCell]) {
+            penalty += 2500;
+          } else if (usedHoriz[nCell]) {
+            penalty += 24;
+          }
+          if (nc > 0 && usedVert[nr * GRID_COLS + (nc - 1)]) penalty += 3;
+          if (nc < GRID_COLS - 1 && usedVert[nr * GRID_COLS + (nc + 1)]) penalty += 3;
+        }
+
+        const tentativeG = gScore[currentState] + penalty;
         const nextState = nCell * 5 + d;
         if (tentativeG < gScore[nextState]) {
           gScore[nextState] = tentativeG;
@@ -823,58 +981,80 @@ function computeOrthogonalWirePaths(
     blocked[startIdx] = prevBlockedStart;
     blocked[endIdx] = prevBlockedEnd;
 
+    const startStubShift = fromCount === 0 ? 0 : fromCount % 2 === 1 ? 4 : -4;
+    const endStubShift = toCount === 0 ? 0 : toCount % 2 === 1 ? 4 : -4;
+
     const pts: Array<{ x: number; y: number }> = [{ x: startAbsX, y: startAbsY }];
 
     if (goalState !== -1) {
-      const gridPath: Array<{ x: number; y: number; cell: number }> = [];
+      const gridPath: Array<{ x: number; y: number; cell: number; dir: number }> = [];
       let cur = goalState;
       while (cur !== -1) {
         const cell = Math.floor(cur / 5);
+        const dir = cur % 5;
         const c = cell % GRID_COLS;
         const r = Math.floor(cell / GRID_COLS);
-        gridPath.push({ x: c * GRID_STEP, y: r * GRID_STEP, cell });
+        gridPath.push({ x: c * GRID_STEP, y: r * GRID_STEP, cell, dir });
         cur = parentState[cur];
       }
       gridPath.reverse();
 
+      for (let i = 0; i < gridPath.length; i++) {
+        const gp = gridPath[i];
+        const prevDir = i > 0 ? gridPath[i].dir : -1;
+        const nextDir = i < gridPath.length - 1 ? gridPath[i + 1].dir : -1;
+
+        if (prevDir === 0 || prevDir === 1 || nextDir === 0 || nextDir === 1) {
+          usedHoriz[gp.cell] = 1;
+        }
+        if (prevDir === 2 || prevDir === 3 || nextDir === 2 || nextDir === 3) {
+          usedVert[gp.cell] = 1;
+        }
+        if (prevDir !== -1 && nextDir !== -1 && prevDir !== nextDir) {
+          usedTurn[gp.cell] = 1;
+        }
+      }
+
       if (gridPath.length > 0) {
-        pts.push({ x: gridPath[0].x, y: startAbsY });
+        const first = gridPath[0];
+        if (startExit.side === 'top' || startExit.side === 'bottom') {
+          if (startStubShift !== 0) {
+            pts.push({ x: startAbsX + startStubShift, y: startAbsY });
+          }
+          pts.push({ x: startAbsX + startStubShift, y: first.y });
+        } else {
+          pts.push({ x: first.x, y: startAbsY });
+        }
+
         for (const gp of gridPath) {
-          usedCells[gp.cell] += 1;
           pts.push({ x: gp.x, y: gp.y });
         }
+
         const last = gridPath[gridPath.length - 1];
-        pts.push({ x: last.x, y: endAbsY });
+        if (endExit.side === 'top' || endExit.side === 'bottom') {
+          pts.push({ x: endAbsX + endStubShift, y: last.y });
+          if (endStubShift !== 0) {
+            pts.push({ x: endAbsX + endStubShift, y: endAbsY });
+          }
+        } else {
+          pts.push({ x: last.x, y: endAbsY });
+        }
       }
-    } else {
-      const midY = Math.round((startExit.stubY + endExit.stubY) / 2);
-      pts.push({ x: startExit.stubX, y: startAbsY });
-      pts.push({ x: startExit.stubX, y: midY });
-      pts.push({ x: endExit.stubX, y: midY });
-      pts.push({ x: endExit.stubX, y: endAbsY });
     }
 
     pts.push({ x: endAbsX, y: endAbsY });
-
-    const simplified: Array<{ x: number; y: number }> = [];
-    for (const p of pts) {
-      const prev = simplified[simplified.length - 1];
-      if (prev && prev.x === p.x && prev.y === p.y) continue;
-      if (simplified.length >= 2) {
-        const p1 = simplified[simplified.length - 2];
-        const p2 = simplified[simplified.length - 1];
-        if ((p1.x === p2.x && p2.x === p.x) || (p1.y === p2.y && p2.y === p.y)) {
-          simplified[simplified.length - 1] = p;
-          continue;
-        }
-      }
-      simplified.push(p);
-    }
-
-    paths[w.id] = simplified
-      .map((p, idx) => `${idx === 0 ? 'M' : 'L'} ${p.x} ${p.y}`)
-      .join(' ');
+    rawPolylines.set(w.id, simplifyPolyline(pts));
   });
+
+  const separated = separateParallelSegments(rawPolylines);
+
+  const paths: Record<string, string> = {};
+  for (const [wireId, pts] of separated.entries()) {
+    const clean = simplifyPolyline(pts);
+    paths[wireId] = clean
+      .map((p, idx) => `${idx === 0 ? 'M' : 'L'} ${Math.round(p.x)} ${Math.round(p.y)}`)
+      .join(' ');
+  }
 
   return paths;
 }
@@ -2346,6 +2526,14 @@ export const InteractiveBoardEditor: React.FC = () => {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                     />
+                    <path
+                      d={d}
+                      fill="none"
+                      stroke="#090d16"
+                      strokeWidth="5.6"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
                     {isLive && (
                       <path
                         d={d}
@@ -2361,7 +2549,7 @@ export const InteractiveBoardEditor: React.FC = () => {
                       d={d}
                       fill="none"
                       stroke={strokeColor}
-                      strokeWidth="3.2"
+                      strokeWidth="3"
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       className="group-hover:stroke-rose-400 transition-colors"

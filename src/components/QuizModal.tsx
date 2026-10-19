@@ -114,6 +114,15 @@ export const QuizModal: React.FC<QuizModalProps> = ({
               <p className="text-base sm:text-lg font-bold text-slate-100 leading-snug">
                 {currentQ.question}
               </p>
+              {currentQ.image && (
+                <div className="my-3 p-3 bg-white rounded-xl border border-slate-300 inline-block shadow-md">
+                  <img
+                    src={currentQ.image}
+                    alt="Elektrotechnická značka"
+                    className="h-20 max-w-[200px] object-contain mx-auto"
+                  />
+                </div>
+              )}
               {currentQ.normReference && (
                 <span className="inline-block mt-2 text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
                   {currentQ.normReference}

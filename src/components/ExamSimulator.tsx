@@ -436,9 +436,19 @@ export const ExamSimulator: React.FC<ExamSimulatorProps> = ({
           )}
         </div>
 
-        <p className="text-lg font-bold text-slate-100 leading-snug mb-6">
+        <p className="text-lg font-bold text-slate-100 leading-snug mb-4">
           {currentQ.question}
         </p>
+
+        {currentQ.image && (
+          <div className="mb-6 p-3 bg-white rounded-xl border border-slate-300 inline-block shadow-md">
+            <img
+              src={currentQ.image}
+              alt="Elektrotechnická značka"
+              className="h-20 max-w-[200px] object-contain mx-auto"
+            />
+          </div>
+        )}
 
         {/* Možnosti odpovědí */}
         <div className="space-y-3">

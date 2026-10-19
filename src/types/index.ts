@@ -77,6 +77,7 @@ export interface Question {
   chapterId: number;
   competencyCode: string; // např. "26-017-H/01"
   question: string;
+  image?: string; // Vizuální značka/schéma (např. "/symbols/019.png")
   options: QuestionOption[];
   correctOptionId: string;
   explanation: string;

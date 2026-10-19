@@ -678,7 +678,7 @@ export const TechnicalSchematicsViewer: React.FC<TechnicalSchematicsViewerProps>
               Elektrotechnické značky používané ve schématech dle ČSN EN 60617 (Elektromateriál)
             </span>
             <h3 className="text-base sm:text-lg font-extrabold text-white">
-              Oficiální technické značky a schémata rozvaděčů 1:1
+              Oficiální technické značky a schémata rozvaděčů
             </h3>
           </div>
         </div>
@@ -728,7 +728,7 @@ export const TechnicalSchematicsViewer: React.FC<TechnicalSchematicsViewerProps>
         </div>
       </div>
 
-      {/* ZÁLOŽKA 1: ATLAS ZNAČEK (Standard 1:1 dle ČSN EN 60617 a Elektromateriál.cz) */}
+      {/* ZÁLOŽKA 1: ATLAS ZNAČEK (dle ČSN EN 60617 a Elektromateriál.cz) */}
       {activeTab === 'symbols' && (
         <div className="p-4 sm:p-6 space-y-4">
           {/* Horní ovládací lišta: Informace + Přepínač režimu */}
@@ -736,7 +736,7 @@ export const TechnicalSchematicsViewer: React.FC<TechnicalSchematicsViewerProps>
             <div>
               <div className="flex items-center gap-2">
                 <span className="px-2.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[11px] font-mono font-bold">
-                  ČSN EN 60617 • Zkouška 26-017-H (1:1)
+                  ČSN EN 60617 • Zkouška 26-017-H
                 </span>
                 <span className="text-xs text-slate-400">
                   {catalogMode === 'standard'
@@ -771,12 +771,12 @@ export const TechnicalSchematicsViewer: React.FC<TechnicalSchematicsViewerProps>
                 }`}
               >
                 <Layers className="w-3.5 h-3.5" />
-                Půdorys vs. Schéma (1:1)
+                Půdorys vs. Schéma
               </button>
             </div>
           </div>
 
-          {/* REŽIM 1: OFICIÁLNÍ KATALOG ELEKTROMATERIÁL.CZ (1:1 NORMU) */}
+          {/* REŽIM 1: OFICIÁLNÍ KATALOG ELEKTROMATERIÁL.CZ */}
           {catalogMode === 'standard' && (
             <div className="space-y-4">
               {/* Vyhledávací pole a filtry */}
@@ -841,7 +841,7 @@ export const TechnicalSchematicsViewer: React.FC<TechnicalSchematicsViewerProps>
                 })}
               </div>
 
-              {/* Mřížka 1:1 normovaných značek */}
+              {/* Mřížka normovaných značek */}
               {filteredStandardSymbols.length === 0 ? (
                 <div className="p-8 text-center bg-slate-950 rounded-xl border border-slate-800 text-slate-400 text-xs">
                   Pro zadané hledání nebyla nalezena žádná značka. Zkuste vymazat filtr nebo hledat jiné slovo (např. &bdquo;vypínač&ldquo;, &bdquo;svítidlo&ldquo;, &bdquo;jistič&ldquo;).
@@ -864,7 +864,7 @@ export const TechnicalSchematicsViewer: React.FC<TechnicalSchematicsViewerProps>
                       }
                       className="bg-slate-950/80 hover:bg-slate-900 border border-slate-800 hover:border-amber-500/80 rounded-xl p-3 flex flex-col justify-between cursor-pointer transition-all hover:scale-[1.02] shadow-sm group"
                     >
-                      {/* Bílý rámeček pro CAD černobílé schéma 1:1 */}
+                      {/* Bílý rámeček pro CAD schéma */}
                       <div className="bg-white p-2 rounded-lg border border-slate-200 flex items-center justify-center h-20 shadow-sm overflow-hidden mb-2 group-hover:shadow-md transition-shadow">
                         <img
                           src={sym.image}
@@ -889,7 +889,7 @@ export const TechnicalSchematicsViewer: React.FC<TechnicalSchematicsViewerProps>
             </div>
           )}
 
-          {/* REŽIM 2: SROVNÁNÍ PŮDORYS VS. SCHÉMA (1:1) */}
+          {/* REŽIM 2: SROVNÁNÍ PŮDORYS VS. SCHÉMA */}
           {catalogMode === 'dual' && (
             <div className="space-y-4">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-2 border-b border-slate-800">
@@ -906,7 +906,7 @@ export const TechnicalSchematicsViewer: React.FC<TechnicalSchematicsViewerProps>
                       symbolViewMode === 'both' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-white'
                     }`}
                   >
-                    Obě (1:1 srovnání)
+                    Obě zobrazení
                   </button>
                   <button
                     onClick={() => setSymbolViewMode('installation')}
@@ -1434,11 +1434,11 @@ export const TechnicalSchematicsViewer: React.FC<TechnicalSchematicsViewerProps>
       {inspectedElement && (
         <div className="p-4 sm:p-6 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border-t-2 border-amber-500 shadow-2xl animate-fadeIn">
           <div className="flex flex-col lg:flex-row items-start justify-between gap-5">
-            {/* Vizuální náhled značky 1:1 */}
+            {/* Vizuální náhled značky */}
             {inspectedElement.image ? (
               <div className="flex flex-col items-center bg-white p-3 sm:p-4 rounded-xl border border-slate-300 shadow-xl shrink-0 self-center lg:self-start">
                 <span className="text-[10px] font-mono text-slate-500 mb-1.5 uppercase font-bold">
-                  ČSN EN 60617 (1:1 standard)
+                  ČSN EN 60617
                 </span>
                 <img
                   src={inspectedElement.image}

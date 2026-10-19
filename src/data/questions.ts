@@ -1658,5 +1658,549 @@ export const QUESTIONS: Question[] = [
     difficulty: 'normal',
     practicalExamRelevant: true
   }
-];
+,
+  // =========================================================================
+  // KAPITOLA 4: VIZUÁLNÍ IDENTIFIKACE SCHÉMATICKÝCH ZNAČEK (ČSN EN 60617)
+  // =========================================================================
+  {
+    id: 'q4-13',
+    chapterId: 4,
+    competencyCode: '26-017-H/04',
+    question: 'Který elektrotechnický spínací prvek znázorňuje tento schematický symbol?',
+    image: '/symbols/019.png',
+    options: [
+      { id: 'a', text: 'Spínač jednopólový řazení 1 (jednoklapkový spínač pro jedno svítidlo)' },
+      { id: 'b', text: 'Spínač střídavý řazení 6 (schodišťový přepínač)' },
+      { id: 'c', text: 'Tlačítkový ovladač řazení 1/0' },
+      { id: 'd', text: 'Spínač sériový řazení 5' }
+    ],
+    correctOptionId: 'a',
+    explanation: 'Značka představuje jednopólový spínač (řazení 1) dle ČSN EN 60617. Má jeden kontakt a ovládá se jednou klapkou pro zapnutí/vypnutí jednoho světelného okruhu.',
+    normReference: 'ČSN EN 60617',
+    difficulty: 'normal',
+    practicalExamRelevant: true
+  },
+  {
+    id: 'q4-14',
+    chapterId: 4,
+    competencyCode: '26-017-H/04',
+    question: 'Jaký spínací přístroj je vyobrazen na této normované půdorysné značce?',
+    image: '/symbols/023.png',
+    options: [
+      { id: 'a', text: 'Spínač křížový řazení 7' },
+      { id: 'b', text: 'Spínač sériový (lustrový) řazení 5 (dvouklapkový spínač pro dvě nezávislé skupiny svítidel)' },
+      { id: 'c', text: 'Dvojitá zásuvka 230 V' },
+      { id: 'd', text: 'Dvoupólový spínač řazení 2' }
+    ],
+    correctOptionId: 'b',
+    explanation: 'Dvě rovnoběžné čárky směřující na stejnou stranu označují sériový (lustrový) spínač řazení 5 s dělenou klapkou pro nezávislé ovládání dvou okruhů z jednoho místa.',
+    normReference: 'ČSN EN 60617',
+    difficulty: 'normal',
+    practicalExamRelevant: true
+  },
+  {
+    id: 'q4-15',
+    chapterId: 4,
+    competencyCode: '26-017-H/04',
+    question: 'Identifikujte spínací přístroj podle zobrazené instalační značky:',
+    image: '/symbols/022.png',
+    options: [
+      { id: 'a', text: 'Spínač střídavý (schodišťový) řazení 6 (pro ovládání svítidla ze 2 míst)' },
+      { id: 'b', text: 'Spínač jednopólový řazení 1' },
+      { id: 'c', text: 'Spínač křížový řazení 7' },
+      { id: 'd', text: 'Tlačítkový ovladač 1/0' }
+    ],
+    correctOptionId: 'a',
+    explanation: 'Jedna čára procházející středem kroužku s praporky na obou koncích v opačném směru je střídavý přepínač řazení 6. Používá se ve dvojici pro ovládání téhož osvětlení ze dvou různých míst.',
+    normReference: 'ČSN EN 60617',
+    difficulty: 'normal',
+    practicalExamRelevant: true
+  },
+  {
+    id: 'q4-16',
+    chapterId: 4,
+    competencyCode: '26-017-H/04',
+    question: 'Který instalační spínací prvek představuje tento symbol s křížem a čtyřmi praporky?',
+    image: '/symbols/024.png',
+    options: [
+      { id: 'a', text: 'Spínač křížový řazení 7 (zapojuje se mezi dva přepínače č. 6 pro ovládání ze 3 a více míst)' },
+      { id: 'b', text: 'Nouzový vypínač CENTRAL STOP' },
+      { id: 'c', text: 'Čtyřpólový jistič' },
+      { id: 'd', text: 'Zásuvka 400 V' }
+    ],
+    correctOptionId: 'a',
+    explanation: 'Kříž se čtyřmi praporky znázorňuje křížový přepínač řazení 7. Zapojuje se mezi přepínače č. 6 a umožňuje ovládat svítidlo z libovolného počtu dalších míst.',
+    normReference: 'ČSN EN 60617',
+    difficulty: 'normal',
+    practicalExamRelevant: true
+  },
+  {
+    id: 'q4-17',
+    chapterId: 4,
+    competencyCode: '26-017-H/04',
+    question: 'Jaký ovládací prvek vyjadřuje tato schematická značka s plným terčíkem (bodem)?',
+    image: '/symbols/038.png',
+    options: [
+      { id: 'a', text: 'Tlačítkový ovladač řazení 1/0 (zapínací tlačítko s vratnou pružinou pro zvonek, relé nebo časovač)' },
+      { id: 'b', text: 'Běžný vypínač řazení 1' },
+      { id: 'c', text: 'Plovákový spínač' },
+      { id: 'd', text: 'Koncový mikrospínač' }
+    ],
+    correctOptionId: 'a',
+    explanation: 'Plný bod (terčík) na konci značky spínače značí tlačítkový ovladač 1/0 (zapínací tlačítko). Po uvolnění tlaku prstu se kontakt vrátí do klidové rozepnuté polohy.',
+    normReference: 'ČSN EN 60617',
+    difficulty: 'normal',
+    practicalExamRelevant: true
+  },
+  {
+    id: 'q4-18',
+    chapterId: 4,
+    competencyCode: '26-017-H/04',
+    question: 'Co znázorňuje tento základní půdorysný elektrotechnický symbol?',
+    image: '/symbols/001.png',
+    options: [
+      { id: 'a', text: 'Jednofázovou domovní zásuvku 230 V (16 A, 2P+PE)' },
+      { id: 'b', text: 'Třífázovou zásuvku 400 V' },
+      { id: 'c', text: 'Nástěnné svítidlo' },
+      { id: 'd', text: 'Rozvodnou krabici' }
+    ],
+    correctOptionId: 'a',
+    explanation: 'Půlkruh s jednou čárkou představuje běžnou jednofázovou zásuvku 230 V (16 A) s ochranným kolíkem dle ČSN EN 60617.',
+    normReference: 'ČSN EN 60617',
+    difficulty: 'normal',
+    practicalExamRelevant: true
+  },
+  {
+    id: 'q4-19',
+    chapterId: 4,
+    competencyCode: '26-017-H/04',
+    question: 'Jaký typ zásuvky představuje tento symbol se dvěma čárkami vyvedenými z půlkruhu?',
+    image: '/symbols/005.png',
+    options: [
+      { id: 'a', text: 'Dvojitou zásuvku 230 V (2× 16 A v jednom těle / jedné montážní krabici)' },
+      { id: 'b', text: 'Zásuvku 400 V' },
+      { id: 'c', text: 'Zásuvku pro holicí strojek SELV' },
+      { id: 'd', text: 'Datovou dvojzásuvku RJ45' }
+    ],
+    correctOptionId: 'a',
+    explanation: 'Dvě rovnoběžné čárky z půlkruhu znázorňují dvojitou zásuvku 230 V. Dle ČSN 33 2130 ed. 4 se dvojzásuvka do maximálního počtu 10 zásuvek na obvod započítává jako 1 kus.',
+    normReference: 'ČSN EN 60617, ČSN 33 2130 ed. 4',
+    difficulty: 'normal',
+    practicalExamRelevant: true
+  },
+  {
+    id: 'q4-20',
+    chapterId: 4,
+    competencyCode: '26-017-H/04',
+    question: 'Identifikujte zobrazenou zásuvku podle značky se třemi čárkami:',
+    image: '/symbols/006.png',
+    options: [
+      { id: 'a', text: 'Třífázová průmyslová zásuvka 400 V (3P+N+PE, 16 A nebo 32 A)' },
+      { id: 'b', text: 'Trojnásobná zásuvka 230 V ve trojrámečku' },
+      { id: 'c', text: 'Třífázový elektroměr' },
+      { id: 'd', text: 'Transformátor 400/230 V' }
+    ],
+    correctOptionId: 'a',
+    explanation: 'Tři čárky u půdorysné značky zásuvky značí třífázovou zásuvku 400 V (3P+N+PE, tzv. pětikolík CEE).',
+    normReference: 'ČSN EN 60617',
+    difficulty: 'normal',
+    practicalExamRelevant: true
+  },
+  {
+    id: 'q4-21',
+    chapterId: 4,
+    competencyCode: '26-017-H/04',
+    question: 'Který světelný vývod představuje tento křížek v kruhu?',
+    image: '/symbols/009.png',
+    options: [
+      { id: 'a', text: 'Stropní svítidlo (všeobecná značka světelného vývodu / svítidla)' },
+      { id: 'b', text: 'Odtahový ventilátor' },
+      { id: 'c', text: 'Zvonkové tlačítko' },
+      { id: 'd', text: 'Měřicí přístroj (voltmetr)' }
+    ],
+    correctOptionId: 'a',
+    explanation: 'Kruh s křížkem uvnitř je základní schematická a půdorysná značka pro stropní svítidlo / světelný bod dle ČSN EN 60617.',
+    normReference: 'ČSN EN 60617',
+    difficulty: 'normal',
+    practicalExamRelevant: true
+  },
+  {
+    id: 'q4-22',
+    chapterId: 4,
+    competencyCode: '26-017-H/04',
+    question: 'Jaký modulární přístroj do rozvaděče představuje tato značka s tepelnou a elektromagnetickou spouští?',
+    image: '/symbols/105.png',
+    options: [
+      { id: 'a', text: 'Jednopólový jistič vedení (MCB 1P)' },
+      { id: 'b', text: 'Proudový chránič' },
+      { id: 'c', text: 'Odpínač zátěže bez spouští' },
+      { id: 'd', text: 'Tavná pojistka' }
+    ],
+    correctOptionId: 'a',
+    explanation: 'Značka znázorňuje jednopólový jistič vedení (např. B10/1, B16/1). Obsahuje kontaktní spínač doplněný tepelnou spouští (obdélníček pro ochranu proti přetížení) a elektromagnetickou rychlou zkratovou spouští.',
+    normReference: 'ČSN EN 60617, ČSN EN 60898-1',
+    difficulty: 'normal',
+    practicalExamRelevant: true
+  },
+  {
+    id: 'q4-23',
+    chapterId: 4,
+    competencyCode: '26-017-H/04',
+    question: 'Který rozvaděčový přístroj je znázorněn tímto schématem tří mechanicky spřažených pólů se spouštěmi?',
+    image: '/symbols/107.png',
+    options: [
+      { id: 'a', text: 'Třípólový jistič vedení (MCB 3P pro třífázové obvody 400 V)' },
+      { id: 'b', text: 'Třífázový výkonový stykač' },
+      { id: 'c', text: 'Svodič přepětí SPD Typ 2' },
+      { id: 'd', text: 'Reverzační spínač' }
+    ],
+    correctOptionId: 'a',
+    explanation: 'Jedná se o třípólový jistič (např. B16/3 nebo C25/3) se společným mechanickým spřažením páček – při poruše v libovolné fázi bezpečně odpojí všechny 3 fáze současně.',
+    normReference: 'ČSN EN 60617, ČSN EN 60898-1',
+    difficulty: 'normal',
+    practicalExamRelevant: true
+  },
+  {
+    id: 'q4-24',
+    chapterId: 4,
+    competencyCode: '26-017-H/04',
+    question: 'Který klíčový ochranný přístroj rozvaděče je vyobrazen se součtovým proudovým transformátorem (ovál) a testovacím tlačítkem T?',
+    image: '/symbols/112.png',
+    options: [
+      { id: 'a', text: 'Proudový chránič bez nadproudové spouště (RCD / RCCB)' },
+      { id: 'b', text: 'Běžný jistič vedení' },
+      { id: 'c', text: 'Rozváděčový ampérmetr' },
+      { id: 'd', text: 'Elektromagnetické relé' }
+    ],
+    correctOptionId: 'a',
+    explanation: 'Ovál představuje feritové jádro součtového proudového transformátoru (měřicí diferenciální cívka) a tlačítko T slouží pro pravidelné mechanické a elektrické testování vybavení chrániče. Jedná se o proudový chránič (RCCB).',
+    normReference: 'ČSN EN 60617, ČSN EN 61008-1',
+    difficulty: 'normal',
+    practicalExamRelevant: true
+  },
+  {
+    id: 'q4-25',
+    chapterId: 4,
+    competencyCode: '26-017-H/04',
+    question: 'Jaký přístroj představuje toto kombinované schéma obsahující jističové spouště (tepelnou i zkratovou) i součtový transformátor chrániče?',
+    image: '/symbols/rcbo.png',
+    options: [
+      { id: 'a', text: 'Proudový chránič s vestavěnou nadproudovou ochranou (jističochránič RCBO)' },
+      { id: 'b', text: 'Samostatný jistič vedení' },
+      { id: 'c', text: 'Motorový spouštěč bez chrániče' },
+      { id: 'd', text: 'Časové relé se zpožděním' }
+    ],
+    correctOptionId: 'a',
+    explanation: 'Jističochránič (RCBO) sdružuje v jednom přístroji ochranu proti nadproudu a zkratu (funkce jističe) a ochranu před nebezpečným dotykem a reziduálním unikajícím proudem (funkce chrániče). Šetří místo v rozvaděči (často šířka 1 nebo 2 moduly).',
+    normReference: 'ČSN EN 60617, ČSN EN 61009-1',
+    difficulty: 'normal',
+    practicalExamRelevant: true
+  },
+  {
+    id: 'q4-26',
+    chapterId: 4,
+    competencyCode: '26-017-H/04',
+    question: 'Identifikujte ochranný přístroj vyznačený schématickou značkou varistoru / bleskojistky v rozvaděči:',
+    image: '/symbols/113.png',
+    options: [
+      { id: 'a', text: 'Přepěťová ochrana / svodič přepětí (SPD Typ 1, 2 nebo 3)' },
+      { id: 'b', text: 'Regulační transformátor' },
+      { id: 'c', text: 'Kompenzační kondenzátor' },
+      { id: 'd', text: 'Nožová pojistka' }
+    ],
+    correctOptionId: 'a',
+    explanation: 'Značka představuje svodič přepětí (SPD – Surge Protective Device dle ČSN EN 61643-11), který svede bleskové proudy a přepěťové špičky bezpečně do ochranného pospojování a země.',
+    normReference: 'ČSN EN 60617, ČSN EN 61643-11',
+    difficulty: 'normal',
+    practicalExamRelevant: true
+  },
+  {
+    id: 'q4-27',
+    chapterId: 4,
+    competencyCode: '26-017-H/04',
+    question: 'Který výkonový spínací přístroj je znázorněn se silovými spínacími kontakty a ovládací cívkou svorek A1–A2?',
+    image: '/symbols/118.png',
+    options: [
+      { id: 'a', text: 'Výkonový stykač (KM) pro dálkové spínání zátěže (motory, topení, osvětlení)' },
+      { id: 'b', text: 'Jednofázový jistič' },
+      { id: 'c', text: 'Proudový chránič' },
+      { id: 'd', text: 'Hlavní vypínač rozvodnice QM' }
+    ],
+    correctOptionId: 'a',
+    explanation: 'Značka představuje stykač (KM). Obsahuje elektromagnetickou ovládací cívku (svorky A1–A2) a hlavní silové spínací kontakty (1-2, 3-4, 5-6) určené pro dálkové spínání vysokých proudů.',
+    normReference: 'ČSN EN 60617, ČSN EN 60947-4-1',
+    difficulty: 'normal',
+    practicalExamRelevant: true
+  },
+  {
+    id: 'q4-28',
+    chapterId: 4,
+    competencyCode: '26-017-H/04',
+    question: 'Který jistící prvek rozvaděče představuje tento obdélníček s čarou procházející středem?',
+    image: '/symbols/108.png',
+    options: [
+      { id: 'a', text: 'Tavná pojistka (pojistková vložka FU, např. nožová NH nebo válcová)' },
+      { id: 'b', text: 'Pevný odporník (rezistor)' },
+      { id: 'c', text: 'Pomocný kontakt relé' },
+      { id: 'd', text: 'Bleskojistka' }
+    ],
+    correctOptionId: 'a',
+    explanation: 'Obdélník s průchozí plnou čárou je mezinárodní značka pojistky (FU dle ČSN EN 60617 a ČSN EN 81346-2). Při nadproudu nebo zkratu se tavný drátek přetaví a obvod bezpečně přeruší.',
+    normReference: 'ČSN EN 60617, ČSN EN 81346-2',
+    difficulty: 'normal',
+    practicalExamRelevant: true
+  },
+  {
+    id: 'q4-29',
+    chapterId: 4,
+    competencyCode: '26-017-H/04',
+    question: 'Co znamená tato základní elektrotechnická značka složená z vodorovných čárek klesající délky?',
+    image: '/symbols/083.png',
+    options: [
+      { id: 'a', text: 'Uzemnění / ochranný zemnič (spojení s obecnou zemí)' },
+      { id: 'b', text: 'Nulovací můstek' },
+      { id: 'c', text: 'Stejnosměrný zdroj napětí' },
+      { id: 'd', text: 'Filtr rušení' }
+    ],
+    correctOptionId: 'a',
+    explanation: 'Tři vodorovné čárky zmenšující se směrem dolů jsou univerzální mezinárodní značkou pro zemnič / uzemnění dle ČSN EN 60617.',
+    normReference: 'ČSN EN 60617, ČSN 33 2000-5-54 ed. 3',
+    difficulty: 'normal',
+    practicalExamRelevant: true
+  },
+  {
+    id: 'q4-30',
+    chapterId: 4,
+    competencyCode: '26-017-H/04',
+    question: 'Co znamenají tři šikmé čárky na schematické čáře elektrického vedení v instalačním výkrese?',
+    image: '/symbols/087.png',
+    options: [
+      { id: 'a', text: 'Vedení je tvořeno třemi žilami (např. kabel CYKY-J 3×1,5 – fáze L, střední N a ochranný PE)' },
+      { id: 'b', text: 'Vedení má délku 3 metry' },
+      { id: 'c', text: 'Jde o trojnásobně izolovaný kabel' },
+      { id: 'd', text: 'Jedná se o 3 samostatné kabely v souběhu' }
+    ],
+    correctOptionId: 'a',
+    explanation: 'Šikmé čárky protínající trasu vedení udávají počet žil v daném úseku kabelu nebo trubky (3 čárky = 3 žíly L, N, PE).',
+    normReference: 'ČSN EN 60617',
+    difficulty: 'normal',
+    practicalExamRelevant: true
+  },
+  // =========================================================================
+  // KAPITOLA 2: OTÁZKY ZE ZKOUŠEK NV č. 194/2022 Sb. & ČSN EN 50110-1 (PŠIS 2025)
+  // =========================================================================
+  {
+    id: 'q2-13',
+    chapterId: 2,
+    competencyCode: '26-017-H/02',
+    question: 'Jaké složení musí mít zkušební komise pro přezkoušení elektrotechniků (§ 6) a vedoucích elektrotechniků (§ 7) podle NV č. 194/2022 Sb. a jaký minimální výsledek z písemného testu je nutný pro hodnocení „vyhověl“?',
+    options: [
+      { id: 'a', text: 'Dvoučlenná komise; stačí 50 % bodů' },
+      { id: 'b', text: 'Tříčlenná zkušební komise, jejímž předsedou musí být revizní technik; v písemném testu musí zkoušený dosáhnout minimálně 80 % správných odpovědí' },
+      { id: 'c', text: 'Zkouší pouze zástupce úřadu práce bez revizního technika; limit je 70 %' },
+      { id: 'd', text: 'Jednočlenná komise tvořená pouze mistrem odborného výcviku' }
+    ],
+    correctOptionId: 'b',
+    explanation: 'Podle NV č. 194/2022 Sb. zkušební komise musí být tříčlenná a jejím předsedou musí být revizní technik. Aby mohl být výsledek písemné části vyhodnocen stupněm „vyhověl“ a uchazeč mohl pokračovat k ústní části, musí dosáhnout minimálně 80 % správných odpovědí.',
+    normReference: 'NV č. 194/2022 Sb., Metodické pokyny PŠIS 2025',
+    difficulty: 'normal',
+    practicalExamRelevant: true
+  },
+  {
+    id: 'q2-14',
+    chapterId: 2,
+    competencyCode: '26-017-H/02',
+    question: 'Které úkony na elektrických zařízeních nízkého napětí smějí podle ČSN EN 50110-1 ed. 3 provádět osoby seznámené (školené) u svítidel s ochranou před dotykem minimálně IP 2X nebo IP XXB?',
+    options: [
+      { id: 'a', text: 'Pouze ve vypnutém stavu vyměňovat světelné zdroje (žárovky, zářivkové trubice, LED zdroje) a startéry zářivek' },
+      { id: 'b', text: 'Smějí vyměňovat celá stropní svítidla a zapojovat kabely ve svorkovnici' },
+      { id: 'c', text: 'Smějí demontovat rozvaděč pod napětím' },
+      { id: 'd', text: 'Osoby seznámené nesmějí provádět žádnou manipulaci se svítidly ani při vypnutém vypínači' }
+    ],
+    correctOptionId: 'a',
+    explanation: 'Podle ČSN EN 50110-1 ed. 3 smějí osoby seznámené (školené dle zákona č. 250/2021 Sb.) u svítidel s krytím alespoň IP 2X (IP XXB) ve vypnutém stavu vyměňovat světelné zdroje a startéry. Výměnu svítidla či zásah do pevné elektroinstalace smějí provádět výhradně osoby znalé (§ 6 elektrotechnik).',
+    normReference: 'ČSN EN 50110-1 ed. 3',
+    difficulty: 'normal',
+    practicalExamRelevant: true
+  },
+  {
+    id: 'q2-15',
+    chapterId: 2,
+    competencyCode: '26-017-H/02',
+    question: 'Kdo podle zákona č. 250/2021 Sb. a NV č. 190/2022 Sb. může provádět montáž, opravy a revize vyhrazených elektrických zařízení (VEZ)?',
+    options: [
+      { id: 'a', text: 'Každý občan s maturitním vysvědčením' },
+      { id: 'b', text: 'Montáž a opravy smějí provádět pouze právnické nebo podnikající fyzické osoby, které vlastní oprávnění vydané Technickou inspekcí České republiky (TIČR); revize provádí revizní technik s osvědčením TIČR' },
+      { id: 'c', text: 'Jakákoliv stavební firma bez odborného oprávnění' },
+      { id: 'd', text: 'Pouze státní podniky' }
+    ],
+    correctOptionId: 'b',
+    explanation: 'Podle zákona č. 250/2021 Sb. a NV č. 190/2022 Sb. vyžaduje montáž a oprava vyhrazených elektrických zařízení oprávnění organizace vydané TIČR a výkon revizí osvědčení revizního technika vydané TIČR po úspěšné státní zkoušce.',
+    normReference: 'Zákon č. 250/2021 Sb., NV č. 190/2022 Sb.',
+    difficulty: 'normal',
+    practicalExamRelevant: true
+  },
+  // =========================================================================
+  // KAPITOLA 3: OTÁZKY ZE ZKOUŠEK ČSN 33 2000-4-41 ed. 3 (PŠIS 2025)
+  // =========================================================================
+  {
+    id: 'q3-13',
+    chapterId: 3,
+    competencyCode: '26-017-H/03',
+    question: 'Jaký minimální stupeň krytí musí podle ČSN 33 2000-4-41 ed. 3 zajišťovat kryty živých částí uvnitř a jaké krytí musí mít vodorovný horní povrch snadno přístupných krytů?',
+    options: [
+      { id: 'a', text: 'Uvnitř alespoň IP 00 a nahoře IP 20' },
+      { id: 'b', text: 'Živé části uvnitř krytů alespoň IP XXB nebo IP 2X (ochrana prstem); vodorovný horní povrch snadno přístupných krytů alespoň IP XXD nebo IP 4X (ochrana drátem 1 mm)!' },
+      { id: 'c', text: 'Všude musí být krytí alespoň IP 68 ponorné' },
+      { id: 'd', text: 'Uvnitř IP 4X a nahoře IP 2X' }
+    ],
+    correctOptionId: 'b',
+    explanation: 'Dle ČSN 33 2000-4-41 ed. 3 čl. 412.2 musí kryty a přepážky chránící živé části zajistit krytí alespoň IP 2X / IP XXB. Vodorovný horní povrch krytů, na který mohou spadnout předměty nebo nářadí, musí mít přísnější krytí alespoň IP 4X / IP XXD.',
+    normReference: 'ČSN 33 2000-4-41 ed. 3',
+    difficulty: 'hard',
+    practicalExamRelevant: true
+  },
+  {
+    id: 'q3-14',
+    chapterId: 3,
+    competencyCode: '26-017-H/03',
+    question: 'Jaký je zásadní rozdíl v klasifikaci prostorů z hlediska nebezpečí úrazu elektrickým proudem mezi starší ČSN 33 2000-4-41 ed. 2 a platnou ČSN 33 2000-4-41 ed. 3?',
+    options: [
+      { id: 'a', text: 'Všechny prostory v ČR byly prohlášeny za zvlášť nebezpečné' },
+      { id: 'b', text: 'Platná edice 3 již neuvádí dřívější rozdělení na prostory normální, nebezpečné a zvlášť nebezpečné ani tabulky bezpečných dotykových napětí; provedení elektroinstalace se určuje výhradně podle protokolu o určení vnějších vlivů dle ČSN 33 2000-5-51 ed. 3' },
+      { id: 'c', text: 'Norma byla zrušena bez náhrady' },
+      { id: 'd', text: 'Prostory se nyní dělí pouze podle výšky stropu' }
+    ],
+    correctOptionId: 'b',
+    explanation: 'ČSN 33 2000-4-41 ed. 3 opustila staré rozdělení na 3 kategorie prostorů (normální, nebezpečné, zvlášť nebezpečné). Bezpečnostní požadavky a dimenzování se dnes řídí přesnými kódy vnějších vlivů (ČSN 33 2000-5-51 ed. 3) a předmětovými normami.',
+    normReference: 'ČSN 33 2000-4-41 ed. 3, ČSN 33 2000-5-51 ed. 3',
+    difficulty: 'hard',
+    practicalExamRelevant: true
+  },
+  {
+    id: 'q3-15',
+    chapterId: 3,
+    competencyCode: '26-017-H/03',
+    question: 'Pro které zásuvky je podle platné ČSN 33 2000-4-41 ed. 3 povinná doplňková ochrana proudovým chráničem (RCD) s vybavovacím proudem IΔn ≤ 30 mA?',
+    options: [
+      { id: 'a', text: 'Pouze pro zásuvky v koupelně do 10 A' },
+      { id: 'b', text: 'Pro všechny střídavé zásuvky pro všeobecné použití obsluhované laiky až do jmenovitého proudu In ≤ 32 A (dříve v edici 2 to bylo pouze do 20 A) a pro mobilní zařízení určená pro venkovní použití do 32 A' },
+      { id: 'c', text: 'Pouze pro třífázové zásuvky nad 63 A' },
+      { id: 'd', text: 'Pro žádné zásuvky, proudový chránič je pouze doporučený' }
+    ],
+    correctOptionId: 'b',
+    explanation: 'ČSN 33 2000-4-41 ed. 3 rozšířila povinnost instalace 30mA proudového chrániče pro zásuvky používané laiky z dřívějších 20 A nově až do jmenovitého proudu 32 A včetně (týká se tedy i 32A třífázových zásuvek).',
+    normReference: 'ČSN 33 2000-4-41 ed. 3',
+    difficulty: 'normal',
+    practicalExamRelevant: true
+  },
+  // =========================================================================
+  // KAPITOLA 5: ČSN 33 2130 ed. 4 (PLATNÁ OD 1. 1. 2025) & ULIČKY ROZVADĚČŮ
+  // =========================================================================
+  {
+    id: 'q5-13',
+    chapterId: 5,
+    competencyCode: '26-017-H/05',
+    question: 'Jaké zásadní požadavky na ochranu světelných obvodů v bytové výstavbě stanovuje nová norma ČSN 33 2130 ed. 4 (platná od 1. ledna 2025)?',
+    options: [
+      { id: 'a', text: 'Světelné obvody se nesmějí jistit vůbec' },
+      { id: 'b', text: 'Světelné obvody musí mít doplňkovou ochranu proudovým chráničem s IΔn ≤ 30 mA, který je určen POUZE pro daný světelný obvod (nesmí být sdílen se zásuvkami), a pro jištění světelných obvodů se NESMÍ použít chránič typu AC!' },
+      { id: 'c', text: 'Všechna svítidla musí být připojena na jeden společný chránič se zásuvkami' },
+      { id: 'd', text: 'Proudový chránič se vyžaduje pouze u zářivek' }
+    ],
+    correctOptionId: 'b',
+    explanation: 'Dle ČSN 33 2130 ed. 4 (od 1. 1. 2025) musí mít světelné obvody samostatný proudový chránič max. 30 mA (ideálně samostatné RCBO), který nesmí být sloučen se zásuvkovými obvody, a je zakázáno instalovat chrániče zastaralého typu AC (které nereagují na stejnosměrné složky LED předřadníků).',
+    normReference: 'ČSN 33 2130 ed. 4 (od 1. 1. 2025)',
+    difficulty: 'hard',
+    practicalExamRelevant: true
+  },
+  {
+    id: 'q5-14',
+    chapterId: 5,
+    competencyCode: '26-017-H/05',
+    question: 'Jak se podle normy ČSN 33 2130 ed. 4 (od 1. 1. 2025) počítá počet zásuvek ve vícenásobných rámečcích a kolik zásuvek smí být maximálně na jednom obvodu?',
+    options: [
+      { id: 'a', text: 'Na obvod lze dát neomezeně zásuvek' },
+      { id: 'b', text: 'Na jeden zásuvkový obvod lze zapojit nejvýše 10 zásuvek; ve vícenásobném rámečku se každá zásuvka počítá samostatně (např. trojrámeček = 3 zásuvky z 10 povolených), zatímco dvojzásuvka v jedné krabici se i nadále počítá jako 1 kus' },
+      { id: 'c', text: 'Každý rámeček se počítá jako jedna zásuvka bez ohledu na počet otvorů' },
+      { id: 'd', text: 'Maximální počet je 5 zásuvek na celý dům' }
+    ],
+    correctOptionId: 'b',
+    explanation: 'Podle ČSN 33 2130 ed. 4 platí limit max. 10 zásuvkových vývodů na obvod. Zásuvky ve vícenásobném rámečku (např. 3 zásuvky vedle sebe) se započítávají každá jako samostatná zásuvka. Tradiční dvojitá zásuvka montovaná do jedné přístrojové krabice KU 68 se počítá jako 1 kus.',
+    normReference: 'ČSN 33 2130 ed. 4',
+    difficulty: 'normal',
+    practicalExamRelevant: true
+  },
+  {
+    id: 'q5-15',
+    chapterId: 5,
+    competencyCode: '26-017-H/05',
+    question: 'Jaké požadavky platí pro uličky pro obsluhu a údržbu rozvaděčů a elektrických zařízení dle bezpečnostních norem (ČSN 33 2130 ed. 4, ČSN EN 61936-1)?',
+    options: [
+      { id: 'a', text: 'Ulička stačí široká 30 cm; výška živých částí 1,5 m' },
+      { id: 'b', text: 'Výška nechráněných živých částí nad podlahou v uličce musí být min. 2,5 m; uličky musí umožnit otevření dveří rozvaděče min. v úhlu 90°; a uzavřený prostor pro obsluhu delší než 20 m musí být přístupný dveřmi na obou koncích' },
+      { id: 'c', text: 'Dveře rozvaděče se musí otevírat pouze v úhlu 45°' },
+      { id: 'd', text: 'V uličkách pro obsluhu nesmí být instalováno žádné osvětlení' }
+    ],
+    correctOptionId: 'b',
+    explanation: 'Pro zajištění bezpečného pohybu a úniku v rozvodnách a uličkách rozvaděčů se vyžaduje výška živých částí min. 2,5 m nad podlahou, úhel otevření dveří alespoň 90° a u dlouhých prostorů nad 20 m oboustranný únik (dveře na obou koncích).',
+    normReference: 'ČSN 33 2130 ed. 4, ČSN EN 61936-1',
+    difficulty: 'normal',
+    practicalExamRelevant: true
+  },
+  // =========================================================================
+  // KAPITOLA 8: PRVNÍ POMOC & HROMOSVODY (PŠIS 2025, ČSN EN 62305 ed. 2)
+  // =========================================================================
+  {
+    id: 'q8-13',
+    chapterId: 8,
+    competencyCode: '26-017-H/08',
+    question: 'Jaká je správná frekvence stlačování hrudníku a jaká je rychlost umělého dýchání při resuscitaci postiženého po zásahu elektrickým proudem?',
+    options: [
+      { id: 'a', text: 'Frekvence stlačování hrudníku 100 až 120 za minutu v poměru 30:2; samostatné umělé dýchání 10 až 12 vdechů za minutu' },
+      { id: 'b', text: 'Stlačování hrudníku 40 až 50 za minutu; umělé dýchání 30 vdechů za minutu' },
+      { id: 'c', text: 'Stlačování hrudníku 150 až 200 za minutu; dýchání se neprovádí vůbec' },
+      { id: 'd', text: 'Poměr je 5 stlačení na 5 vdechů' }
+    ],
+    correctOptionId: 'a',
+    explanation: 'Podle mezinárodních doporučení ERC a zkušebních testů pro elektrotechniky je frekvence nepřímé srdeční masáže 100 až 120 stlačení/min v hloubce 5–6 cm v poměru 30 stlačení ku 2 záchranným vdechům. Provádí-li se samostatné umělé dýchání, frekvence je 10 až 12 vdechů/min.',
+    normReference: 'ERC Guidelines, Zkušební testy PŠIS 2025',
+    difficulty: 'normal',
+    practicalExamRelevant: true
+  },
+  {
+    id: 'q8-14',
+    chapterId: 8,
+    competencyCode: '26-017-H/08',
+    question: 'Kdy a za jakých podmínek lze ukončit nepřímou srdeční masáž a umělé dýchání u postiženého po úrazu elektrickým proudem?',
+    options: [
+      { id: 'a', text: 'Po 5 minutách, pokud se postižený neprobudí' },
+      { id: 'b', text: 'Pouze tehdy, když postižený začne sám spontánně a pravidelně dýchat, nebo na přímý pokyn přítomného lékaře / záchranáře posádky ZZS, případně při úplném fyzickém vyčerpání zachránce' },
+      { id: 'c', text: 'Jakmile se ozve siréna sanitky v dálce' },
+      { id: 'd', text: 'Po 10 cyklech 30:2 bez ohledu na stav postiženého' }
+    ],
+    correctOptionId: 'b',
+    explanation: 'KPR nesmí zachránce svévolně přerušit po několika minutách. Resuscitace se provádí nepřetržitě až do obnovení spontánních životních funkcí, do převzetí péče posádkou zdravotnické záchranné služby (na pokyn lékaře), nebo do absolutního fyzického vyčerpání zachránce.',
+    normReference: 'Zkušební testy PŠIS 2025, ERC Guidelines',
+    difficulty: 'normal',
+    practicalExamRelevant: true
+  },
+  {
+    id: 'q8-15',
+    chapterId: 8,
+    competencyCode: '26-017-H/08',
+    question: 'Kolik tříd ochrany před bleskem (LPS) rozlišuje norma ČSN EN 62305-3 ed. 2 a jaké jsou přípustné metody pro stanovení umístění jímací soustavy?',
+    options: [
+      { id: 'a', text: 'Dvě třídy; přípustná je pouze metoda aktivního jímače' },
+      { id: 'b', text: 'Celkem čtyři třídy LPS (I až IV); přípustné jsou výhradně 3 metody: metoda ochranného úhlu, metoda valící se koule a metoda mřížové soustavy' },
+      { id: 'c', text: 'Šest tříd LPS; metoda náhodného jímače' },
+      { id: 'd', text: 'Jedna třída LPS pro všechny stavby stejně' }
+    ],
+    correctOptionId: 'b',
+    explanation: 'Podle ČSN EN 62305-3 ed. 2 se systémy ochrany před bleskem dělí do 4 tříd LPS (I, II, III, IV) podle úrovně LPL. Pro stanovení ochranného prostoru jímací soustavy norma připouští přesně tři metody: metodu ochranného úhlu, metodu valící se koule a metodu mřížové soustavy.',
+    normReference: 'ČSN EN 62305-3 ed. 2',
+    difficulty: 'normal',
+    practicalExamRelevant: true
+  }
 
+];

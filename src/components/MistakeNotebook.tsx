@@ -87,9 +87,19 @@ export const MistakeNotebook: React.FC<MistakeNotebookProps> = ({
             </button>
           </div>
 
-          <p className="text-lg font-bold text-slate-100 mb-6">
+          <p className="text-lg font-bold text-slate-100 mb-4">
             {currentQ.question}
           </p>
+
+          {currentQ.image && (
+            <div className="mb-6 p-3 bg-white rounded-xl border border-slate-300 inline-block shadow-md">
+              <img
+                src={currentQ.image}
+                alt="Elektrotechnická značka"
+                className="h-20 max-w-[200px] object-contain mx-auto"
+              />
+            </div>
+          )}
 
           <div className="space-y-3">
             {currentQ.options.map((option) => {
@@ -237,6 +247,15 @@ export const MistakeNotebook: React.FC<MistakeNotebookProps> = ({
                     <h3 className="text-sm font-bold text-slate-100 mt-1">
                       {q.question}
                     </h3>
+                    {q.image && (
+                      <div className="mt-2 p-2 bg-white rounded-lg border border-slate-300 inline-block shadow-sm">
+                        <img
+                          src={q.image}
+                          alt="Elektrotechnická značka"
+                          className="h-14 max-w-[150px] object-contain"
+                        />
+                      </div>
+                    )}
                   </div>
                   <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-red-500/10 text-red-300 border border-red-500/20 shrink-0">
                     Chybováno: {mistakeInfo?.mistakeCount || 1}×

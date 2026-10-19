@@ -229,7 +229,7 @@ Používají se, když ochrana před dotykem živých částí je vyšší než 
     title: 'Dodržování bezpečnosti při práci a ochrana před úrazem el. proudem',
     shortDescription: 'Zákon 250/2021 Sb. a NV 194/2022 Sb., obsluha vs. práce, 5 pravidel beznapěťového stavu, zóny PPN, ČSN 33 2000-4-41 ed. 3 a proudové chrániče.',
     iconName: 'ShieldCheck',
-    totalQuestions: 12,
+    totalQuestions: 15,
     subchapters: [
       {
         id: '2-1',
@@ -420,7 +420,7 @@ Proudový chránič pracuje na principu **součtového měřicího transformáto
     title: 'Dimenzování, jištění a kladení elektrických vedení',
     shortDescription: 'ČSN 33 2000-5-52, průřezy PE vodičů, úbytky napětí, jističe a závitové pojistky, SPD a LPS, spojování vodičů (Cu/Al), kabely v zemi a instalační zóny.',
     iconName: 'Sliders',
-    totalQuestions: 12,
+    totalQuestions: 15,
     subchapters: [
       {
         id: '3-1',
@@ -637,7 +637,7 @@ Kabely pod omítkou se vedou **výhradně vodorovně a svisle** (nikdy šikmo!) 
     title: 'Používání technické dokumentace a norem při instalacích',
     shortDescription: 'Čtení jednopólových a liniových schémat rozvaděčů, schematické značky ČSN EN 60617, impulzní relé a značení prvků ČSN EN 81346-2.',
     iconName: 'FileText',
-    totalQuestions: 12,
+    totalQuestions: 30,
     subchapters: [
       {
         id: '4-1',
@@ -711,7 +711,7 @@ Kabely pod omítkou se vedou **výhradně vodorovně a svisle** (nikdy šikmo!) 
     title: 'Volba postupu práce, nářadí, pomůcek a měřidel',
     shortDescription: 'Plánování postupu práce, izolované nářadí 1000 V (ČSN EN 60900), přesný postup měření při revizi (spojitost PE ≥ 200 mA, Riso 500 V DC, Zs a RCD).',
     iconName: 'Wrench',
-    totalQuestions: 12,
+    totalQuestions: 15,
     subchapters: [
       {
         id: '5-1',
@@ -1078,7 +1078,7 @@ Po dokončení montáže a proměření je montér povinen:
     title: 'Poskytování první pomoci při úrazu elektrickým proudem',
     shortDescription: 'Přímé a nepřímé účinky el. proudu na člověka (ČSN IEC 60479-1), bezpečné vyproštění z NN a VN, krokové napětí, KPR 30:2, AED a ošetření popálenin.',
     iconName: 'HeartPulse',
-    totalQuestions: 12,
+    totalQuestions: 15,
     subchapters: [
       {
         id: '8-1',

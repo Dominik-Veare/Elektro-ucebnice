@@ -736,16 +736,16 @@ export const TechnicalSchematicsViewer: React.FC<TechnicalSchematicsViewerProps>
             <div>
               <div className="flex items-center gap-2">
                 <span className="px-2.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[11px] font-mono font-bold">
-                  ČSN EN 60617 • Elektromateriál.cz (1:1)
+                  ČSN EN 60617 • Zkouška 26-017-H (1:1)
                 </span>
                 <span className="text-xs text-slate-400">
                   {catalogMode === 'standard'
-                    ? `Zobrazeno ${filteredStandardSymbols.length} z ${STANDARD_SYMBOLS.length} oficiálních elektrotechnických značek`
+                    ? `Zobrazeno ${filteredStandardSymbols.length} z ${STANDARD_SYMBOLS.length} značek vyžadovaných u zkoušky`
                     : `Srovnání: Půdorysná instalační značka vs. Obvodová schématická značka`}
                 </span>
               </div>
               <h4 className="text-sm sm:text-base font-extrabold text-slate-100 mt-1">
-                Elektrotechnické značky používané ve schématech a půdorysech
+                Elektrotechnické značky ke státní profesní zkoušce
               </h4>
             </div>
 
@@ -760,7 +760,7 @@ export const TechnicalSchematicsViewer: React.FC<TechnicalSchematicsViewerProps>
                 }`}
               >
                 <BookOpen className="w-3.5 h-3.5" />
-                Oficiální katalog ({STANDARD_SYMBOLS.length})
+                Zkušební atlas ({STANDARD_SYMBOLS.length})
               </button>
               <button
                 onClick={() => setCatalogMode('dual')}

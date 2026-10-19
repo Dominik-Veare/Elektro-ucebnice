@@ -1422,6 +1422,40 @@ export const QUESTIONS: Question[] = [
     practicalExamRelevant: true
   },
   {
+    id: 'q1-13',
+    chapterId: 1,
+    competencyCode: '26-017-H/01',
+    question: 'Jaký vliv má nízký účiník (cos φ < 0,95) způsobený indukční zátěží (elektromotory, transformátory) na napájecí síť a jak se v praxi kompenzuje?',
+    options: [
+      { id: 'a', text: 'Zvyšuje jalový proud a celkový zdánlivý proud v kabelech (větší ztráty a oteplení); kompenzuje se paralelním připojením kompenzačních kondenzátorů.' },
+      { id: 'b', text: 'Způsobuje nebezpečný pokles síťové frekvence pod 45 Hz v transformátoru; kompenzuje se zařazením výkonových sériových odporníků před motor.' },
+      { id: 'c', text: 'Vyvolává přepětí v nulovém vodiči N a zkreslení sinusovky napětí; kompenzuje se trvalým přizemněním fázových vodičů přes bleskojistky.' },
+      { id: 'd', text: 'Nemá na vedení žádný praktický vliv, protože elektroměry měří pouze činnou práci; kompenzace je v rozvodech nn výslovně zakázána.' }
+    ],
+    correctOptionId: 'a',
+    explanation: 'Indukční zátěž odebírá ze sítě kromě činného proudu i jalový induktivní proud, který zbytečně zatěžuje vedení a transformátory. Připojením paralelních kondenzátorů (kapacitní jalový výkon) se jalový proud kompenzuje přímo u spotřebiče nebo v centrálním kompenzačním rozvaděči.',
+    normReference: 'ČSN IEC 60050, ČSN 33 2000-1 ed. 2',
+    difficulty: 'normal',
+    practicalExamRelevant: true
+  },
+  {
+    id: 'q1-14',
+    chapterId: 1,
+    competencyCode: '26-017-H/01',
+    question: 'U kterého obvodu malého napětí (do 50 V AC) NENÍ vyžadována základní izolace ani krytí živých částí v běžných suchých prostorech za normálních podmínek?',
+    options: [
+      { id: 'a', text: 'U všech obvodů malého napětí bez rozdílu až do 50 V AC, protože dotyk napětí do 50 V nemůže lidskému tělu způsobit žádnou újmu na zdraví.' },
+      { id: 'b', text: 'Pouze u obvodů SELV a PELV do jmenovitého napětí 25 V AC (nebo 60 V DC bez zvlnění); u obvodů FELV je základní izolace povinná vždy.' },
+      { id: 'c', text: 'Výhradně u obvodů FELV, protože jejich transformátor nevyžaduje bezpečné galvanické oddělení od sítě nízkého napětí 230 V.' },
+      { id: 'd', text: 'U žádného obvodu – norma ČSN 33 2000-4-41 ed. 3 přísně nařizuje plné zakrytí všech živých částí i při napětí 12 V AC.' }
+    ],
+    correctOptionId: 'b',
+    explanation: 'Dle ČSN 33 2000-4-41 ed. 3 čl. 414.4.5: V obvodech SELV a PELV není základní ochrana nutná, jestliže jmenovité napětí nepřekračuje 25 V AC nebo 60 V DC v běžných suchých prostorech. U FELV musí být základní izolace zajištěna vždy jako u sítě 230 V, protože FELV není bezpečně oddělen od nn sítě.',
+    normReference: 'ČSN 33 2000-4-41 ed. 3',
+    difficulty: 'hard',
+    practicalExamRelevant: true
+  },
+  {
     id: 'q2-11',
     chapterId: 2,
     competencyCode: '26-017-H/02',
@@ -1591,6 +1625,40 @@ export const QUESTIONS: Question[] = [
     practicalExamRelevant: true
   },
   {
+    id: 'q6-13',
+    chapterId: 6,
+    competencyCode: '26-017-H/06',
+    question: 'Jaké kovové části musí být v koupelně propojeny na doplňující ochranné pospojování a jaký je minimální průřez měděného vodiče PE tohoto pospojování?',
+    options: [
+      { id: 'a', text: 'Výhradně kovové nožičky vany vodičem o průřezu 1,5 mm² Cu; vodovodní baterie a kovové trubky se pospojovat nesmějí.' },
+      { id: 'b', text: 'Všechny kovové předměty včetně klik dveří a zrcadel vodičem o průřezu minimálně 10 mm² Cu spojeným přímo s hromosvodem.' },
+      { id: 'c', text: 'Kovová vodovodní potrubí, kovové vany a přístupné kovové konstrukce; vodič Cu min. 2,5 mm² je-li chráněn, nebo 4 mm² bez mechanické ochrany.' },
+      { id: 'd', text: 'V koupelnách s proudovým chráničem 30 mA je doplňující pospojování normou zakázáno z důvodu rizika zavlečení napětí.' }
+    ],
+    correctOptionId: 'c',
+    explanation: 'Dle ČSN 33 2000-7-701 ed. 2 čl. 701.415.2 musí místní doplňující pospojování spojit ochranné vodiče s cizími vodivými částmi (kovová potrubí, kovové vany). Průřez dle 544.2: min. 2,5 mm² Cu mechanicky chráněný v trubce nebo 4 mm² nechráněný.',
+    normReference: 'ČSN 33 2000-7-701 ed. 2, ČSN 33 2000-5-54 ed. 3',
+    difficulty: 'normal',
+    practicalExamRelevant: true
+  },
+  {
+    id: 'q6-14',
+    chapterId: 6,
+    competencyCode: '26-017-H/06',
+    question: 'V jakých standardních výškách nad dokončenou podlahou se podle ČSN 33 2130 osazují nástěnné vypínače osvětlení a běžné zásuvky v obytných místnostech?',
+    options: [
+      { id: 'a', text: 'Spínače osvětlení ve výšce 150 až 170 cm; běžné zásuvky těsně nad podlahovou lištou do výšky 5 cm.' },
+      { id: 'b', text: 'Spínače osvětlení ve výšce 50 cm nad podlahou; běžné zásuvky ve výšce očí 160 cm kvůli pohodlnému zapojování.' },
+      { id: 'c', text: 'Norma výšky nestanovuje, montér je určuje výhradně podle výšky parapetu oken v dané místnosti.' },
+      { id: 'd', text: 'Spínače osvětlení obvykle 105 cm (dovolené pásmo 90 až 120 cm) u dveří; běžné zásuvky 20 až 30 cm nad hotovou podlahou.' }
+    ],
+    correctOptionId: 'd',
+    explanation: 'Spínače se umisťují u vchodu do místnosti na straně kliky dveří ve výšce 105 cm (ergonomická výška ruky, pásmo 90–120 cm). Zásuvky v obytných místnostech se standardně osazují 20–30 cm nad podlahou (v kuchyni nad linkou 115–120 cm).',
+    normReference: 'ČSN 33 2130 ed. 3 / ed. 4',
+    difficulty: 'normal',
+    practicalExamRelevant: true
+  },
+  {
     id: 'q7-11',
     chapterId: 7,
     competencyCode: '26-017-H/07',
@@ -1621,6 +1689,40 @@ export const QUESTIONS: Question[] = [
     correctOptionId: 'c',
     explanation: 'Klasické měření impedance smyčky Zs mezi L a PE zatěžuje obvod zkušebním proudem několika ampérů, což proudový chránič s IΔn = 30 mA vyhodnotí jako zemní poruchu a okamžitě vybaví. Režim „No-trip“ (bez vybavení RCD) měří proudem pod 0,5× IΔn (< 15 mA), takže chránič zůstane sepnutý.',
     normReference: 'ČSN 33 2000-6 ed. 2',
+    difficulty: 'normal',
+    practicalExamRelevant: true
+  },
+  {
+    id: 'q7-13',
+    chapterId: 7,
+    competencyCode: '26-017-H/07',
+    question: 'Jaké smrtelně nebezpečné následky má přerušení vodiče PEN ve třífázovém rozvodu starší sítě TN-C před domovním rozvaděčem?',
+    options: [
+      { id: 'a', text: 'Na neživých kovových kostrách spotřebičů třídy I se objeví nebezpečné fázové napětí 230 V a při nesymetrii fází přepětí až 400 V zničí spotřebiče!' },
+      { id: 'b', text: 'Dojde pouze k okamžitému shození hlavního jističe v přípojkové skříni a všechny spotřebiče zůstanou bezpečně odpojeny bez napětí.' },
+      { id: 'c', text: 'V síti se pouze mírně sníží frekvence proudu z 50 Hz na 25 Hz a elektroměr začne načítat poloviční spotřebu elektrické energie.' },
+      { id: 'd', text: 'Přerušení PEN nemá na spotřebiče vliv, protože proud si automaticky najde cestu zpět přes armatury základů domu.' }
+    ],
+    correctOptionId: 'a',
+    explanation: 'V síti TN-C plní vodič PEN funkci pracovního nulového i ochranného vodiče. Při jeho přerušení se proud z fází přes zapnuté spotřebiče dostane na jejich kostry (kostra je přímo spojena s PEN svorkou). Navíc plovoucí střed způsobí, že na méně zatížené fázi vzroste napětí až k 400 V.',
+    normReference: 'Zásady bezpečnosti a diagnostiky v sítích TN',
+    difficulty: 'hard',
+    practicalExamRelevant: true
+  },
+  {
+    id: 'q7-14',
+    chapterId: 7,
+    competencyCode: '26-017-H/07',
+    question: 'Proč může proudový chránič 30 mA v kanceláři nebo domácnosti náhodně vybavovat, i když na kabeláži není žádná izolační závada ani zkrat?',
+    options: [
+      { id: 'a', text: 'Proudové chrániče reagují na elektromagnetické záření Wi-Fi routerů a mobilních telefonů umístěných v blízkosti rozvaděče.' },
+      { id: 'b', text: 'Spínané zdroje počítačů a spotřebičů mají odrušovací filtry s Y-kondenzátory do PE; při zapojení většího počtu zařízení součet unikajících proudů překročí práh RCD.' },
+      { id: 'c', text: 'Vodiče v kabelech se při průchodu proudu přirozeně magnetizují a magnetické pole kabelu mechanicky vychýlí páčku chrániče.' },
+      { id: 'd', text: 'Příčinou je výhradně nízká kvalita mědi v kabelech, která vyvolává samovolný vznik stejnosměrného proudu v nulovém vodiči.' }
+    ],
+    correctOptionId: 'b',
+    explanation: 'Každý spínaný zdroj (PC, monitor, TV, pračka) má odrušovací LC filtr svádějící do vodiče PE trvalý unikající proud cca 0,5 až 2 mA. Pokud je na jednom chrániči 30 mA připojeno např. 15–20 počítačů, trvalý svod dosáhne 15–20 mA a sebemenší zapínací impuls chránič vybaví.',
+    normReference: 'ČSN 33 2000-5-53 ed. 2',
     difficulty: 'normal',
     practicalExamRelevant: true
   },
@@ -1986,6 +2088,40 @@ export const QUESTIONS: Question[] = [
     difficulty: 'normal',
     practicalExamRelevant: true
   },
+  {
+    id: 'q4-31',
+    chapterId: 4,
+    competencyCode: '26-017-H/04',
+    question: 'Jak jsou podle ČSN EN 60947-4-1 standardně číslovány pomocné kontakty na stykači nebo pomocném relé (spínací NO vs rozpínací NC)?',
+    options: [
+      { id: 'a', text: 'Rozpínací kontakty (NC) mají koncová čísla .3–.4 (např. 13–14); spínací kontakty (NO) mají koncová čísla .1–.2 (např. 21–22).' },
+      { id: 'b', text: 'Všechny kontakty jsou číslovány pouze písmeny A–B pro spínací a C–D pro rozpínací kontakt nezávisle na typu stykače.' },
+      { id: 'c', text: 'Rozpínací kontakty (NC) mají koncová čísla .1–.2 (např. 21–22); spínací kontakty (NO) mají koncová čísla .3–.4 (např. 13–14).' },
+      { id: 'd', text: 'Číslování svorek na stykači je zcela libovolné a každý výrobce používá vlastní značení bez vazby na mezinárodní normy.' }
+    ],
+    correctOptionId: 'c',
+    explanation: 'Dle normy platí: lichá čísla jsou vstupy, sudá výstupy. Koncová čísla 1-2 jsou vždy rozpínací (NC - normally closed), koncová čísla 3-4 jsou vždy spínací (NO - normally open). Desítková číslice udává pořadí kontaktu na přístroji (např. 13-14 je 1. kontakt NO, 21-22 je 2. kontakt NC).',
+    normReference: 'ČSN EN 60947-4-1',
+    difficulty: 'normal',
+    practicalExamRelevant: true
+  },
+  {
+    id: 'q4-32',
+    chapterId: 4,
+    competencyCode: '26-017-H/04',
+    question: 'Jaký typ vodiče / kabelu představuje podle evropského harmonizovaného značení označení „H07RN-F 3G2,5“?',
+    options: [
+      { id: 'a', text: 'Běžný pevný plochý PVC kabel pro uložení pod omítku ve vnitřních suchých prostorách bytových domů bez ochranného vodiče PE.' },
+      { id: 'b', text: 'Ohniodolný bezhalogenový kabel s kovovým pancéřováním do prostorů s nebezpečím výbuchu hořlavých prachů a plynů.' },
+      { id: 'c', text: 'Telefonní a datový stíněný sdělovací kabel s třemi kroucenými páry měděných žil pro domovní dorozumívací systémy.' },
+      { id: 'd', text: 'Těžkou flexibilní pryžovou (gumovou) šňůru pro náročné venkovní podmínky a staveniště s jmenovitým napětím 450/750 V se zeleno-žlutou žílou PE.' }
+    ],
+    correctOptionId: 'd',
+    explanation: 'Kód: H = harmonizovaný, 07 = 450/750 V, R = pryžová izolace žil, N = plášť z polychloroprenu (neopren - odolný oleji a vodě), -F = jemně slaněná flexibilní žíla, 3G2,5 = 3 žíly průřezu 2,5 mm², přičemž písmeno G značí přítomnost zeleno-žluté žíly PE.',
+    normReference: 'ČSN 34 7410-1, HD 361',
+    difficulty: 'normal',
+    practicalExamRelevant: true
+  },
   // =========================================================================
   // KAPITOLA 2: OTÁZKY ZE ZKOUŠEK NV č. 194/2022 Sb. & ČSN EN 50110-1 (PŠIS 2025)
   // =========================================================================
@@ -2037,6 +2173,40 @@ export const QUESTIONS: Question[] = [
     correctOptionId: 'd',
     explanation: 'Podle zákona č. 250/2021 Sb. a NV č. 190/2022 Sb. vyžaduje montáž a oprava vyhrazených elektrických zařízení oprávnění organizace vydané TIČR a výkon revizí osvědčení revizního technika vydané TIČR po úspěšné státní zkoušce.',
     normReference: 'Zákon č. 250/2021 Sb., NV č. 190/2022 Sb.',
+    difficulty: 'normal',
+    practicalExamRelevant: true
+  },
+  {
+    id: 'q2-16',
+    chapterId: 2,
+    competencyCode: '26-017-H/02',
+    question: 'Jak jsou podle normy ČSN EN 50110-1 ed. 3 definovány bezpečnostní zóny v okolí nechráněných živých částí na zařízeních nízkého napětí (nn do 1000 V)?',
+    options: [
+      { id: 'a', text: 'Zóna práce pod napětím je vymezena vzdáleností 1,5 metru od živé části; zóna přiblížení sahá do vzdálenosti 5 metrů od zařízení.' },
+      { id: 'b', text: 'V soustavách nízkého napětí do 1000 V se zóny nestanovují, zóny přiblížení platí výhradně pro venkovní linky velmi vysokého napětí (VVN).' },
+      { id: 'c', text: 'Zóna práce pod napětím je prostor do vzdálenosti DL od živých částí (při nn je DL = dotyk na živou část); pásmo mezi DL a DV je zóna přiblížení.' },
+      { id: 'd', text: 'Zóna práce pod napětím zahrnuje celou místnost rozvodny bez ohledu na vzdálenost od rozvaděče a polohu nechráněných částí.' }
+    ],
+    correctOptionId: 'c',
+    explanation: 'Na zařízeních nízkého napětí (nn) je vnější hranice zóny práce pod napětím DL rovna fyzickému dotyku (0 mm bez izolačního nástroje). Zóna přiblížení DV sahá na nn do vzdálenosti cca 300 mm podle konkrétního uspořádání.',
+    normReference: 'ČSN EN 50110-1 ed. 3',
+    difficulty: 'hard',
+    practicalExamRelevant: true
+  },
+  {
+    id: 'q2-17',
+    chapterId: 2,
+    competencyCode: '26-017-H/02',
+    question: 'Kdy je podle ČSN EN 50110-1 ed. 3 a českých bezpečnostních předpisů povinné vystavit písemný doklad k zajištění pracoviště – Příkaz "B"?',
+    options: [
+      { id: 'a', text: 'Při jakékoliv běžné montáži zásuvky nebo výměně svítidla v rodinném domě či bytové jednotce za účasti alespoň dvou montérů.' },
+      { id: 'b', text: 'Pouze při revizních měřeních izolačního odporu Riso prováděných revizním technikem TIČR napětím vyšším než 500 V DC.' },
+      { id: 'c', text: 'Příkaz "B" byl zrušen přijetím nového zákoníku práce v roce 2006 a na žádném elektrickém zařízení se již nevystavuje.' },
+      { id: 'd', text: 'Při pracích na zařízeních vysokého napětí (VN), nebo na vybraných zařízeních nn s vysokým rizikem úrazu, při PPN nebo složitých manipulacích.' }
+    ],
+    correctOptionId: 'd',
+    explanation: 'Příkaz "B" je doklad o nařízených technických a organizačních opatřeních k zajištění bezpečnosti pracoviště před zahájením prací na zařízeních VN/VVN a vybraných nn zařízeních s nebezpečím zavlečení napětí.',
+    normReference: 'ČSN EN 50110-1 ed. 3',
     difficulty: 'normal',
     practicalExamRelevant: true
   },
@@ -2094,6 +2264,40 @@ export const QUESTIONS: Question[] = [
     difficulty: 'normal',
     practicalExamRelevant: true
   },
+  {
+    id: 'q3-16',
+    chapterId: 3,
+    competencyCode: '26-017-H/03',
+    question: 'Jaká minimální jmenovitá zkratová vypínací schopnost Icn je normami a připojovacími podmínkami distributorů (ČEZ, EG.D, PRE) vyžadována pro jističe v domovních rozvodech?',
+    options: [
+      { id: 'a', text: 'Minimálně 6 kA (6 000 A) pro běžné bytové podružné rozvodnice a 10 kA (10 000 A) pro hlavní jistič v elektroměrovém rozvaděči před měřením.' },
+      { id: 'b', text: 'Postačí 1,5 kA (1 500 A) pro byt i elektroměr, protože v síti 230 V nemůže zkratový proud hodnotu 1 000 A nikdy fyzicky překročit.' },
+      { id: 'c', text: 'Minimálně 25 kA (25 000 A) pro všechny jističe v objektu včetně zásuvkových a světelných okruhů v jednotlivých pokojích.' },
+      { id: 'd', text: 'Zkratová schopnost se u domovních jističů neuvádí, všechny modulární jističe na DIN lištu mají neomezenou vypínací odolnost.' }
+    ],
+    correctOptionId: 'a',
+    explanation: 'Podle připojovacích podmínek distributorů musí mít hlavní jistič před elektroměrem vypínací schopnost min. 10 kA. V podružných bytových rozvodnicích se používají jističe s Icn min. 6 kA (dříve se používalo 4,5 kA, dnes je standardem 6 kA).',
+    normReference: 'ČSN EN 60898-1, Připojovací podmínky PDS',
+    difficulty: 'normal',
+    practicalExamRelevant: true
+  },
+  {
+    id: 'q3-17',
+    chapterId: 3,
+    competencyCode: '26-017-H/03',
+    question: 'Jak se změní dovolená proudová zatížitelnost Iz kabelu CYKY 3×2,5 mm², pokud je uložen ve svazku s dalšími pěti zatíženými kabely na společné trase?',
+    options: [
+      { id: 'a', text: 'Zatížitelnost Iz se zvýší, protože více kabelů v souběhu odvádí teplo do okolního vzduchu lépe než jeden samotný kabel.' },
+      { id: 'b', text: 'Zatížitelnost Iz se výrazně sníží vynásobením přepočítacím koeficientem seskupení (např. cca 0,6–0,7), protože kabely se vzájemně ohřívají.' },
+      { id: 'c', text: 'Zatížitelnost se nemění, souběh více kabelů má vliv pouze na elektromagnetické rušení datových kabelů, nikoliv na oteplení.' },
+      { id: 'd', text: 'Zatížitelnost klesne na nulu, protože norma ČSN 33 2000-5-52 přísně zakazuje souběh více než dvou silových kabelů v jedné liště.' }
+    ],
+    correctOptionId: 'b',
+    explanation: 'Při seskupení více zatížených kabelů v jedné liště, trubce nebo kabelovém žlabu dochází ke vzájemnému tepelnému ovlivnění. Podle tabulek v ČSN 33 2000-5-52 se základní proudová zatížitelnost Iz násobí koeficientem uspořádání k < 1,0.',
+    normReference: 'ČSN 33 2000-5-52 ed. 2',
+    difficulty: 'normal',
+    practicalExamRelevant: true
+  },
   // =========================================================================
   // KAPITOLA 5: ČSN 33 2130 ed. 4 (PLATNÁ OD 1. 1. 2025) & ULIČKY ROZVADĚČŮ
   // =========================================================================
@@ -2148,6 +2352,40 @@ export const QUESTIONS: Question[] = [
     difficulty: 'normal',
     practicalExamRelevant: true
   },
+  {
+    id: 'q5-16',
+    chapterId: 5,
+    competencyCode: '26-017-H/05',
+    question: 'Do jaké bezpečnostní kategorie přepěťové odolnosti (CAT) musí spadat multimetr nebo revizní přístroj při měření přímo na přípojkové skříni objektu nebo venkovním vedení?',
+    options: [
+      { id: 'a', text: 'Musí splňovat kategorii CAT IV (pro měření u zdroje instalace, venkovních rozvodů a hlavních domovních skříní HDS s rizikem bleskového přepětí).' },
+      { id: 'b', text: 'Postačí kategorie CAT I, protože při měření napětí 230/400 V nehrozí žádné vysokonapěťové impulsy.' },
+      { id: 'c', text: 'Kategorie CAT II, která je podle ČSN EN 61010-1 certifikována pro jakékoliv práce na venkovních sítích a trafostanicích.' },
+      { id: 'd', text: 'Na kategorii nezáleží, podstatné je pouze to, zda má přístroj neporušenou skleněnou pojistku a čerstvě nabitou baterii.' }
+    ],
+    correctOptionId: 'a',
+    explanation: 'ČSN EN 61010-1 definuje: CAT I = elektronika oddělená od sítě, CAT II = spotřebiče připojené do zásuvek, CAT III = pevná instalace v budově a rozvaděče, CAT IV = počátek instalace, přípojkové skříně, venkovní vedení a elektroměry.',
+    normReference: 'ČSN EN 61010-1 ed. 2',
+    difficulty: 'normal',
+    practicalExamRelevant: true
+  },
+  {
+    id: 'q5-17',
+    chapterId: 5,
+    competencyCode: '26-017-H/05',
+    question: 'Proč je revizní technik či elektromontér povinen v každé třífázové zásuvce 400 V (16 A i 32 A) ověřit sled fází a jaký sled je předepsán?',
+    options: [
+      { id: 'a', text: 'Musí být zajištěno levotočivé pole (L3–L2–L1), protože čerpadla a cirkulárky mají v ČR předepsán levý směr otáčení motoru.' },
+      { id: 'b', text: 'Musí být zajištěno pravotočivé pole (L1–L2–L3 po směru hodinových ručiček), aby se třífázové motory a stroje točily správným směrem.' },
+      { id: 'c', text: 'Sled fází se měří pouze kvůli rovnoměrnému zatížení fází v transformovně, na směr otáčení motorů nemá sled fází vliv.' },
+      { id: 'd', text: 'Sled fází se v domovních zásuvkách nekontroluje, směr točení je dán konstrukcí vidlice spotřebiče.' }
+    ],
+    correctOptionId: 'b',
+    explanation: 'Norma ČSN 33 2000-6 ed. 2 předepisuje ověření sledu fází u všech vícefázových zásuvek. Pravotočivé pole zaručuje, že se motory (např. stavební míchačka, pila, kompresor) roztočí standardním směrem.',
+    normReference: 'ČSN 33 2000-6 ed. 2',
+    difficulty: 'normal',
+    practicalExamRelevant: true
+  },
   // =========================================================================
   // KAPITOLA 8: PRVNÍ POMOC & HROMOSVODY (PŠIS 2025, ČSN EN 62305 ed. 2)
   // =========================================================================
@@ -2199,6 +2437,40 @@ export const QUESTIONS: Question[] = [
     correctOptionId: 'c',
     explanation: 'Podle ČSN EN 62305-3 ed. 2 se systémy ochrany před bleskem dělí do 4 tříd LPS (I, II, III, IV) podle úrovně LPL. Pro stanovení ochranného prostoru jímací soustavy norma připouští přesně tři metody: metodu ochranného úhlu, metodu valící se koule a metodu mřížové soustavy.',
     normReference: 'ČSN EN 62305-3 ed. 2',
+    difficulty: 'normal',
+    practicalExamRelevant: true
+  },
+  {
+    id: 'q8-16',
+    chapterId: 8,
+    competencyCode: '26-017-H/08',
+    question: 'Jak se chová automatizovaný externí defibrilátor (AED) po nalepení elektrod a v jakém případě elektrický výboj NEPODÁ?',
+    options: [
+      { id: 'a', text: 'Přístroj podá elektrický výboj v každém případě automaticky do 10 sekund po nalepení elektrod bez ohledu na srdeční aktivitu.' },
+      { id: 'b', text: 'Výboj nepodá pouze tehdy, má-li postižený na těle kovový řetízek nebo je-li v místnosti teplota vzduchu nižší než 10 °C.' },
+      { id: 'c', text: 'Přístroj sám zanalyzuje EKG rytmus srdce; výboj NEPODÁ při asystolii (zástava bez elektrické aktivity – rovná čára) a nařídí pokračovat v KPR 30:2.' },
+      { id: 'd', text: 'Přístroj nepodá výboj při komorové fibrilaci, protože při chvění srdečních komor je defibrilace přísně zakázána.' }
+    ],
+    correctOptionId: 'c',
+    explanation: 'AED defibriluje pouze defibrilovatelné rytmy: komorovou fibrilaci (VF) a bezpulzovou komorovou tachykardii (VT). Při asystolii (zástava srdce bez elektrické aktivity) defibrilátor výboj nedoporučí, protože srdce nemá jak zresetovat, a hlasově navádí zachránce k okamžitému provádění srdeční masáže 30:2.',
+    normReference: 'Guidelines ERC (Evropská resuscitační rada)',
+    difficulty: 'normal',
+    practicalExamRelevant: true
+  },
+  {
+    id: 'q8-17',
+    chapterId: 8,
+    competencyCode: '26-017-H/08',
+    question: 'Jaká jsou základní protišoková opatření známá jako pravidlo 5T, která aplikujeme u postiženého po zásahu elektrickým proudem při vědomí?',
+    options: [
+      { id: 'a', text: 'Teplý čaj (vypít alespoň 1 litr), Tělocvik (rozpohybovat končetiny), Tlaková masáž, Teplá koupel a Telefonát zaměstnavateli.' },
+      { id: 'b', text: 'Tabletky proti bolesti (acylpyrin), Tuhá strava, Tlakový obvaz na krk, Teplý obklad na srdce a Trvalý odpočinek doma bez lékaře.' },
+      { id: 'c', text: 'Studená sprcha celého těla, Třesení tělem pro probuzení, Tvrdý alkohol na zklidnění, Těsný oděv a Transport vlastním autem.' },
+      { id: 'd', text: 'Teplo (zabalení do fólie), Ticho (uklidnění), Tekutiny (pouze otírání rtů, NIKDY nepodávat pít!), Tišení bolesti a Transport (přivolání ZZS 155).' }
+    ],
+    correctOptionId: 'd',
+    explanation: 'Pravidlo 5T: Teplo (zamezení podchlazení izotermickou fólií), Ticho (psychické uklidnění, omezení zvědavců), Tekutiny (nesmí nic pít kvůli riziku zvracení v narkóze či bezvědomí, pouze svlažit rty vodou), Tišení bolesti (chlazení popálenin, správná poloha, bez podávání léků ústy) a Transport (odborná záchranná služba 155).',
+    normReference: 'Zásady první pomoci ČČK',
     difficulty: 'normal',
     practicalExamRelevant: true
   }

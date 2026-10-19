@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, CheckCircle, XCircle, ArrowRight, Award, RefreshCw } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Question } from '../types';
+import { randomizeQuizQuestions } from '../utils/quizUtils';
 
 interface QuizModalProps {
   isOpen: boolean;
@@ -20,6 +21,9 @@ export const QuizModal: React.FC<QuizModalProps> = ({
   questions,
   onQuizCompleted,
 }) => {
+  const [shuffledQuestions, setShuffledQuestions] = useState<Question[]>(() =>
+    questions.length > 0 ? randomizeQuizQuestions(questions) : []
+  );
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
   const [isAnswered, setIsAnswered] = useState(false);
@@ -27,10 +31,25 @@ export const QuizModal: React.FC<QuizModalProps> = ({
   const [incorrectIds, setIncorrectIds] = useState<string[]>([]);
   const [isFinished, setIsFinished] = useState(false);
 
-  if (!isOpen || questions.length === 0) return null;
+  // Při každém otevření kvízu nebo změně kapitoly kompletně zrandomizujeme otázky i možnosti
+  useEffect(() => {
+    if (isOpen && questions.length > 0) {
+      setShuffledQuestions(randomizeQuizQuestions(questions));
+      setCurrentIndex(0);
+      setSelectedOptionId(null);
+      setIsAnswered(false);
+      setScore(0);
+      setIncorrectIds([]);
+      setIsFinished(false);
+    }
+  }, [isOpen, chapterId, questions]);
 
-  const currentQ = questions[currentIndex];
-  const isLast = currentIndex === questions.length - 1;
+  const activeList = shuffledQuestions.length > 0 ? shuffledQuestions : questions;
+
+  if (!isOpen || activeList.length === 0) return null;
+
+  const currentQ = activeList[currentIndex];
+  const isLast = currentIndex === activeList.length - 1;
 
   const handleSelectOption = (optionId: string) => {
     if (isAnswered) return;
@@ -53,7 +72,7 @@ export const QuizModal: React.FC<QuizModalProps> = ({
       setIsAnswered(false);
     } else {
       setIsFinished(true);
-      const pct = (score / questions.length) * 100;
+      const pct = (score / activeList.length) * 100;
       if (pct >= 75) {
         confetti({
           particleCount: 80,
@@ -62,11 +81,12 @@ export const QuizModal: React.FC<QuizModalProps> = ({
         });
       }
 
-      onQuizCompleted(chapterId, score, questions.length, incorrectIds);
+      onQuizCompleted(chapterId, score, activeList.length, incorrectIds);
     }
   };
 
   const handleRestart = () => {
+    setShuffledQuestions(randomizeQuizQuestions(questions));
     setCurrentIndex(0);
     setSelectedOptionId(null);
     setIsAnswered(false);
@@ -98,13 +118,13 @@ export const QuizModal: React.FC<QuizModalProps> = ({
                 {chapterTitle}
               </h2>
               <div className="flex items-center justify-between text-xs text-slate-400 mt-2">
-                <span>Otázka {currentIndex + 1} z {questions.length}</span>
+                <span>Otázka {currentIndex + 1} z {activeList.length}</span>
                 <span>Průběžné skóre: <strong className="text-emerald-400">{score}</strong> správně</span>
               </div>
               <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden mt-1.5">
                 <div
                   className="h-full bg-gradient-to-r from-amber-500 to-yellow-400 transition-all duration-300"
-                  style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
+                  style={{ width: `${((currentIndex + 1) / activeList.length) * 100}%` }}
                 />
               </div>
             </div>
@@ -221,13 +241,13 @@ export const QuizModal: React.FC<QuizModalProps> = ({
 
             <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-5 max-w-sm mx-auto">
               <div className="text-4xl font-black text-amber-400">
-                {Math.round((score / questions.length) * 100)} %
+                {Math.round((score / activeList.length) * 100)} %
               </div>
               <p className="text-xs text-slate-300 mt-1">
-                Správně <strong>{score}</strong> z <strong>{questions.length}</strong> otázek
+                Správně <strong>{score}</strong> z <strong>{activeList.length}</strong> otázek
               </p>
               <div className="mt-3 text-xs font-semibold">
-                {(score / questions.length) >= 0.75 ? (
+                {(score / activeList.length) >= 0.75 ? (
                   <span className="text-emerald-400">✓ Splněno (hranice 75 % pro zkoušku)</span>
                 ) : (
                   <span className="text-amber-400">⚠️ Doporučujeme kapitolu ještě zopakovat</span>

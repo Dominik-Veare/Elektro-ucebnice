@@ -8,6 +8,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { Question, UserProgress } from '../types';
+import { randomizeQuizQuestions } from '../utils/quizUtils';
 
 interface MistakeNotebookProps {
   allQuestions: Question[];
@@ -23,6 +24,7 @@ export const MistakeNotebook: React.FC<MistakeNotebookProps> = ({
   onClearMistakes,
 }) => {
   const [activeDrillIndex, setActiveDrillIndex] = useState<number | null>(null);
+  const [drillQuestions, setDrillQuestions] = useState<Question[]>([]);
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
   const [isAnswered, setIsAnswered] = useState(false);
 
@@ -34,9 +36,10 @@ export const MistakeNotebook: React.FC<MistakeNotebookProps> = ({
     .map(([qId]) => allQuestions.find(q => q.id === qId))
     .filter((q): q is Question => q !== undefined);
 
-  // Spuštění procvičování chyb
+  // Spuštění procvičování chyb (náhodné pořadí otázek i možností)
   const startDrill = () => {
     if (activeQuestions.length > 0) {
+      setDrillQuestions(randomizeQuizQuestions(activeQuestions));
       setActiveDrillIndex(0);
       setSelectedOptionId(null);
       setIsAnswered(false);
@@ -49,7 +52,7 @@ export const MistakeNotebook: React.FC<MistakeNotebookProps> = ({
     setSelectedOptionId(optionId);
     setIsAnswered(true);
 
-    const currentQ = activeQuestions[activeDrillIndex];
+    const currentQ = drillQuestions[activeDrillIndex];
     const isCorrect = optionId === currentQ.correctOptionId;
 
     onAnswerMistakeQuestion(currentQ.id, isCorrect);
@@ -58,7 +61,7 @@ export const MistakeNotebook: React.FC<MistakeNotebookProps> = ({
   const handleNextDrillQuestion = () => {
     if (activeDrillIndex === null) return;
 
-    if (activeDrillIndex < activeQuestions.length - 1) {
+    if (activeDrillIndex < drillQuestions.length - 1) {
       setActiveDrillIndex(prev => (prev !== null ? prev + 1 : null));
       setSelectedOptionId(null);
       setIsAnswered(false);
@@ -68,16 +71,16 @@ export const MistakeNotebook: React.FC<MistakeNotebookProps> = ({
   };
 
   // Režim aktivního procvičování chyb
-  if (activeDrillIndex !== null && activeQuestions[activeDrillIndex]) {
-    const currentQ = activeQuestions[activeDrillIndex];
-    const isLast = activeDrillIndex === activeQuestions.length - 1;
+  if (activeDrillIndex !== null && drillQuestions[activeDrillIndex]) {
+    const currentQ = drillQuestions[activeDrillIndex];
+    const isLast = activeDrillIndex === drillQuestions.length - 1;
 
     return (
       <div className="max-w-2xl mx-auto space-y-5 animate-fadeIn pb-16">
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-xl">
           <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
             <span className="text-xs font-mono font-bold text-amber-400 uppercase">
-              Opakování chyby {activeDrillIndex + 1} z {activeQuestions.length}
+              Opakování chyby {activeDrillIndex + 1} z {drillQuestions.length}
             </span>
             <button
               onClick={() => setActiveDrillIndex(null)}

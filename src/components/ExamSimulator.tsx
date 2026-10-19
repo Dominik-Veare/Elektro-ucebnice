@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Question } from '../types';
+import { randomizeQuestion, shuffleArray } from '../utils/quizUtils';
 
 interface ExamSimulatorProps {
   allQuestions: Question[];
@@ -52,16 +53,6 @@ export const ExamSimulator: React.FC<ExamSimulatorProps> = ({
   const timeLeftRef = useRef(timeLeft);
   timeLeftRef.current = timeLeft;
 
-  // Fisher-Yates míchání pole
-  const shuffleArray = <T,>(arr: T[]): T[] => {
-    const copy = [...arr];
-    for (let i = copy.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [copy[i], copy[j]] = [copy[j], copy[i]];
-    }
-    return copy;
-  };
-
   // Inicializace vyváženého výběru otázek ze všech 8 kapitol NSK
   const startExam = () => {
     const targetCount = examMode === 'standard' ? 20 : 40;
@@ -86,7 +77,10 @@ export const ExamSimulator: React.FC<ExamSimulatorProps> = ({
       ...remaining.slice(0, Math.max(0, targetCount - selected.length))
     ]);
 
-    setExamQuestions(finalSelection);
+    // Každou vybranou otázku kompletně náhodně promícháme v možnostech i pozici správné odpovědi
+    const randomizedExamQuestions = finalSelection.map(randomizeQuestion);
+
+    setExamQuestions(randomizedExamQuestions);
     setUserAnswers({});
     setFlaggedQuestions({});
     setCurrentIndex(0);

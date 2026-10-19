@@ -36,6 +36,7 @@ export interface SyncEnvelope {
 
 const DEFAULT_PROGRESS: UserProgress = {
   completedSubchapters: [],
+  subchapterStatus: {},
   quizScores: {},
   examHistory: [],
   mistakes: {},
@@ -58,6 +59,7 @@ export function loadProgress(): UserProgress {
       ...parsed,
       mistakes: parsed.mistakes || {},
       mistakesClearedAt: parsed.mistakesClearedAt,
+      subchapterStatus: parsed.subchapterStatus || {},
       quizScores: parsed.quizScores || {},
       examHistory: parsed.examHistory || [],
       completedSubchapters: parsed.completedSubchapters || [],
@@ -79,12 +81,58 @@ export function saveProgress(progress: UserProgress): void {
 
 // Sloučení dvou profilů postupu bez ztráty dat z kteréhokoliv zařízení (Union / Merge)
 export function mergeProgress(local: UserProgress, remote: UserProgress): UserProgress {
-  // Bezpečnostní ošetření a limitace počtu podkapitol (ochrana proti zahlcení localStorage)
-  const mergedSubchapters = Array.from(
-    new Set([...(local.completedSubchapters || []), ...(remote.completedSubchapters || [])])
-  )
-    .filter((id): id is string => typeof id === 'string' && id.length <= 64)
-    .slice(0, 150);
+  // Sloučení podkapitol na základě časových razítek (LWW CRDT) - řeší správné odznačení přečtených témat mezi PC a mobilem
+  const localStatus = local.subchapterStatus || {};
+  const remoteStatus = remote.subchapterStatus || {};
+
+  const allSubchapterIds = new Set<string>([
+    ...Object.keys(localStatus),
+    ...Object.keys(remoteStatus),
+    ...(local.completedSubchapters || []),
+    ...(remote.completedSubchapters || []),
+  ]);
+
+  const mergedSubchapterStatus: Record<string, { completed: boolean; updatedAt: number }> = {};
+  const mergedSubchaptersList: string[] = [];
+
+  for (const id of allSubchapterIds) {
+    if (typeof id !== 'string' || id.length > 64) continue;
+
+    const l = localStatus[id];
+    const r = remoteStatus[id];
+
+    let winningCompleted: boolean;
+    let winningUpdatedAt: number;
+
+    if (l && r) {
+      if (l.updatedAt >= r.updatedAt) {
+        winningCompleted = Boolean(l.completed);
+        winningUpdatedAt = l.updatedAt;
+      } else {
+        winningCompleted = Boolean(r.completed);
+        winningUpdatedAt = r.updatedAt;
+      }
+    } else if (l) {
+      winningCompleted = Boolean(l.completed);
+      winningUpdatedAt = l.updatedAt;
+    } else if (r) {
+      winningCompleted = Boolean(r.completed);
+      winningUpdatedAt = r.updatedAt;
+    } else {
+      // Zpětná kompatibilita pro staré profily bez časových razítek
+      const inL = (local.completedSubchapters || []).includes(id);
+      const inR = (remote.completedSubchapters || []).includes(id);
+      winningCompleted = inL || inR;
+      winningUpdatedAt = 1;
+    }
+
+    mergedSubchapterStatus[id] = { completed: winningCompleted, updatedAt: winningUpdatedAt };
+    if (winningCompleted) {
+      mergedSubchaptersList.push(id);
+    }
+  }
+
+  const mergedSubchapters = mergedSubchaptersList.slice(0, 150);
 
   const mergedScores: Record<number, { score: number; total: number; date: string }> = {
     ...(local.quizScores || {}),
@@ -170,6 +218,7 @@ export function mergeProgress(local: UserProgress, remote: UserProgress): UserPr
 
   return {
     completedSubchapters: mergedSubchapters,
+    subchapterStatus: mergedSubchapterStatus,
     quizScores: mergedScores,
     examHistory: cappedExams,
     mistakes: mergedMistakes,

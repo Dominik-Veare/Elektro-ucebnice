@@ -131,14 +131,26 @@ export const App: React.FC = () => {
     });
   };
 
-  // Označit podkapitolu za přečtenou / nepřečtenou
+  // Označit podkapitolu za přečtenou / nepřečtenou (s časovým razítkem pro obousměrný live sync)
   const handleToggleSubchapter = (subchapterId: string) => {
+    const now = Date.now();
     updateProgress(prev => {
       const exists = prev.completedSubchapters.includes(subchapterId);
-      const updated = exists
-        ? prev.completedSubchapters.filter(id => id !== subchapterId)
-        : [...prev.completedSubchapters, subchapterId];
-      return { ...prev, completedSubchapters: updated };
+      const isNowCompleted = !exists;
+      const updated = isNowCompleted
+        ? [...prev.completedSubchapters, subchapterId]
+        : prev.completedSubchapters.filter(id => id !== subchapterId);
+
+      const updatedStatus = {
+        ...(prev.subchapterStatus || {}),
+        [subchapterId]: { completed: isNowCompleted, updatedAt: now }
+      };
+
+      return {
+        ...prev,
+        completedSubchapters: updated,
+        subchapterStatus: updatedStatus
+      };
     });
   };
 

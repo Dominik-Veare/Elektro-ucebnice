@@ -138,6 +138,7 @@ export interface UserProgress {
     lastAttemptDate: string;
   }>;
   mistakesClearedAt?: string; // ISO čas posledního smazání historie chyb
+  subchapterStatus?: Record<string, { completed: boolean; updatedAt: number }>; // Časová razítka označení/odznačení kapitol pro spolehlivou synchronizaci
   syncId: string; // e.g. "ELEKTRO-7842"
   lastSyncedAt?: string;
 }

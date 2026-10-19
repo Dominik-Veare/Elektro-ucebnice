@@ -17,6 +17,7 @@ import {
   BookOpen
 } from 'lucide-react';
 import { Chapter, UserProgress } from '../types';
+import { TechnicalSchematicsViewer } from './TechnicalSchematicsViewer';
 
 interface ChapterViewProps {
   chapters: Chapter[];
@@ -327,6 +328,14 @@ export const ChapterView: React.FC<ChapterViewProps> = ({
                 <div className="text-slate-300 text-sm space-y-2 font-sans">
                   {renderFormattedContent(sub.content)}
                 </div>
+
+                {/* Vizuální technická schémata a atlas značek pro Kapitolu 4 */}
+                {selectedChapter.id === 4 && sub.id === '4-1' && (
+                  <TechnicalSchematicsViewer initialTab="single-line" />
+                )}
+                {selectedChapter.id === 4 && sub.id === '4-2' && (
+                  <TechnicalSchematicsViewer initialTab="symbols" />
+                )}
 
                 {/* Klíčové body k zapamatování */}
                 {sub.keyTakeaways && sub.keyTakeaways.length > 0 && (

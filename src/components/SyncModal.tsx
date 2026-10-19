@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Cloud, Copy, Check, RefreshCw, Smartphone, Download, Upload, QrCode, Link2 } from 'lucide-react';
+import { X, Cloud, Copy, Check, RefreshCw, Smartphone, Download, Upload, QrCode, Link2, Trash2, AlertTriangle } from 'lucide-react';
 import { UserProgress, LiveSyncStatus } from '../types';
 import { syncWithCloud, saveProgress, loadProgress } from '../services/storage';
 
@@ -8,6 +8,7 @@ interface SyncModalProps {
   onClose: () => void;
   progress: UserProgress;
   onProgressUpdated: (newProgress: UserProgress) => void;
+  onResetAllProgress?: () => Promise<void> | void;
   syncStatus?: LiveSyncStatus;
 }
 
@@ -16,11 +17,13 @@ export const SyncModal: React.FC<SyncModalProps> = ({
   onClose,
   progress,
   onProgressUpdated,
+  onResetAllProgress,
   syncStatus = 'idle',
 }) => {
   const [copied, setCopied] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [showQr, setShowQr] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [inputCode, setInputCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
@@ -271,6 +274,52 @@ export const SyncModal: React.FC<SyncModalProps> = ({
               <input type="file" accept=".json" onChange={handleImport} className="hidden" />
             </label>
           </div>
+        </div>
+
+        {/* Vymazání veškerého postupu (Reset studia) */}
+        <div className="mt-5 pt-4 border-t border-slate-800">
+          {!showResetConfirm ? (
+            <button
+              onClick={() => setShowResetConfirm(true)}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold text-red-400 hover:text-red-300 hover:bg-red-950/40 border border-red-900/40 hover:border-red-800/60 transition-colors"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>Vymazat veškerý postup studia</span>
+            </button>
+          ) : (
+            <div className="bg-red-950/40 border border-red-900/60 rounded-xl p-4 space-y-3 animate-fadeIn">
+              <div className="flex items-start gap-2.5">
+                <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                <div className="text-xs text-red-200 leading-relaxed">
+                  <strong className="text-sm font-bold block mb-1">Opravdu chcete vymazat veškerý postup?</strong>
+                  <p className="text-slate-300">
+                    Tato akce resetuje všechny přečtené kapitoly, výsledky cvičných testů, historii zkoušek i celou Knihu chyb na tomto zařízení i v cloudu pro spárovaná zařízení.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center justify-end gap-2 pt-1">
+                <button
+                  onClick={() => setShowResetConfirm(false)}
+                  className="px-3.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
+                >
+                  Zrušit
+                </button>
+                <button
+                  onClick={async () => {
+                    setShowResetConfirm(false);
+                    if (onResetAllProgress) {
+                      await onResetAllProgress();
+                    }
+                    setStatusMsg({ type: 'success', text: 'Veškerý postup studia byl úspěšně vymazán a resetován na nulu.' });
+                  }}
+                  className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold bg-red-600 hover:bg-red-500 text-white shadow-sm transition-colors"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Ano, vymazat vše</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
       </div>

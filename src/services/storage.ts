@@ -79,6 +79,24 @@ export function saveProgress(progress: UserProgress): void {
   }
 }
 
+// Úplné vymazání a resetování veškerého studijního postupu (lokálně i s možností synchronizace)
+export function resetAllProgress(keepSyncId = true): UserProgress {
+  const current = loadProgress();
+  const reset: UserProgress = {
+    ...DEFAULT_PROGRESS,
+    syncId: keepSyncId ? current.syncId : generateSyncCode(),
+    completedSubchapters: [],
+    subchapterStatus: {},
+    quizScores: {},
+    examHistory: [],
+    mistakes: {},
+    mistakesClearedAt: new Date().toISOString(),
+    lastSyncedAt: new Date().toISOString(),
+  };
+  saveProgress(reset);
+  return reset;
+}
+
 // Sloučení dvou profilů postupu bez ztráty dat z kteréhokoliv zařízení (Union / Merge)
 export function mergeProgress(local: UserProgress, remote: UserProgress): UserProgress {
   // Sloučení podkapitol na základě časových razítek (LWW CRDT) - řeší správné odznačení přečtených témat mezi PC a mobilem

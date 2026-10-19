@@ -9,6 +9,7 @@ import { QUESTIONS } from './data/questions';
 import {
   loadProgress,
   saveProgress,
+  resetAllProgress,
   syncWithCloud,
   broadcastProgress,
   subscribeToLiveSync,
@@ -16,15 +17,34 @@ import {
 } from './services/storage';
 import { UserProgress, QualificationId, QUALIFICATIONS, LiveSyncStatus } from './types';
 
-const ChapterView = lazy(() => import('./components/ChapterView').then(m => ({ default: m.ChapterView })));
-const QuizModal = lazy(() => import('./components/QuizModal').then(m => ({ default: m.QuizModal })));
-const ExamSimulator = lazy(() => import('./components/ExamSimulator').then(m => ({ default: m.ExamSimulator })));
-const MistakeNotebook = lazy(() => import('./components/MistakeNotebook').then(m => ({ default: m.MistakeNotebook })));
-const FlashcardsView = lazy(() => import('./components/FlashcardsView').then(m => ({ default: m.FlashcardsView })));
-const CalculatorsView = lazy(() => import('./components/CalculatorsView').then(m => ({ default: m.CalculatorsView })));
-const WiringSimulator = lazy(() => import('./components/WiringSimulator').then(m => ({ default: m.WiringSimulator })));
-const DiagnosticsView = lazy(() => import('./components/DiagnosticsView').then(m => ({ default: m.DiagnosticsView })));
-const SyncModal = lazy(() => import('./components/SyncModal').then(m => ({ default: m.SyncModal })));
+// Bezpečný lazy import, který při 404 (nová verze aplikace po deploymentu) automaticky obnoví stránku
+function safeLazy<T extends React.ComponentType<any>>(
+  factory: () => Promise<{ default: T }>
+): React.LazyExoticComponent<T> {
+  return lazy(() =>
+    factory().catch((error) => {
+      console.warn('Detekován starý JS chunk v prohlížeči (nová verze na Vercelu), obnovuji...', error);
+      const reloadKey = 'chunk_reload_' + window.location.pathname;
+      if (!sessionStorage.getItem(reloadKey)) {
+        sessionStorage.setItem(reloadKey, 'true');
+        window.location.reload();
+        return new Promise(() => {});
+      }
+      sessionStorage.removeItem(reloadKey);
+      throw error;
+    })
+  );
+}
+
+const ChapterView = safeLazy(() => import('./components/ChapterView').then(m => ({ default: m.ChapterView })));
+const QuizModal = safeLazy(() => import('./components/QuizModal').then(m => ({ default: m.QuizModal })));
+const ExamSimulator = safeLazy(() => import('./components/ExamSimulator').then(m => ({ default: m.ExamSimulator })));
+const MistakeNotebook = safeLazy(() => import('./components/MistakeNotebook').then(m => ({ default: m.MistakeNotebook })));
+const FlashcardsView = safeLazy(() => import('./components/FlashcardsView').then(m => ({ default: m.FlashcardsView })));
+const CalculatorsView = safeLazy(() => import('./components/CalculatorsView').then(m => ({ default: m.CalculatorsView })));
+const WiringSimulator = safeLazy(() => import('./components/WiringSimulator').then(m => ({ default: m.WiringSimulator })));
+const DiagnosticsView = safeLazy(() => import('./components/DiagnosticsView').then(m => ({ default: m.DiagnosticsView })));
+const SyncModal = safeLazy(() => import('./components/SyncModal').then(m => ({ default: m.SyncModal })));
 
 const TabLoadingFallback: React.FC = () => (
   <div className="flex flex-col items-center justify-center min-h-[40vh] p-8 space-y-3 animate-pulse">
@@ -263,6 +283,22 @@ export const App: React.FC = () => {
     }
   };
 
+  // Úplné vymazání veškerého studijního postupu (reset na nulu) s okamžitou synchronizací
+  const handleResetAllProgress = async () => {
+    const fresh = resetAllProgress(true);
+    setProgress(fresh);
+
+    // Bleskové živé odeslání do cloudu, aby se postup vymazal i na spárovaném mobilu
+    if (fresh.syncId && navigator.onLine) {
+      if (syncDebounceTimerRef.current) {
+        clearTimeout(syncDebounceTimerRef.current);
+      }
+      setSyncStatus('syncing');
+      await broadcastProgress(fresh);
+      setSyncStatus('connected');
+    }
+  };
+
   // Příprava otázek pro aktivní kvíz
   const activeQuizChapter = CHAPTERS.find(c => c.id === activeQuizChapterId);
   const activeQuizQuestions = activeQuizChapterId
@@ -394,6 +430,7 @@ export const App: React.FC = () => {
             onClose={() => setIsSyncModalOpen(false)}
             progress={progress}
             onProgressUpdated={(newProg) => setProgress(newProg)}
+            onResetAllProgress={handleResetAllProgress}
             syncStatus={syncStatus}
           />
         )}
